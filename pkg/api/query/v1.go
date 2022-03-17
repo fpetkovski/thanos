@@ -21,12 +21,18 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	promql2 "github.com/cortexproject/cortex/pkg/configs/legacy_promql"
+
+	"github.com/thanos-io/thanos/pkg/promclient"
 
 	"github.com/go-kit/log"
 	"github.com/opentracing/opentracing-go"
@@ -70,6 +76,7 @@ const (
 	StoreMatcherParam        = "storeMatch[]"
 	Step                     = "step"
 	Stats                    = "stats"
+	ShardID                  = "shard_id"
 )
 
 // QueryAPI is an API used by Thanos Querier.
@@ -295,6 +302,20 @@ func (qapi *QueryAPI) parseStep(r *http.Request, defaultRangeQueryStep time.Dura
 	return d, nil
 }
 
+func (qapi *QueryAPI) parseShardID(r *http.Request) (*int, *api.ApiError) {
+	val := r.FormValue(ShardID)
+	if val == "" {
+		return nil, nil
+	}
+
+	shardID, err := strconv.Atoi(val)
+	if err != nil {
+		return nil, &api.ApiError{Typ: api.ErrorBadData, Err: errors.Wrapf(err, "'%s' parameter", ShardID)}
+	}
+
+	return &shardID, nil
+}
+
 func (qapi *QueryAPI) query(r *http.Request) (interface{}, []error, *api.ApiError) {
 	ts, err := parseTimeParam(r, "time", qapi.baseAPI.Now())
 	if err != nil {
@@ -338,13 +359,70 @@ func (qapi *QueryAPI) query(r *http.Request) (interface{}, []error, *api.ApiErro
 		return nil, nil, apiErr
 	}
 
+	shardID, apiErr := qapi.parseShardID(r)
+	if apiErr != nil {
+		return nil, nil, apiErr
+	}
+
+	if shardID == nil {
+		var results model.Vector
+		for _, shardID := range []int{0, 1} {
+			currentShardID := shardID
+			promClient := promclient.NewClient(&http.Client{}, qapi.logger, "Yolo")
+			host, _ := url.Parse("http://127.0.0.1:10903")
+			query := r.FormValue("query")
+			result, warns, err := promClient.QueryInstant(ctx, host, query, ts, promclient.QueryOptions{
+				Deduplicate: enableDedup,
+				ShardID:     &currentShardID,
+			})
+			if err != nil {
+				return nil, nil, &api.ApiError{Typ: api.ErrorCanceled, Err: err}
+			}
+
+			if len(warns) > 0 {
+				fmt.Println(warns)
+			}
+
+			fmt.Println(currentShardID)
+			fmt.Println(result)
+
+			results = append(results, result...)
+		}
+
+		var promqlResult promql.Vector
+		for _, sample := range results {
+			var labelset labels.Labels
+			for l, v := range sample.Metric {
+				labelset = append(labelset, labels.Label{
+					Name:  string(l),
+					Value: string(v),
+				})
+			}
+
+			promqlResult = append(promqlResult, promql.Sample{
+				Point: promql.Point{
+					T: sample.Timestamp.Unix(),
+					V: float64(sample.Value),
+				},
+				Metric: labelset,
+			})
+		}
+
+		return &queryData{
+			ResultType: promql2.ValueTypeVector,
+			Result:     promqlResult,
+			Stats:      nil,
+			Warnings:   nil,
+		}, nil, nil
+	}
+
 	qe := qapi.queryEngine(maxSourceResolution)
 
 	// We are starting promQL tracing span here, because we have no control over promQL code.
 	span, ctx := tracing.StartSpan(ctx, "promql_instant_query")
 	defer span.Finish()
 
-	qry, err := qe.NewInstantQuery(qapi.queryableCreate(enableDedup, replicaLabels, storeDebugMatchers, maxSourceResolution, enablePartialResponse, qapi.enableQueryPushdown, false), r.FormValue("query"), ts)
+	qry, err := qe.NewInstantQuery(qapi.queryableCreate(enableDedup, replicaLabels, storeDebugMatchers, maxSourceResolution, enablePartialResponse, qapi.enableQueryPushdown, false, shardID), r.FormValue("query"), ts)
 	if err != nil {
 		return nil, nil, &api.ApiError{Typ: api.ErrorBadData, Err: err}
 	}
@@ -451,6 +529,11 @@ func (qapi *QueryAPI) queryRange(r *http.Request) (interface{}, []error, *api.Ap
 		return nil, nil, apiErr
 	}
 
+	shardID, apiErr := qapi.parseShardID(r)
+	if apiErr != nil {
+		return nil, nil, apiErr
+	}
+
 	qe := qapi.queryEngine(maxSourceResolution)
 
 	// Record the query range requested.
@@ -461,7 +544,7 @@ func (qapi *QueryAPI) queryRange(r *http.Request) (interface{}, []error, *api.Ap
 	defer span.Finish()
 
 	qry, err := qe.NewRangeQuery(
-		qapi.queryableCreate(enableDedup, replicaLabels, storeDebugMatchers, maxSourceResolution, enablePartialResponse, qapi.enableQueryPushdown, false),
+		qapi.queryableCreate(enableDedup, replicaLabels, storeDebugMatchers, maxSourceResolution, enablePartialResponse, qapi.enableQueryPushdown, false, shardID),
 		r.FormValue("query"),
 		start,
 		end,
@@ -525,6 +608,11 @@ func (qapi *QueryAPI) labelValues(r *http.Request) (interface{}, []error, *api.A
 		return nil, nil, apiErr
 	}
 
+	shardID, apiErr := qapi.parseShardID(r)
+	if apiErr != nil {
+		return nil, nil, apiErr
+	}
+
 	var matcherSets [][]*labels.Matcher
 	for _, s := range r.Form[MatcherParam] {
 		matchers, err := parser.ParseMetricSelector(s)
@@ -534,7 +622,7 @@ func (qapi *QueryAPI) labelValues(r *http.Request) (interface{}, []error, *api.A
 		matcherSets = append(matcherSets, matchers)
 	}
 
-	q, err := qapi.queryableCreate(true, nil, storeDebugMatchers, 0, enablePartialResponse, qapi.enableQueryPushdown, true).
+	q, err := qapi.queryableCreate(true, nil, storeDebugMatchers, 0, enablePartialResponse, qapi.enableQueryPushdown, true, shardID).
 		Querier(ctx, timestamp.FromTime(start), timestamp.FromTime(end))
 	if err != nil {
 		return nil, nil, &api.ApiError{Typ: api.ErrorExec, Err: err}
@@ -621,7 +709,12 @@ func (qapi *QueryAPI) series(r *http.Request) (interface{}, []error, *api.ApiErr
 		return nil, nil, apiErr
 	}
 
-	q, err := qapi.queryableCreate(enableDedup, replicaLabels, storeDebugMatchers, math.MaxInt64, enablePartialResponse, qapi.enableQueryPushdown, true).
+	shardID, apiErr := qapi.parseShardID(r)
+	if apiErr != nil {
+		return nil, nil, apiErr
+	}
+
+	q, err := qapi.queryableCreate(enableDedup, replicaLabels, storeDebugMatchers, math.MaxInt64, enablePartialResponse, qapi.enableQueryPushdown, true, shardID).
 		Querier(r.Context(), timestamp.FromTime(start), timestamp.FromTime(end))
 	if err != nil {
 		return nil, nil, &api.ApiError{Typ: api.ErrorExec, Err: err}
@@ -671,7 +764,12 @@ func (qapi *QueryAPI) labelNames(r *http.Request) (interface{}, []error, *api.Ap
 		matcherSets = append(matcherSets, matchers)
 	}
 
-	q, err := qapi.queryableCreate(true, nil, storeDebugMatchers, 0, enablePartialResponse, qapi.enableQueryPushdown, true).
+	shardID, apiErr := qapi.parseShardID(r)
+	if apiErr != nil {
+		return nil, nil, apiErr
+	}
+
+	q, err := qapi.queryableCreate(true, nil, storeDebugMatchers, 0, enablePartialResponse, qapi.enableQueryPushdown, true, shardID).
 		Querier(r.Context(), timestamp.FromTime(start), timestamp.FromTime(end))
 	if err != nil {
 		return nil, nil, &api.ApiError{Typ: api.ErrorExec, Err: err}

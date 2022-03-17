@@ -361,6 +361,7 @@ type QueryOptions struct {
 	PartialResponseStrategy storepb.PartialResponseStrategy
 	Method                  string
 	MaxSourceResolution     string
+	ShardID                 *int
 }
 
 func (p *QueryOptions) AddTo(values url.Values) error {
@@ -381,7 +382,9 @@ func (p *QueryOptions) AddTo(values url.Values) error {
 
 	// TODO(bwplotka): Apply change from bool to strategy in Query API as well.
 	values.Add("partial_response", partialResponseValue)
-
+	if p.ShardID != nil {
+		values.Add("shard_id", strconv.Itoa(*p.ShardID))
+	}
 	return nil
 }
 

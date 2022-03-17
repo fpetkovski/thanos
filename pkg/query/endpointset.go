@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/thanos-io/thanos/pkg/api/query/querypb"
+
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/pkg/errors"
@@ -371,6 +373,20 @@ func (e *EndpointSet) GetStoreClients() []store.Client {
 	return stores
 }
 
+// GetQueryClients returns a list of all active queries.
+func (e *EndpointSet) GetQueryClients() []querypb.QueryClient {
+	e.endpointsMtx.RLock()
+	defer e.endpointsMtx.RUnlock()
+
+	stores := make([]querypb.QueryClient, 0, len(e.endpoints))
+	for _, er := range e.endpoints {
+		if er.HasQueryAPI() {
+			stores = append(stores, er.clients.query)
+		}
+	}
+	return stores
+}
+
 // GetRulesClients returns a list of all active rules clients.
 func (e *EndpointSet) GetRulesClients() []rulespb.RulesClient {
 	e.endpointsMtx.RLock()
@@ -670,6 +686,13 @@ func (er *endpointRef) HasStoreAPI() bool {
 	return er.clients != nil && er.clients.store != nil
 }
 
+func (er *endpointRef) HasQueryAPI() bool {
+	er.mtx.RLock()
+	defer er.mtx.RUnlock()
+
+	return er.clients != nil && er.clients.query != nil
+}
+
 func (er *endpointRef) HasRulesAPI() bool {
 	er.mtx.RLock()
 	defer er.mtx.RUnlock()
@@ -772,6 +795,7 @@ func (er *endpointRef) apisPresent() []string {
 }
 
 type endpointClients struct {
+	query          querypb.QueryClient
 	store          storepb.StoreClient
 	rule           rulespb.RulesClient
 	metricMetadata metadatapb.MetadataClient

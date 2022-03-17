@@ -34,7 +34,7 @@ import (
 // replicaLabels at query time.
 // maxResolutionMillis controls downsampling resolution that is allowed (specified in milliseconds).
 // partialResponse controls `partialResponseDisabled` option of StoreAPI and partial response behavior of proxy.
-type QueryableCreator func(deduplicate bool, replicaLabels []string, storeDebugMatchers [][]*labels.Matcher, maxResolutionMillis int64, partialResponse, enableQueryPushdown, skipChunks bool) storage.Queryable
+type QueryableCreator func(deduplicate bool, replicaLabels []string, storeDebugMatchers [][]*labels.Matcher, maxResolutionMillis int64, partialResponse, enableQueryPushdown, skipChunks bool, shardID *int) storage.Queryable
 
 // NewQueryableCreator creates QueryableCreator.
 func NewQueryableCreator(logger log.Logger, reg prometheus.Registerer, proxy storepb.StoreServer, maxConcurrentSelects int, selectTimeout time.Duration) QueryableCreator {
@@ -42,7 +42,7 @@ func NewQueryableCreator(logger log.Logger, reg prometheus.Registerer, proxy sto
 		extprom.WrapRegistererWithPrefix("concurrent_selects_", reg),
 	).NewHistogram(gate.DurationHistogramOpts)
 
-	return func(deduplicate bool, replicaLabels []string, storeDebugMatchers [][]*labels.Matcher, maxResolutionMillis int64, partialResponse, enableQueryPushdown, skipChunks bool) storage.Queryable {
+	return func(deduplicate bool, replicaLabels []string, storeDebugMatchers [][]*labels.Matcher, maxResolutionMillis int64, partialResponse, enableQueryPushdown, skipChunks bool, shardID *int) storage.Queryable {
 		return &queryable{
 			logger:              logger,
 			replicaLabels:       replicaLabels,
@@ -58,6 +58,7 @@ func NewQueryableCreator(logger log.Logger, reg prometheus.Registerer, proxy sto
 			maxConcurrentSelects: maxConcurrentSelects,
 			selectTimeout:        selectTimeout,
 			enableQueryPushdown:  enableQueryPushdown,
+			shardID:              shardID,
 		}
 	}
 }
@@ -75,11 +76,12 @@ type queryable struct {
 	maxConcurrentSelects int
 	selectTimeout        time.Duration
 	enableQueryPushdown  bool
+	shardID              *int
 }
 
 // Querier returns a new storage querier against the underlying proxy store API.
 func (q *queryable) Querier(ctx context.Context, mint, maxt int64) (storage.Querier, error) {
-	return newQuerier(ctx, q.logger, mint, maxt, q.replicaLabels, q.storeDebugMatchers, q.proxy, q.deduplicate, q.maxResolutionMillis, q.partialResponse, q.enableQueryPushdown, q.skipChunks, q.gateProviderFn(), q.selectTimeout), nil
+	return newQuerier(ctx, q.logger, mint, maxt, q.replicaLabels, q.storeDebugMatchers, q.proxy, q.deduplicate, q.maxResolutionMillis, q.partialResponse, q.enableQueryPushdown, q.skipChunks, q.gateProviderFn(), q.selectTimeout, q.shardID), nil
 }
 
 type querier struct {
@@ -97,6 +99,7 @@ type querier struct {
 	skipChunks          bool
 	selectGate          gate.Gate
 	selectTimeout       time.Duration
+	shardID             *int
 }
 
 // newQuerier creates implementation of storage.Querier that fetches data from the proxy
@@ -113,6 +116,7 @@ func newQuerier(
 	partialResponse, enableQueryPushdown bool, skipChunks bool,
 	selectGate gate.Gate,
 	selectTimeout time.Duration,
+	shardID *int,
 ) *querier {
 	if logger == nil {
 		logger = log.NewNopLogger()
@@ -140,6 +144,7 @@ func newQuerier(
 		partialResponse:     partialResponse,
 		skipChunks:          skipChunks,
 		enableQueryPushdown: enableQueryPushdown,
+		shardID:             shardID,
 	}
 }
 
@@ -288,9 +293,18 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 	// TODO(bwplotka): Use inprocess gRPC.
 	resp := &seriesServer{ctx: ctx}
 	var queryHints *storepb.QueryHints
-	if q.enableQueryPushdown {
-		queryHints = storeHintsFromPromHints(hints)
+	//if q.enableQueryPushdown {
+	queryHints = storeHintsFromPromHints(hints)
+	//}
+
+	var shardInfo *storepb.ShardInfo
+	if q.shardID != nil {
+		shardInfo = &storepb.ShardInfo{
+			ShardIndex:  int64(*q.shardID),
+			TotalShards: 2,
+		}
 	}
+
 	if err := q.proxy.Series(&storepb.SeriesRequest{
 		MinTime:                 hints.Start,
 		MaxTime:                 hints.End,
@@ -298,6 +312,7 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 		MaxResolutionWindow:     q.maxResolutionMillis,
 		Aggregates:              aggrs,
 		QueryHints:              queryHints,
+		ShardInfo:               shardInfo,
 		PartialResponseDisabled: !q.partialResponse,
 		SkipChunks:              q.skipChunks,
 		Step:                    hints.Step,

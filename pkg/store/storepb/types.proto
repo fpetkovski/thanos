@@ -71,3 +71,43 @@ enum PartialResponseStrategy {
   /// errors.
   ABORT = 1;
 }
+
+// Analogous to storage.SelectHints.
+message QueryHints {
+  // Query step size in milliseconds.
+  int64 step_millis = 1;
+
+  // The surrounding function or aggregation.
+  Func func = 2;
+
+  // The grouping expression
+  Grouping grouping = 4;
+
+  // Range vector selector.
+  Range range = 5;
+}
+
+message ShardInfo {
+  // The index of the current shard.
+  int64 shard_index = 1;
+
+  // The total number of shards.
+  int64 total_shards = 2;
+}
+
+message Func {
+  // The function or aggregation name
+  string name = 1;
+}
+
+message Grouping {
+  // Indicate whether it is without or by.
+  bool by = 1;
+
+  // List of label names used in the grouping.
+  repeated string labels = 3;
+}
+
+message Range {
+  int64 millis = 1;
+}
