@@ -82,8 +82,8 @@ func defaultPromHttpConfig() string {
 }
 
 func NewPrometheus(e e2e.Environment, name, promConfig, webConfig, promImage string, enableFeatures ...string) (e2e.InstrumentedRunnable, string, error) {
-	dir := filepath.Join(e.SharedDir(), "data", "prometheus", name)
-	container := filepath.Join(ContainerSharedDir, "data", "prometheus", name)
+	dir := filepath.Join(e.SharedDir(), "data", "prometheus-"+name)
+	container := filepath.Join(ContainerSharedDir, "data", "prometheus-"+name)
 	if err := os.MkdirAll(dir, 0750); err != nil {
 		return nil, "", errors.Wrap(err, "create prometheus dir")
 	}
@@ -181,6 +181,9 @@ type QuerierBuilder struct {
 	externalPrefix string
 	image          string
 
+	grpcPort int
+	httpPort int
+
 	storeAddresses       []string
 	fileSDStoreAddresses []string
 	ruleAddresses        []string
@@ -191,6 +194,8 @@ type QuerierBuilder struct {
 	endpoints            []string
 
 	tracingConfig string
+
+	enableSharding bool
 }
 
 func NewQuerierBuilder(e e2e.Environment, name string, storeAddresses ...string) *QuerierBuilder {
@@ -200,6 +205,9 @@ func NewQuerierBuilder(e e2e.Environment, name string, storeAddresses ...string)
 		name:           name,
 		storeAddresses: storeAddresses,
 		image:          DefaultImage(),
+
+		grpcPort: 9091,
+		httpPort: 8080,
 	}
 }
 
@@ -258,6 +266,21 @@ func (q *QuerierBuilder) WithTracingConfig(tracingConfig string) *QuerierBuilder
 	return q
 }
 
+func (q *QuerierBuilder) WithEnableSharding(enableSharding bool) *QuerierBuilder {
+	q.enableSharding = enableSharding
+	return q
+}
+
+func (q *QuerierBuilder) WithGRPCPort(grpcPort int) *QuerierBuilder {
+	q.grpcPort = grpcPort
+	return q
+}
+
+func (q *QuerierBuilder) WithHTTPPort(httpPort int) *QuerierBuilder {
+	q.httpPort = httpPort
+	return q
+}
+
 func (q *QuerierBuilder) BuildUninitiated() e2e.InstrumentedRunnableBuilder {
 	return newUninitiatedService(
 		q.environment,
@@ -296,8 +319,8 @@ func (q *QuerierBuilder) Build() (e2e.InstrumentedRunnable, error) {
 		q.image,
 		e2e.NewCommand("query", args...),
 		e2e.NewHTTPReadinessProbe("http", "/-/ready", 200, 200),
-		8080,
-		9091,
+		q.httpPort,
+		q.grpcPort,
 	)
 
 	return querier, nil
@@ -308,9 +331,9 @@ func (q *QuerierBuilder) collectArgs() ([]string, error) {
 
 	args := e2e.BuildArgs(map[string]string{
 		"--debug.name":            fmt.Sprintf("querier-%v", q.name),
-		"--grpc-address":          ":9091",
+		"--grpc-address":          fmt.Sprintf(":%d", q.grpcPort),
 		"--grpc-grace-period":     "0s",
-		"--http-address":          ":8080",
+		"--http-address":          fmt.Sprintf(":%d", q.httpPort),
 		"--query.replica-label":   replicaLabel,
 		"--store.sd-dns-interval": "5s",
 		"--log.level":             infoLogLevel,
@@ -379,6 +402,10 @@ func (q *QuerierBuilder) collectArgs() ([]string, error) {
 
 	if q.tracingConfig != "" {
 		args = append(args, "--tracing.config="+q.tracingConfig)
+	}
+
+	if q.enableSharding {
+		args = append(args, "--query.enable-sharding")
 	}
 
 	return args, nil

@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/timestamp"
@@ -195,11 +196,13 @@ func (p *PrometheusStore) Series(r *storepb.SeriesRequest, s storepb.Store_Serie
 		return nil
 	}
 
-	if r.QueryHints != nil && r.QueryHints.IsSafeToExecute() {
+	shardMatcher := r.ShardInfo.Matcher()
+	if r.QueryHints != nil && r.QueryHints.IsSafeToExecute() && !shardMatcher.IsSharded() {
 		return p.queryPrometheus(s, r)
 	}
 
 	q := &prompb.Query{StartTimestampMs: r.MinTime, EndTimestampMs: r.MaxTime}
+	level.Info(p.logger).Log("min_time", r.MinTime, "max_time", r.MaxTime)
 	for _, m := range matchers {
 		pm := &prompb.LabelMatcher{Name: m.Name, Value: m.Value}
 
@@ -237,7 +240,7 @@ func (p *PrometheusStore) Series(r *storepb.SeriesRequest, s storepb.Store_Serie
 	if !strings.HasPrefix(contentType, "application/x-streamed-protobuf; proto=prometheus.ChunkedReadResponse") {
 		return errors.Errorf("not supported remote read content type: %s", contentType)
 	}
-	return p.handleStreamedPrometheusResponse(s, httpResp, queryPrometheusSpan, extLset)
+	return p.handleStreamedPrometheusResponse(s, shardMatcher, httpResp, queryPrometheusSpan, extLset)
 }
 
 func (p *PrometheusStore) queryPrometheus(s storepb.Store_SeriesServer, r *storepb.SeriesRequest) error {
@@ -351,7 +354,34 @@ func (p *PrometheusStore) handleSampledPrometheusResponse(s storepb.Store_Series
 	return nil
 }
 
-func (p *PrometheusStore) handleStreamedPrometheusResponse(s storepb.Store_SeriesServer, httpResp *http.Response, querySpan tracing.Span, extLset labels.Labels) error {
+func (p *PrometheusStore) handleStreamedPrometheusResponse(
+	s storepb.Store_SeriesServer,
+	shardMatcher *storepb.ShardMatcher,
+	httpResp *http.Response,
+	querySpan tracing.Span,
+	extLset labels.Labels,
+) error {
+	var timeSending float64
+	var timeHashing float64
+	var timePrometheusRead float64
+	bodySizer := NewBytesRead(httpResp.Body)
+	seriesStats := &storepb.SeriesStatsCounter{}
+	start := time.Now()
+	defer func() {
+		timeSpent := time.Now().Sub(start)
+		level.Info(p.logger).Log("msg",
+			"done streaming series",
+			"duration", timeSpent.String(),
+			"series", seriesStats.Series,
+			"samples", seriesStats.Samples,
+			"bytes", bodySizer.BytesCount(),
+			"chunks", seriesStats.Chunks,
+			"time_sending", timeSending,
+			"time_hashing", timeHashing,
+			"time_prometheus_read", timePrometheusRead,
+		)
+	}()
+
 	level.Debug(p.logger).Log("msg", "started handling ReadRequest_STREAMED_XOR_CHUNKS streamed read response.")
 
 	framesNum := 0
@@ -366,20 +396,20 @@ func (p *PrometheusStore) handleStreamedPrometheusResponse(s storepb.Store_Serie
 	var data = p.getBuffer()
 	defer p.putBuffer(data)
 
-	bodySizer := NewBytesRead(httpResp.Body)
-	seriesStats := &storepb.SeriesStatsCounter{}
-
 	// TODO(bwplotka): Put read limit as a flag.
 	stream := remote.NewChunkedReader(bodySizer, remote.DefaultChunkedReadLimit, *data)
 	for {
+		startPromRead := time.Now()
 		res := &prompb.ChunkedReadResponse{}
 		err := stream.NextProto(res)
 		if err == io.EOF {
 			break
 		}
+
 		if err != nil {
 			return errors.Wrap(err, "next proto")
 		}
+		timePrometheusRead += time.Now().Sub(startPromRead).Seconds()
 
 		if len(res.ChunkedSeries) != 1 {
 			level.Warn(p.logger).Log("msg", "Prometheus ReadRequest_STREAMED_XOR_CHUNKS returned non 1 series in frame", "series", len(res.ChunkedSeries))
@@ -387,6 +417,12 @@ func (p *PrometheusStore) handleStreamedPrometheusResponse(s storepb.Store_Serie
 
 		framesNum++
 		for _, series := range res.ChunkedSeries {
+			startSharding := time.Now()
+			if !shardMatcher.MatchesZLabels(series.Labels) {
+				continue
+			}
+			timeHashing += time.Now().Sub(startSharding).Seconds()
+
 			seriesStats.CountSeries(series.Labels)
 			thanosChks := make([]storepb.AggrChunk, len(series.Chunks))
 			for i, chk := range series.Chunks {
@@ -408,14 +444,17 @@ func (p *PrometheusStore) handleStreamedPrometheusResponse(s storepb.Store_Serie
 				series.Chunks[i].Data = nil
 			}
 
-			if err := s.Send(storepb.NewSeriesResponse(&storepb.Series{
+			r := storepb.NewSeriesResponse(&storepb.Series{
 				Labels: labelpb.ZLabelsFromPromLabels(
 					labelpb.ExtendSortedLabels(labelpb.ZLabelsToPromLabels(series.Labels), extLset),
 				),
 				Chunks: thanosChks,
-			})); err != nil {
+			})
+			startSending := time.Now()
+			if err := s.Send(r); err != nil {
 				return err
 			}
+			timeSending += time.Now().Sub(startSending).Seconds()
 		}
 	}
 
@@ -424,6 +463,7 @@ func (p *PrometheusStore) handleStreamedPrometheusResponse(s storepb.Store_Serie
 	querySpan.SetTag("processed.samples", seriesStats.Samples)
 	querySpan.SetTag("processed.bytes", bodySizer.BytesCount())
 	level.Debug(p.logger).Log("msg", "handled ReadRequest_STREAMED_XOR_CHUNKS request.", "frames", framesNum)
+
 	return nil
 }
 

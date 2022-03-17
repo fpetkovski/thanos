@@ -650,7 +650,7 @@ func TestSidecarStorePushdown(t *testing.T) {
 	testutil.Ok(t, e2e.StartAndWaitReady(q))
 	testutil.Ok(t, s1.WaitSumMetrics(e2e.Equals(1), "thanos_blocks_meta_synced"))
 
-	testutil.Ok(t, synthesizeSamples(ctx, prom1, []fakeMetricSample{
+	testutil.Ok(t, synthesizeFakeMetricSamples(ctx, prom1, []fakeMetricSample{
 		{
 			label:             "foo",
 			value:             123,
@@ -843,8 +843,8 @@ func TestSidecarQueryEvaluation(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 			t.Cleanup(cancel)
 
-			testutil.Ok(t, synthesizeSamples(ctx, prom1, tc.prom1Samples))
-			testutil.Ok(t, synthesizeSamples(ctx, prom2, tc.prom2Samples))
+			testutil.Ok(t, synthesizeFakeMetricSamples(ctx, prom1, tc.prom1Samples))
+			testutil.Ok(t, synthesizeFakeMetricSamples(ctx, prom2, tc.prom2Samples))
 
 			testQuery := func() string { return tc.query }
 			queryAndAssert(t, ctx, q.Endpoint("http"), testQuery, time.Now, promclient.QueryOptions{
@@ -1040,12 +1040,16 @@ func queryExemplars(t *testing.T, ctx context.Context, addr, q string, start, en
 	}))
 }
 
-func synthesizeSamples(ctx context.Context, prometheus e2e.InstrumentedRunnable, testSamples []fakeMetricSample) error {
+func synthesizeFakeMetricSamples(ctx context.Context, prometheus e2e.InstrumentedRunnable, testSamples []fakeMetricSample) error {
 	samples := make([]model.Sample, len(testSamples))
 	for i, s := range testSamples {
 		samples[i] = newSample(s)
 	}
 
+	return synthesizeSamples(ctx, prometheus, samples)
+}
+
+func synthesizeSamples(ctx context.Context, prometheus e2e.InstrumentedRunnable, samples []model.Sample) error {
 	remoteWriteURL, err := url.Parse("http://" + prometheus.Endpoint("http") + "/api/v1/write")
 	if err != nil {
 		return err
@@ -1213,8 +1217,8 @@ func TestSidecarQueryEvaluationWithDedup(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 			t.Cleanup(cancel)
 
-			testutil.Ok(t, synthesizeSamples(ctx, prom1, tc.prom1Samples))
-			testutil.Ok(t, synthesizeSamples(ctx, prom2, tc.prom2Samples))
+			testutil.Ok(t, synthesizeFakeMetricSamples(ctx, prom1, tc.prom1Samples))
+			testutil.Ok(t, synthesizeFakeMetricSamples(ctx, prom2, tc.prom2Samples))
 
 			testQuery := func() string { return tc.query }
 			queryAndAssert(t, ctx, q.Endpoint("http"), testQuery, time.Now, promclient.QueryOptions{
@@ -1266,7 +1270,7 @@ func TestSidecarAlignmentPushdown(t *testing.T) {
 		})
 	}
 
-	testutil.Ok(t, synthesizeSamples(ctx, prom1, samples))
+	testutil.Ok(t, synthesizeFakeMetricSamples(ctx, prom1, samples))
 
 	// This query should have identical requests.
 	testQuery := func() string { return `max_over_time({instance="test"}[5m])` }
@@ -1343,7 +1347,7 @@ func TestGrpcInstantQuery(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	testutil.Ok(t, synthesizeSamples(ctx, prom, samples))
+	testutil.Ok(t, synthesizeFakeMetricSamples(ctx, prom, samples))
 
 	grpcConn, err := grpc.Dial(querier.Endpoint("grpc"), grpc.WithInsecure())
 	testutil.Ok(t, err)
@@ -1466,7 +1470,7 @@ func TestGrpcQueryRange(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	testutil.Ok(t, synthesizeSamples(ctx, prom, samples))
+	testutil.Ok(t, synthesizeFakeMetricSamples(ctx, prom, samples))
 
 	grpcConn, err := grpc.Dial(querier.Endpoint("grpc"), grpc.WithInsecure())
 	testutil.Ok(t, err)
@@ -1518,4 +1522,244 @@ func TestGrpcQueryRange(t *testing.T) {
 		return nil
 	})
 	testutil.Ok(t, err)
+}
+
+func TestInstantQuerySharding(t *testing.T) {
+	t.Parallel()
+
+	e, err := e2e.NewDockerEnvironment("e2e_test_query_sharding")
+	testutil.Ok(t, err)
+	t.Cleanup(e2ethanos.CleanScenario(t, e))
+
+	promConfig := e2ethanos.DefaultPromConfig("p1", 0, "", "")
+	prom, sidecar, err := e2ethanos.NewPrometheusWithSidecar(e, "p1", promConfig, "", e2ethanos.DefaultPrometheusImage(), "", "remote-write-receiver")
+	testutil.Ok(t, err)
+	testutil.Ok(t, e2e.StartAndWaitReady(prom, sidecar))
+
+	stores := []string{sidecar.InternalEndpoint("grpc")}
+	q1, err := e2ethanos.
+		NewQuerierBuilder(e, "q1", stores...).
+		WithGRPCPort(9082).
+		WithHTTPPort(8082).
+		Build()
+	testutil.Ok(t, err)
+	q2, err := e2ethanos.
+		NewQuerierBuilder(e, "q2", stores...).
+		WithGRPCPort(9083).
+		WithHTTPPort(8083).
+		Build()
+	testutil.Ok(t, e2e.StartAndWaitReady(q1, q2))
+
+	shardingQuerier, err := e2ethanos.
+		NewQuerierBuilder(e, "sharding-querier").
+		WithEndpoints(
+			q1.InternalEndpoint("grpc"),
+			q2.InternalEndpoint("grpc"),
+		).
+		WithEnableSharding(true).
+		WithGRPCPort(9084).
+		WithHTTPPort(8084).
+		Build()
+	testutil.Ok(t, err)
+	testutil.Ok(t, e2e.StartAndWaitReady(shardingQuerier))
+
+	now := model.Now()
+	samples := []model.Sample{
+		{
+			Metric: model.Metric{labels.MetricName: "http_requests_total", "pod": "nginx-1", "handler": "/"},
+			Value:  1, Timestamp: now,
+		},
+		{
+			Metric: model.Metric{labels.MetricName: "http_requests_total", "pod": "nginx-1", "handler": "/metrics"},
+			Value:  3, Timestamp: now,
+		},
+		{
+			Metric: model.Metric{labels.MetricName: "http_requests_total", "pod": "nginx-2", "handler": "/"},
+			Value:  2, Timestamp: now,
+		},
+		{
+			Metric: model.Metric{labels.MetricName: "http_requests_total", "pod": "nginx-2", "handler": "/metrics"},
+			Value:  4, Timestamp: now,
+		},
+		{
+			Metric: model.Metric{labels.MetricName: "http_requests_total", "pod": "nginx-3", "handler": "/metrics"},
+			Value:  5, Timestamp: now,
+		},
+	}
+	ctx := context.Background()
+	testutil.Ok(t, synthesizeSamples(ctx, prom, samples))
+
+	qryFunc := func() string { return `sum by (pod) (http_requests_total)` }
+	timeFunc := func() time.Time { return time.Now() }
+	queryAndAssert(t, ctx, shardingQuerier.Endpoint("http"), qryFunc, timeFunc, promclient.QueryOptions{
+		Deduplicate: true,
+	}, model.Vector{
+		{
+			Metric: model.Metric{"pod": "nginx-1"},
+			Value:  4,
+		},
+		{
+			Metric: model.Metric{"pod": "nginx-2"},
+			Value:  6,
+		},
+		{
+			Metric: model.Metric{"pod": "nginx-3"},
+			Value:  5,
+		},
+	})
+}
+
+func TestInstantQueryShardingWithRandomData(t *testing.T) {
+	t.Parallel()
+
+	e, err := e2e.NewDockerEnvironment("e2e_test_query_sharding_random_data")
+	testutil.Ok(t, err)
+	t.Cleanup(e2ethanos.CleanScenario(t, e))
+
+	promConfig := e2ethanos.DefaultPromConfig("p1", 0, "", "")
+	prom, sidecar, err := e2ethanos.NewPrometheusWithSidecar(e, "p1", promConfig, "", e2ethanos.DefaultPrometheusImage(), "", "remote-write-receiver")
+	testutil.Ok(t, err)
+
+	now := model.Now()
+	ctx := context.Background()
+	timeSeries := []labels.Labels{
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "1"}, {Name: "handler", Value: "/"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "1"}, {Name: "handler", Value: "/metrics"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "2"}, {Name: "handler", Value: "/"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "2"}, {Name: "handler", Value: "/metrics"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "3"}, {Name: "handler", Value: "/"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "3"}, {Name: "handler", Value: "/metrics"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "4"}, {Name: "handler", Value: "/"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "4"}, {Name: "handler", Value: "/metrics"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "5"}, {Name: "handler", Value: "/"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "5"}, {Name: "handler", Value: "/metrics"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "6"}, {Name: "handler", Value: "/"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "6"}, {Name: "handler", Value: "/metrics"}},
+	}
+
+	_, err = e2eutil.CreateBlock(ctx, prom.Dir(), timeSeries, 20, timestamp.FromTime(now.Time().Add(-1*time.Hour)), timestamp.FromTime(now.Time().Add(1*time.Hour)), nil, 0, metadata.NoneFunc)
+	testutil.Ok(t, err)
+	testutil.Ok(t, e2e.StartAndWaitReady(prom, sidecar))
+
+	stores := []string{sidecar.InternalEndpoint("grpc")}
+	q1, err := e2ethanos.
+		NewQuerierBuilder(e, "q1", stores...).
+		WithGRPCPort(9082).
+		WithHTTPPort(8082).
+		Build()
+	testutil.Ok(t, err)
+	q2, err := e2ethanos.
+		NewQuerierBuilder(e, "q2", stores...).
+		WithGRPCPort(9083).
+		WithHTTPPort(8083).
+		Build()
+	testutil.Ok(t, e2e.StartAndWaitReady(q1, q2))
+
+	shardingQuerier, err := e2ethanos.
+		NewQuerierBuilder(e, "sharding-querier").
+		WithEndpoints(
+			q1.InternalEndpoint("grpc"),
+			q2.InternalEndpoint("grpc"),
+		).
+		WithEnableSharding(true).
+		WithGRPCPort(9084).
+		WithHTTPPort(8084).
+		Build()
+	testutil.Ok(t, err)
+	testutil.Ok(t, e2e.StartAndWaitReady(shardingQuerier))
+
+	qryFunc := func() string { return `sum by (pod) (http_requests_total)` }
+	timeFunc := func() time.Time { return now.Time() }
+	queryOpts := promclient.QueryOptions{
+		Deduplicate: true,
+	}
+
+	resultWithoutSharding := instantQuery(t, ctx, q1.Endpoint("http"), qryFunc, timeFunc, queryOpts, 6)
+	resultWithSharding := instantQuery(t, ctx, shardingQuerier.Endpoint("http"), qryFunc, timeFunc, queryOpts, 6)
+	sortResults(resultWithoutSharding)
+	// The Thanos GRPC API used during sharding returns timestamps in seconds.
+	// We therefore need to convert the non-sharded timestamps to seconds as well.
+	for _, sample := range resultWithoutSharding {
+		sample.Timestamp = model.TimeFromUnix(sample.Timestamp.Unix())
+	}
+	sortResults(resultWithSharding)
+	testutil.Equals(t, resultWithoutSharding, resultWithSharding)
+}
+
+func TestRangeQueryShardingWithRandomData(t *testing.T) {
+	t.Parallel()
+
+	e, err := e2e.NewDockerEnvironment("e2e_test_range_query_sharding_random_data")
+	testutil.Ok(t, err)
+	t.Cleanup(e2ethanos.CleanScenario(t, e))
+
+	promConfig := e2ethanos.DefaultPromConfig("p1", 0, "", "")
+	prom, sidecar, err := e2ethanos.NewPrometheusWithSidecar(e, "p1", promConfig, "", e2ethanos.DefaultPrometheusImage(), "", "remote-write-receiver")
+	testutil.Ok(t, err)
+
+	now := model.Now()
+	ctx := context.Background()
+	timeSeries := []labels.Labels{
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "1"}, {Name: "handler", Value: "/"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "1"}, {Name: "handler", Value: "/metrics"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "2"}, {Name: "handler", Value: "/"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "2"}, {Name: "handler", Value: "/metrics"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "3"}, {Name: "handler", Value: "/"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "3"}, {Name: "handler", Value: "/metrics"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "4"}, {Name: "handler", Value: "/"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "4"}, {Name: "handler", Value: "/metrics"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "5"}, {Name: "handler", Value: "/"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "5"}, {Name: "handler", Value: "/metrics"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "6"}, {Name: "handler", Value: "/"}},
+		{{Name: labels.MetricName, Value: "http_requests_total"}, {Name: "pod", Value: "6"}, {Name: "handler", Value: "/metrics"}},
+	}
+
+	startTime := now.Time().Add(-1 * time.Hour)
+	endTime := now.Time().Add(1 * time.Hour)
+	_, err = e2eutil.CreateBlock(ctx, prom.Dir(), timeSeries, 20, timestamp.FromTime(startTime), timestamp.FromTime(endTime), nil, 0, metadata.NoneFunc)
+	testutil.Ok(t, err)
+	testutil.Ok(t, e2e.StartAndWaitReady(prom, sidecar))
+
+	stores := []string{sidecar.InternalEndpoint("grpc")}
+	q1, err := e2ethanos.
+		NewQuerierBuilder(e, "q1", stores...).
+		WithGRPCPort(9082).
+		WithHTTPPort(8082).
+		Build()
+	testutil.Ok(t, err)
+	q2, err := e2ethanos.
+		NewQuerierBuilder(e, "q2", stores...).
+		WithGRPCPort(9083).
+		WithHTTPPort(8083).
+		Build()
+	testutil.Ok(t, e2e.StartAndWaitReady(q1, q2))
+
+	shardingQuerier, err := e2ethanos.
+		NewQuerierBuilder(e, "sharding-querier").
+		WithEndpoints(
+			q1.InternalEndpoint("grpc"),
+			q2.InternalEndpoint("grpc"),
+		).
+		WithEnableSharding(true).
+		WithGRPCPort(9084).
+		WithHTTPPort(8084).
+		Build()
+	testutil.Ok(t, err)
+	testutil.Ok(t, e2e.StartAndWaitReady(shardingQuerier))
+
+	qryFunc := func() string { return `sum by (pod) (http_requests_total)` }
+	queryOpts := promclient.QueryOptions{Deduplicate: true}
+
+	var resultWithoutSharding model.Matrix
+	rangeQuery(t, ctx, q1.Endpoint("http"), qryFunc, timestamp.FromTime(startTime), timestamp.FromTime(endTime), 30, queryOpts, func(res model.Matrix) error {
+		resultWithoutSharding = res
+		return nil
+	})
+	var resultWithSharding model.Matrix
+	rangeQuery(t, ctx, shardingQuerier.Endpoint("http"), qryFunc, startTime.Unix(), endTime.Unix(), 30, queryOpts, func(res model.Matrix) error {
+		resultWithSharding = res
+		return nil
+	})
+
+	testutil.Equals(t, resultWithoutSharding, resultWithSharding)
 }

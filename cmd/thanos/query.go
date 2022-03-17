@@ -12,6 +12,9 @@ import (
 	"strings"
 	"time"
 
+	v1 "github.com/prometheus/prometheus/web/api/v1"
+	"github.com/thanos-io/thanos/pkg/querysharding"
+
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	grpc_logging "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
@@ -166,6 +169,8 @@ func registerQuery(app *extkingpin.App) {
 	enableExemplarPartialResponse := cmd.Flag("exemplar.partial-response", "Enable partial response for exemplar endpoint. --no-exemplar.partial-response for disabling.").
 		Hidden().Default("true").Bool()
 
+	enableQuerySharding := cmd.Flag("query.enable-sharding", "Enables query sharding in the querier").Bool()
+
 	defaultEvaluationInterval := extkingpin.ModelDuration(cmd.Flag("query.default-evaluation-interval", "Set default evaluation interval for sub queries.").Default("1m"))
 
 	defaultRangeQueryStep := extkingpin.ModelDuration(cmd.Flag("query.default-step", "Set default step for range queries. Default step is only used when step is not set in UI. In such cases, Thanos UI will use default step to calculate resolution (resolution = max(rangeSeconds / 250, defaultStep)). This will not work from Grafana, but Grafana has __step variable which can be used.").
@@ -271,6 +276,7 @@ func registerQuery(app *extkingpin.App) {
 			*enableTargetPartialResponse,
 			*enableMetricMetadataPartialResponse,
 			*enableExemplarPartialResponse,
+			*enableQuerySharding,
 			fileSD,
 			time.Duration(*dnsSDInterval),
 			*dnsSDResolver,
@@ -338,6 +344,7 @@ func runQuery(
 	enableTargetPartialResponse bool,
 	enableMetricMetadataPartialResponse bool,
 	enableExemplarPartialResponse bool,
+	enableQuerySharding bool,
 	fileSD *file.Discovery,
 	dnsSDInterval time.Duration,
 	dnsSDResolver string,
@@ -574,7 +581,15 @@ func runQuery(
 		grpcProbe,
 		prober.NewInstrumentation(comp, logger, extprom.WrapRegistererWithPrefix("thanos_", reg)),
 	)
-	engineCreator := engineFactory(promql.NewEngine, engineOpts, dynamicLookbackDelta)
+
+	var engineCreator func(int64) v1.QueryEngine
+	if enableQuerySharding {
+		engineCreator = func(i int64) v1.QueryEngine {
+			return querysharding.NewEngine(logger, endpoints.GetQueryAPIClients)
+		}
+	} else {
+		engineCreator = engineFactory(promql.NewEngine, engineOpts, dynamicLookbackDelta)
+	}
 
 	// Start query API + UI HTTP server.
 	{
@@ -665,8 +680,9 @@ func runQuery(
 				if httpProbe.IsReady() {
 					mint, maxt := proxy.TimeRange()
 					return &infopb.StoreInfo{
-						MinTime: mint,
-						MaxTime: maxt,
+						MinTime:          mint,
+						MaxTime:          maxt,
+						SupportsSharding: true,
 					}
 				}
 				return nil
@@ -678,7 +694,7 @@ func runQuery(
 			info.WithQueryAPIInfoFunc(),
 		)
 
-		grpcAPI := apiv1.NewGRPCAPI(time.Now, queryableCreator, engineCreator, instantDefaultMaxSourceResolution)
+		grpcAPI := apiv1.NewGRPCAPI(time.Now, queryReplicaLabels, queryableCreator, engineCreator, instantDefaultMaxSourceResolution)
 		s := grpcserver.New(logger, reg, tracer, grpcLogOpts, tagOpts, comp, grpcProbe,
 			grpcserver.WithServer(apiv1.RegisterQueryServer(grpcAPI)),
 			grpcserver.WithServer(store.RegisterStoreServer(proxy)),
@@ -733,7 +749,7 @@ func engineFactory(
 	newEngine func(promql.EngineOpts) *promql.Engine,
 	eo promql.EngineOpts,
 	dynamicLookbackDelta bool,
-) func(int64) *promql.Engine {
+) func(int64) v1.QueryEngine {
 	resolutions := []int64{downsample.ResLevel0}
 	if dynamicLookbackDelta {
 		resolutions = []int64{downsample.ResLevel0, downsample.ResLevel1, downsample.ResLevel2}
@@ -763,7 +779,7 @@ func engineFactory(
 			EnableNegativeOffset:     eo.EnableNegativeOffset,
 		})
 	}
-	return func(maxSourceResolutionMillis int64) *promql.Engine {
+	return func(maxSourceResolutionMillis int64) v1.QueryEngine {
 		for i := len(resolutions) - 1; i >= 1; i-- {
 			left := resolutions[i-1]
 			if resolutions[i-1] < ld {
