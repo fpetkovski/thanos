@@ -335,6 +335,12 @@ func TestReceiveQuorum(t *testing.T) {
 	appenderErrFn := func() error { return errors.New("failed to get appender") }
 	conflictErrFn := func() error { return storage.ErrOutOfBounds }
 	commitErrFn := func() error { return errors.New("failed to commit") }
+	allConflictErrsFn := cycleErrors([]error{
+		storage.ErrOutOfBounds,
+		storage.ErrOutOfOrderSample,
+		storage.ErrDuplicateSampleForTimestamp,
+	})
+
 	wreq1 := &prompb.WriteRequest{
 		Timeseries: []prompb.TimeSeries{
 			{
@@ -412,6 +418,76 @@ func TestReceiveQuorum(t *testing.T) {
 				},
 				{
 					appender: newFakeAppender(nil, nil, nil),
+				},
+			},
+		},
+		{
+			name:              "size 2 success with single conflict",
+			status:            http.StatusConflict,
+			replicationFactor: 2,
+			wreq:              wreq1,
+			appendables: []*fakeAppendable{
+				{
+					appender: newFakeAppender(allConflictErrsFn, nil, nil),
+				},
+				{
+					appender: newFakeAppender(nil, nil, nil),
+				},
+			},
+		},
+		{
+			name:              "size 2 success with two conflicts",
+			status:            http.StatusConflict,
+			replicationFactor: 2,
+			wreq:              wreq1,
+			appendables: []*fakeAppendable{
+				{
+					appender: newFakeAppender(allConflictErrsFn, nil, nil),
+				},
+				{
+					appender: newFakeAppender(allConflictErrsFn, nil, nil),
+				},
+			},
+		},
+		{
+			name:              "size 2 success with one faulty",
+			status:            http.StatusInternalServerError,
+			replicationFactor: 2,
+			wreq:              wreq1,
+			appendables: []*fakeAppendable{
+				{
+					appender: newFakeAppender(nil, commitErrFn, nil),
+				},
+				{
+					appender: newFakeAppender(nil, nil, nil),
+				},
+			},
+		},
+		{
+			name:              "size 2 success with one faulty and one conflict",
+			status:            http.StatusInternalServerError,
+			replicationFactor: 2,
+			wreq:              wreq1,
+			appendables: []*fakeAppendable{
+				{
+					appender: newFakeAppender(nil, commitErrFn, nil),
+				},
+				{
+					appender: newFakeAppender(appenderErrFn, nil, nil),
+				},
+			},
+		},
+		{
+			name:              "size 2 success with two faulty",
+			status:            http.StatusInternalServerError,
+			replicationFactor: 2,
+			wreq:              wreq1,
+			appendables: []*fakeAppendable{
+				{
+					appender: newFakeAppender(nil, commitErrFn, nil),
+				},
+				{
+					appender: newFakeAppender(nil, commitErrFn, nil),
 				},
 			},
 		},
@@ -544,7 +620,7 @@ func TestReceiveQuorum(t *testing.T) {
 			wreq:              wreq1,
 			appendables: []*fakeAppendable{
 				{
-					appender: newFakeAppender(cycleErrors([]error{storage.ErrOutOfBounds, storage.ErrOutOfOrderSample, storage.ErrDuplicateSampleForTimestamp}), nil, nil),
+					appender: newFakeAppender(allConflictErrsFn, nil, nil),
 				},
 				{
 					appender: newFakeAppender(nil, nil, nil),
@@ -578,10 +654,10 @@ func TestReceiveQuorum(t *testing.T) {
 			wreq:              wreq1,
 			appendables: []*fakeAppendable{
 				{
-					appender: newFakeAppender(cycleErrors([]error{storage.ErrOutOfBounds, storage.ErrOutOfOrderSample, storage.ErrDuplicateSampleForTimestamp}), nil, nil),
+					appender: newFakeAppender(allConflictErrsFn, nil, nil),
 				},
 				{
-					appender: newFakeAppender(conflictErrFn, nil, nil),
+					appender: newFakeAppender(allConflictErrsFn, nil, nil),
 				},
 				{
 					appender: newFakeAppender(nil, nil, nil),
@@ -590,12 +666,12 @@ func TestReceiveQuorum(t *testing.T) {
 		},
 		{
 			name:              "size 3 with replication one conflict and one commit error",
-			status:            http.StatusInternalServerError,
+			status:            http.StatusConflict,
 			replicationFactor: 3,
 			wreq:              wreq1,
 			appendables: []*fakeAppendable{
 				{
-					appender: newFakeAppender(cycleErrors([]error{storage.ErrOutOfBounds, storage.ErrOutOfOrderSample, storage.ErrDuplicateSampleForTimestamp}), nil, nil),
+					appender: newFakeAppender(allConflictErrsFn, nil, nil),
 				},
 				{
 					appender: newFakeAppender(nil, commitErrFn, nil),
@@ -671,6 +747,12 @@ func TestReceiveWithConsistencyDelay(t *testing.T) {
 	appenderErrFn := func() error { return errors.New("failed to get appender") }
 	conflictErrFn := func() error { return storage.ErrOutOfBounds }
 	commitErrFn := func() error { return errors.New("failed to commit") }
+	allConflictErrsFn := cycleErrors([]error{
+		storage.ErrOutOfBounds,
+		storage.ErrOutOfOrderSample,
+		storage.ErrDuplicateSampleForTimestamp,
+	})
+
 	wreq1 := &prompb.WriteRequest{
 		Timeseries: []prompb.TimeSeries{
 			{
@@ -880,7 +962,7 @@ func TestReceiveWithConsistencyDelay(t *testing.T) {
 			wreq:              wreq1,
 			appendables: []*fakeAppendable{
 				{
-					appender: newFakeAppender(cycleErrors([]error{storage.ErrOutOfBounds, storage.ErrOutOfOrderSample, storage.ErrDuplicateSampleForTimestamp}), nil, nil),
+					appender: newFakeAppender(allConflictErrsFn, nil, nil),
 				},
 				{
 					appender: newFakeAppender(nil, nil, nil),
@@ -914,10 +996,10 @@ func TestReceiveWithConsistencyDelay(t *testing.T) {
 			wreq:              wreq1,
 			appendables: []*fakeAppendable{
 				{
-					appender: newFakeAppender(cycleErrors([]error{storage.ErrOutOfBounds, storage.ErrOutOfOrderSample, storage.ErrDuplicateSampleForTimestamp}), nil, nil),
+					appender: newFakeAppender(allConflictErrsFn, nil, nil),
 				},
 				{
-					appender: newFakeAppender(conflictErrFn, nil, nil),
+					appender: newFakeAppender(allConflictErrsFn, nil, nil),
 				},
 				{
 					appender: newFakeAppender(nil, nil, nil),
@@ -925,13 +1007,30 @@ func TestReceiveWithConsistencyDelay(t *testing.T) {
 			},
 		},
 		{
-			name:              "size 3 with replication one conflict and one commit error",
-			status:            http.StatusInternalServerError,
+			name:              "size 3 with replication and all three conflicts",
+			status:            http.StatusConflict,
 			replicationFactor: 3,
 			wreq:              wreq1,
 			appendables: []*fakeAppendable{
 				{
-					appender: newFakeAppender(cycleErrors([]error{storage.ErrOutOfBounds, storage.ErrOutOfOrderSample, storage.ErrDuplicateSampleForTimestamp}), nil, nil),
+					appender: newFakeAppender(allConflictErrsFn, nil, nil),
+				},
+				{
+					appender: newFakeAppender(allConflictErrsFn, nil, nil),
+				},
+				{
+					appender: newFakeAppender(allConflictErrsFn, nil, nil),
+				},
+			},
+		},
+		{
+			name:              "size 3 with replication one conflict and one commit error",
+			status:            http.StatusConflict,
+			replicationFactor: 3,
+			wreq:              wreq1,
+			appendables: []*fakeAppendable{
+				{
+					appender: newFakeAppender(allConflictErrsFn, nil, nil),
 				},
 				{
 					appender: newFakeAppender(nil, commitErrFn, nil),

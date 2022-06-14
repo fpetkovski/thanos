@@ -481,7 +481,7 @@ func (h *Handler) fanoutForward(pctx context.Context, tenant string, replicas ma
 				})
 				if err != nil {
 					h.replications.WithLabelValues(labelError).Inc()
-					ec <- errors.Wrapf(err, "replicate write request for endpoint %v", endpoint)
+					ec <- errors.Wrapf(determineWriteErrorCause(err, 1), "replicate write request for endpoint %v", endpoint)
 					return
 				}
 
