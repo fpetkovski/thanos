@@ -253,7 +253,7 @@ func runReceive(
 
 		level.Debug(logger).Log("msg", "setting up tsdb")
 		{
-			if err := startTSDBAndUpload(g, logger, reg, dbs, reloadGRPCServer, uploadC, hashringChangedChan, upload, uploadDone, statusProber, bkt); err != nil {
+			if err := startTSDBAndUpload(g, logger, reg, dbs, reloadGRPCServer, uploadC, hashringChangedChan, upload, uploadDone, statusProber, bkt, receive.HashringAlgorithm(conf.hashringsAlgorithm)); err != nil {
 				return err
 			}
 		}
@@ -558,7 +558,7 @@ func startTSDBAndUpload(g *run.Group,
 	uploadDone chan struct{},
 	statusProber prober.Probe,
 	bkt objstore.Bucket,
-
+	hashringAlgorithm receive.HashringAlgorithm,
 ) error {
 
 	log.With(logger, "component", "storage")
@@ -605,6 +605,10 @@ func startTSDBAndUpload(g *run.Group,
 					return nil
 				}
 				dbUpdatesStarted.Inc()
+				if hashringAlgorithm == receive.AlgorithmKetama {
+					return nil
+				}
+
 				level.Info(logger).Log("msg", "updating storage")
 
 				if err := dbs.Flush(); err != nil {
