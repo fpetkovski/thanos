@@ -276,8 +276,6 @@ replace (
 
 	github.com/vimeo/galaxycache => github.com/thanos-community/galaxycache v0.0.0-20211122094458-3a32041a1f1e
 
-	github.com/thanos-community/promql-engine => /Users/fpetkovski/Projects/promql-engine
-
 	// Override due to https://github.com/weaveworks/common/issues/239
 	google.golang.org/grpc => google.golang.org/grpc v1.45.0
 

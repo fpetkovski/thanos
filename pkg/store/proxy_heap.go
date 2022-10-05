@@ -98,13 +98,13 @@ func (d *dedupResponseHeap) Next() bool {
 			break
 		}
 
-		lbls := resp.GetSeries().Labels
+		//lbls := resp.GetSeries().Labels
 		lastResponse := d.responses[len(d.responses)-1]
-		lastLbls := lastResponse.GetSeries().Labels
+		//lastLbls := lastResponse.GetSeries().Labels
 
 		// Unless a response comes from query pushdown, it is safe to merge
 		// chunks from replica series together into one slice.
-		labelsEqual := labels.Compare(labelpb.ZLabelsToPromLabels(lbls), labelpb.ZLabelsToPromLabels(lastLbls)) == 0
+		labelsEqual := resp.signature == lastResponse.signature
 		if labelsEqual && !resp.hasPushdownMarker {
 			d.responses = append(d.responses, resp)
 		} else {
