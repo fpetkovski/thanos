@@ -1227,6 +1227,7 @@ func (f *fakeRemoteWriteGRPCServer) RemoteWrite(ctx context.Context, in *storepb
 }
 
 func BenchmarkHandlerReceiveHTTP(b *testing.B) {
+	b.ReportAllocs()
 	benchmarkHandlerMultiTSDBReceiveRemoteWrite(testutil.NewTB(b))
 }
 
