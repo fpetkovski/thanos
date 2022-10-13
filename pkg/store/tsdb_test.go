@@ -13,11 +13,13 @@ import (
 	"testing"
 
 	"github.com/go-kit/log"
+	"github.com/gogo/protobuf/types"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb"
 
 	"github.com/thanos-io/thanos/pkg/component"
+	"github.com/thanos-io/thanos/pkg/store/hintspb"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
 	"github.com/thanos-io/thanos/pkg/store/storepb"
 	storetestutil "github.com/thanos-io/thanos/pkg/store/storepb/testutil"
@@ -67,29 +69,18 @@ func TestTSDBStore_Series(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	db, err := e2eutil.NewTSDB()
-	defer func() { testutil.Ok(t, db.Close()) }()
-	testutil.Ok(t, err)
-
-	tsdbStore := NewTSDBStore(nil, db, component.Rule, labels.FromStrings("region", "eu-west"))
-
-	appender := db.Appender(context.Background())
-
-	for i := 1; i <= 3; i++ {
-		_, err = appender.Append(0, labels.FromStrings("a", "1"), int64(i), float64(i))
-		testutil.Ok(t, err)
-	}
-	err = appender.Commit()
-	testutil.Ok(t, err)
-
 	for _, tc := range []struct {
-		title          string
-		req            *storepb.SeriesRequest
-		expectedSeries []rawSeries
-		expectedError  string
+		name                     string
+		externalLabels           labels.Labels
+		series                   []labels.Labels
+		req                      *storepb.SeriesRequest
+		expectedSeries           []rawSeries
+		expectedSortedSeriesHint bool
+		expectedError            string
 	}{
 		{
-			title: "total match series",
+			name:   "total match series",
+			series: []labels.Labels{labels.FromStrings("a", "1")},
 			req: &storepb.SeriesRequest{
 				MinTime: 1,
 				MaxTime: 3,
@@ -103,9 +94,11 @@ func TestTSDBStore_Series(t *testing.T) {
 					chunks: [][]sample{{{1, 1}, {2, 2}, {3, 3}}},
 				},
 			},
+			expectedSortedSeriesHint: true,
 		},
 		{
-			title: "partially match time range series",
+			name:   "partially match time range series",
+			series: []labels.Labels{labels.FromStrings("a", "1")},
 			req: &storepb.SeriesRequest{
 				MinTime: 1,
 				MaxTime: 2,
@@ -119,9 +112,11 @@ func TestTSDBStore_Series(t *testing.T) {
 					chunks: [][]sample{{{1, 1}, {2, 2}}},
 				},
 			},
+			expectedSortedSeriesHint: true,
 		},
 		{
-			title: "dont't match time range series",
+			name:   "dont't match time range series",
+			series: []labels.Labels{labels.FromStrings("a", "1")},
 			req: &storepb.SeriesRequest{
 				MinTime: 4,
 				MaxTime: 6,
@@ -129,10 +124,12 @@ func TestTSDBStore_Series(t *testing.T) {
 					{Type: storepb.LabelMatcher_EQ, Name: "a", Value: "1"},
 				},
 			},
-			expectedSeries: []rawSeries{},
+			expectedSeries:           []rawSeries{},
+			expectedSortedSeriesHint: true,
 		},
 		{
-			title: "only match external label",
+			name:   "only match external label",
+			series: []labels.Labels{labels.FromStrings("a", "1")},
 			req: &storepb.SeriesRequest{
 				MinTime: 1,
 				MaxTime: 3,
@@ -140,10 +137,12 @@ func TestTSDBStore_Series(t *testing.T) {
 					{Type: storepb.LabelMatcher_EQ, Name: "region", Value: "eu-west"},
 				},
 			},
-			expectedError: "rpc error: code = InvalidArgument desc = no matchers specified (excluding external labels)",
+			expectedSortedSeriesHint: true,
+			expectedError:            "rpc error: code = InvalidArgument desc = no matchers specified (excluding external labels)",
 		},
 		{
-			title: "dont't match labels",
+			name:   "dont't match labels",
+			series: []labels.Labels{labels.FromStrings("a", "1")},
 			req: &storepb.SeriesRequest{
 				MinTime: 1,
 				MaxTime: 3,
@@ -151,10 +150,12 @@ func TestTSDBStore_Series(t *testing.T) {
 					{Type: storepb.LabelMatcher_EQ, Name: "b", Value: "1"},
 				},
 			},
-			expectedSeries: []rawSeries{},
+			expectedSeries:           []rawSeries{},
+			expectedSortedSeriesHint: true,
 		},
 		{
-			title: "no chunk",
+			name:   "no chunk",
+			series: []labels.Labels{labels.FromStrings("a", "1")},
 			req: &storepb.SeriesRequest{
 				MinTime: 1,
 				MaxTime: 3,
@@ -168,17 +169,94 @@ func TestTSDBStore_Series(t *testing.T) {
 					lset: labels.FromStrings("a", "1", "region", "eu-west"),
 				},
 			},
+			expectedSortedSeriesHint: true,
+		},
+		{
+			name: "use replica label that is stored in TSDB",
+			series: []labels.Labels{
+				labels.FromStrings("a", "1", "r", "1", "z", "1"),
+				labels.FromStrings("a", "1", "r", "1", "z", "2"),
+				labels.FromStrings("a", "1", "r", "2", "z", "1"),
+				labels.FromStrings("a", "1", "r", "2", "z", "2"),
+				labels.FromStrings("a", "2", "r", "1", "z", "1"),
+				labels.FromStrings("a", "2", "r", "2", "z", "1"),
+			},
+			req: &storepb.SeriesRequest{
+				MinTime: 1,
+				MaxTime: 3,
+				Matchers: []storepb.LabelMatcher{
+					{Type: storepb.LabelMatcher_RE, Name: "a", Value: ".+"},
+				},
+				SkipChunks:    true,
+				ReplicaLabels: []string{"r"},
+			},
+			expectedSeries: []rawSeries{
+				{lset: unsortedLabelsFromStrings("a", "1", "region", "eu-west", "z", "1", "r", "1")},
+				{lset: unsortedLabelsFromStrings("a", "1", "region", "eu-west", "z", "2", "r", "1")},
+				{lset: unsortedLabelsFromStrings("a", "1", "region", "eu-west", "z", "1", "r", "2")},
+				{lset: unsortedLabelsFromStrings("a", "1", "region", "eu-west", "z", "2", "r", "2")},
+				{lset: unsortedLabelsFromStrings("a", "2", "region", "eu-west", "z", "1", "r", "1")},
+				{lset: unsortedLabelsFromStrings("a", "2", "region", "eu-west", "z", "1", "r", "2")},
+			},
+			expectedSortedSeriesHint: false,
+		},
+		{
+			name:           "use an external label as replica label",
+			externalLabels: labels.FromStrings("r", "1"),
+			series: []labels.Labels{
+				labels.FromStrings("a", "1", "z", "1"),
+				labels.FromStrings("a", "1", "z", "2"),
+				labels.FromStrings("a", "2", "z", "1"),
+				labels.FromStrings("a", "2", "z", "2"),
+			},
+			req: &storepb.SeriesRequest{
+				MinTime: 1,
+				MaxTime: 3,
+				Matchers: []storepb.LabelMatcher{
+					{Type: storepb.LabelMatcher_RE, Name: "a", Value: ".+"},
+				},
+				SkipChunks:    true,
+				ReplicaLabels: []string{"r"},
+			},
+			expectedSeries: []rawSeries{
+				{lset: unsortedLabelsFromStrings("a", "1", "region", "eu-west", "z", "1", "r", "1")},
+				{lset: unsortedLabelsFromStrings("a", "1", "region", "eu-west", "z", "2", "r", "1")},
+				{lset: unsortedLabelsFromStrings("a", "2", "region", "eu-west", "z", "1", "r", "1")},
+				{lset: unsortedLabelsFromStrings("a", "2", "region", "eu-west", "z", "2", "r", "1")},
+			},
+			expectedSortedSeriesHint: true,
 		},
 	} {
-		if ok := t.Run(tc.title, func(t *testing.T) {
+		if ok := t.Run(tc.name, func(t *testing.T) {
+			db, err := e2eutil.NewTSDB()
+			defer func() { testutil.Ok(t, db.Close()) }()
+			testutil.Ok(t, err)
+
+			extLset := labelpb.ExtendSortedLabels(labels.FromStrings("region", "eu-west"), tc.externalLabels)
+			tsdbStore := NewTSDBStore(nil, db, component.Rule, extLset)
+
+			appender := db.Appender(context.Background())
+
+			for _, s := range tc.series {
+				for i := 1; i <= 3; i++ {
+					_, err = appender.Append(0, s, int64(i), float64(i))
+					testutil.Ok(t, err)
+				}
+			}
+			err = appender.Commit()
+			testutil.Ok(t, err)
+
 			srv := newStoreSeriesServer(ctx)
-			err := tsdbStore.Series(tc.req, srv)
+			err = tsdbStore.Series(tc.req, srv)
 			if len(tc.expectedError) > 0 {
 				testutil.NotOk(t, err)
 				testutil.Equals(t, tc.expectedError, err.Error())
 			} else {
 				testutil.Ok(t, err)
 				seriesEquals(t, tc.expectedSeries, srv.SeriesSet)
+
+				testutil.Assert(t, len(srv.HintsSet) == 1)
+				sortedSeriesHintEquals(t, tc.expectedSortedSeriesHint, srv.HintsSet[0])
 			}
 		}); !ok {
 			return
@@ -640,6 +718,27 @@ func benchTSDBStoreSeries(t testutil.TB, totalSamples, totalSeries int) {
 				PartialResponseStrategy: storepb.PartialResponseStrategy_ABORT,
 			},
 			ExpectedSeries: expected,
+			ExpectedHints:  []hintspb.SeriesResponseHints{{SeriesSorted: true}},
 		},
 	)
+}
+
+func sortedSeriesHintEquals(t *testing.T, expected bool, anyHint *types.Any) {
+	hint := hintspb.SeriesResponseHints{}
+	testutil.Ok(t, types.UnmarshalAny(anyHint, &hint))
+	testutil.Assert(t, hint.SeriesSorted == expected)
+}
+
+// labelsFromStrings returns is the same as labels.FromStrings,
+// with the exception of not enforcing a sort on the labelset.
+func unsortedLabelsFromStrings(ss ...string) labels.Labels {
+	if len(ss)%2 != 0 {
+		panic("invalid number of strings")
+	}
+	res := make(labels.Labels, 0, len(ss)/2)
+	for i := 0; i < len(ss); i += 2 {
+		res = append(res, labels.Label{Name: ss[i], Value: ss[i+1]})
+	}
+
+	return res
 }
