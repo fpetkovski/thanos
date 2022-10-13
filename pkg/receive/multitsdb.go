@@ -97,11 +97,11 @@ type localClient struct {
 	timeRangeFunc func() (int64, int64)
 }
 
-func newLocalClient(
+func NewLocalClient(
 	c storepb.StoreClient,
 	labelSetFunc func() []labelpb.ZLabelSet,
 	timeRangeFunc func() (int64, int64),
-) *localClient {
+) store.Client {
 	return &localClient{c, labelSetFunc, timeRangeFunc}
 }
 
@@ -165,7 +165,7 @@ func (t *tenant) client() store.Client {
 
 	store := t.store()
 	client := storepb.ServerAsClient(store, 0)
-	return newLocalClient(client, store.LabelSet, store.TimeRange)
+	return NewLocalClient(client, store.LabelSet, store.TimeRange)
 }
 
 func (t *tenant) exemplars() *exemplars.TSDB {

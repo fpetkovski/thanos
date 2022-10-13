@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
+	"github.com/gogo/protobuf/types"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -24,6 +25,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/thanos-io/thanos/pkg/component"
+	"github.com/thanos-io/thanos/pkg/store/hintspb"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
 	"github.com/thanos-io/thanos/pkg/store/storepb"
 	"github.com/thanos-io/thanos/pkg/strutil"
@@ -264,6 +266,7 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 		PartialResponseDisabled: originalRequest.PartialResponseDisabled,
 		PartialResponseStrategy: originalRequest.PartialResponseStrategy,
 		ShardInfo:               originalRequest.ShardInfo,
+		ReplicaLabels:           originalRequest.ReplicaLabels,
 	}
 
 	stores := []Client{}
@@ -314,6 +317,8 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 
 	level.Debug(reqLogger).Log("msg", "Series: started fanout streams", "status", strings.Join(storeDebugMsgs, ";"))
 
+	var hintsReceived int
+	var hintSent bool
 	respHeap := NewDedupResponseHeap(NewProxyResponseHeap(storeResponses...))
 	for respHeap.Next() {
 		resp := respHeap.At()
@@ -322,9 +327,40 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 			return status.Error(codes.Aborted, resp.GetWarning())
 		}
 
+		// For backwards compatibility, we need to make sure that each store sends response hints indicating whether
+		// the store supports sorting series according with replica labels at the end.
+		// In case a store has not sent a hint, we assume it does not support this functionality and we emit
+		// a hint upstream to signal that a global sort is required.
+		if resp.GetHints() != nil {
+			hintsReceived++
+		} else if !hintSent && hintsReceived < len(stores) {
+			err := sendUnsortedSeriesHint(srv)
+			if err != nil {
+				return status.Error(codes.Unknown, errors.Wrap(err, "send series hint").Error())
+			}
+			hintSent = true
+		}
+
 		if err := srv.Send(resp); err != nil {
 			return status.Error(codes.Unknown, errors.Wrap(err, "send series response").Error())
 		}
+	}
+
+	return nil
+}
+
+func sendUnsortedSeriesHint(srv storepb.Store_SeriesServer) error {
+	var (
+		anyHints *types.Any
+		err      error
+	)
+	respHints := &hintspb.SeriesResponseHints{SeriesSorted: false}
+	if anyHints, err = types.MarshalAny(respHints); err != nil {
+		return status.Error(codes.Unknown, errors.Wrap(err, "marshal series response hints").Error())
+	}
+
+	if err := srv.Send(storepb.NewHintsSeriesResponse(anyHints)); err != nil {
+		return status.Error(codes.Aborted, err.Error())
 	}
 
 	return nil

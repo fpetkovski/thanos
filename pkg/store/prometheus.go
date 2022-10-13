@@ -29,6 +29,9 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/thanos-io/thanos/pkg/component"
 	"github.com/thanos-io/thanos/pkg/dedup"
 	"github.com/thanos-io/thanos/pkg/httpconfig"
@@ -38,8 +41,6 @@ import (
 	"github.com/thanos-io/thanos/pkg/store/storepb"
 	"github.com/thanos-io/thanos/pkg/store/storepb/prompb"
 	"github.com/thanos-io/thanos/pkg/tracing"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // PrometheusStore implements the store node API on top of the Prometheus remote read API.
@@ -239,7 +240,7 @@ func (p *PrometheusStore) Series(r *storepb.SeriesRequest, s storepb.Store_Serie
 	if !strings.HasPrefix(contentType, "application/x-streamed-protobuf; proto=prometheus.ChunkedReadResponse") {
 		return errors.Errorf("not supported remote read content type: %s", contentType)
 	}
-	return p.handleStreamedPrometheusResponse(s, shardMatcher, httpResp, queryPrometheusSpan, extLset)
+	return p.handleStreamedPrometheusResponse(s, shardMatcher, httpResp, queryPrometheusSpan, extLset, r.ReplicaLabelSet())
 }
 
 func (p *PrometheusStore) queryPrometheus(s storepb.Store_SeriesServer, r *storepb.SeriesRequest) error {
@@ -353,13 +354,7 @@ func (p *PrometheusStore) handleSampledPrometheusResponse(s storepb.Store_Series
 	return nil
 }
 
-func (p *PrometheusStore) handleStreamedPrometheusResponse(
-	s storepb.Store_SeriesServer,
-	shardMatcher *storepb.ShardMatcher,
-	httpResp *http.Response,
-	querySpan tracing.Span,
-	extLset labels.Labels,
-) error {
+func (p *PrometheusStore) handleStreamedPrometheusResponse(s storepb.Store_SeriesServer, shardMatcher *storepb.ShardMatcher, httpResp *http.Response, querySpan tracing.Span, extLset labels.Labels, replicaLabelSet map[string]struct{}) error {
 	level.Debug(p.logger).Log("msg", "started handling ReadRequest_STREAMED_XOR_CHUNKS streamed read response.")
 
 	framesNum := 0
@@ -376,6 +371,11 @@ func (p *PrometheusStore) handleStreamedPrometheusResponse(
 
 	bodySizer := NewBytesRead(httpResp.Body)
 	seriesStats := &storepb.SeriesStatsCounter{}
+
+	extLabelsMap := makeLabelsMap(extLset)
+	if err := sendSortedSeriesHint(s, replicaLabelSet, extLabelsMap); err != nil {
+		return err
+	}
 
 	// TODO(bwplotka): Put read limit as a flag.
 	stream := remote.NewChunkedReader(bodySizer, remote.DefaultChunkedReadLimit, *data)
@@ -399,6 +399,7 @@ func (p *PrometheusStore) handleStreamedPrometheusResponse(
 			if !shardMatcher.MatchesLabels(completeLabelset) {
 				continue
 			}
+			sortLabelsForDedup(completeLabelset, replicaLabelSet)
 
 			seriesStats.CountSeries(series.Labels)
 			thanosChks := make([]storepb.AggrChunk, len(series.Chunks))
