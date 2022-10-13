@@ -794,6 +794,7 @@ func blockSeries(
 	skipChunks bool, // If true, chunks are not loaded.
 	minTime, maxTime int64, // Series must have data in this time range to be returned.
 	loadAggregates []storepb.Aggr, // List of aggregates to load when loading chunks.
+	replicaLabels map[string]struct{},
 	shardMatcher *storepb.ShardMatcher,
 	emptyPostingsCount prometheus.Counter,
 ) (storepb.SeriesSet, *queryStats, error) {
@@ -846,6 +847,7 @@ func blockSeries(
 		if !shardMatcher.MatchesLabels(completeLabelset) {
 			continue
 		}
+		sortLabelsForDedup(completeLabelset, replicaLabels)
 
 		s := seriesEntry{}
 		s.lset = completeLabelset
@@ -875,6 +877,11 @@ func blockSeries(
 
 		res = append(res, s)
 	}
+	// With re-sort all series in order to align the same series
+	// from different replicas sequentially.
+	sort.Slice(res, func(i, j int) bool {
+		return labels.Compare(res[i].lset, res[j].lset) < 0
+	})
 
 	if skipChunks {
 		return newBucketSeriesSet(res), indexr.stats, nil
@@ -885,6 +892,23 @@ func blockSeries(
 	}
 
 	return newBucketSeriesSet(res), indexr.stats.merge(chunkr.stats), nil
+}
+
+func sortLabelsForDedup(completeLabelset labels.Labels, replicaLabels map[string]struct{}) {
+	if len(replicaLabels) == 0 {
+		return
+	}
+
+	sort.Slice(completeLabelset, func(i, j int) bool {
+		if _, ok := replicaLabels[completeLabelset[i].Name]; ok {
+			return false
+		}
+		if _, ok := replicaLabels[completeLabelset[j].Name]; ok {
+			return true
+		}
+
+		return completeLabelset[i].Name < completeLabelset[j].Name
+	})
 }
 
 func populateChunk(out *storepb.AggrChunk, in chunkenc.Chunk, aggrs []storepb.Aggr, save func([]byte) ([]byte, error)) error {
@@ -1038,6 +1062,7 @@ func (s *BucketStore) Series(req *storepb.SeriesRequest, srv storepb.Store_Serie
 		}
 	}
 
+	replicaLabelSet := req.ReplicaLabelSet()
 	s.mtx.RLock()
 	for _, bs := range s.blockSets {
 		blockMatchers, ok := bs.labelMatchers(matchers...)
@@ -1093,6 +1118,7 @@ func (s *BucketStore) Series(req *storepb.SeriesRequest, srv storepb.Store_Serie
 					req.SkipChunks,
 					req.MinTime, req.MaxTime,
 					req.Aggregates,
+					replicaLabelSet,
 					shardMatcher,
 					s.metrics.emptyPostingCount,
 				)
@@ -1315,6 +1341,7 @@ func (s *BucketStore) LabelNames(ctx context.Context, req *storepb.LabelNamesReq
 					req.End,
 					nil,
 					nil,
+					nil,
 					s.metrics.emptyPostingCount,
 				)
 				if err != nil {
@@ -1481,6 +1508,7 @@ func (s *BucketStore) LabelValues(ctx context.Context, req *storepb.LabelValuesR
 					true,
 					req.Start,
 					req.End,
+					nil,
 					nil,
 					nil,
 					s.metrics.emptyPostingCount,

@@ -522,6 +522,14 @@ func (m *SeriesRequest) ToPromQL() string {
 	return m.QueryHints.toPromQL(m.Matchers)
 }
 
+func (m *SeriesRequest) ReplicaLabelSet() map[string]struct{} {
+	ls := make(map[string]struct{}, len(m.ReplicaLabels))
+	for _, l := range m.ReplicaLabels {
+		ls[l] = struct{}{}
+	}
+	return ls
+}
+
 // IsSafeToExecute returns true if the function or aggregation from the query hint
 // can be safely executed by the underlying Prometheus instance without affecting the
 // result of the query.

@@ -160,6 +160,8 @@ func (s *TSDBStore) Series(r *storepb.SeriesRequest, srv storepb.Store_SeriesSer
 
 	shardMatcher := r.ShardInfo.Matcher(&s.buffers)
 	defer shardMatcher.Close()
+
+	replicaLabelSet := r.ReplicaLabelSet()
 	// Stream at most one series per frame; series may be split over multiple frames according to maxBytesInFrame.
 	for set.Next() {
 		series := set.At()
@@ -168,6 +170,7 @@ func (s *TSDBStore) Series(r *storepb.SeriesRequest, srv storepb.Store_SeriesSer
 			continue
 		}
 
+		sortLabelsForDedup(completeLabelset, replicaLabelSet)
 		storeSeries := storepb.Series{Labels: labelpb.ZLabelsFromPromLabels(completeLabelset)}
 		if r.SkipChunks {
 			if err := srv.Send(storepb.NewSeriesResponse(&storeSeries)); err != nil {
@@ -219,7 +222,6 @@ func (s *TSDBStore) Series(r *storepb.SeriesRequest, srv storepb.Store_SeriesSer
 		if err := chIter.Err(); err != nil {
 			return status.Error(codes.Internal, errors.Wrap(err, "chunk iter").Error())
 		}
-
 	}
 	if err := set.Err(); err != nil {
 		return status.Error(codes.Internal, err.Error())

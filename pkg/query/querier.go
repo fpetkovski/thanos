@@ -89,7 +89,8 @@ type querier struct {
 	logger              log.Logger
 	cancel              func()
 	mint, maxt          int64
-	replicaLabels       map[string]struct{}
+	replicaLabels       []string
+	replicaLabelSet     map[string]struct{}
 	storeDebugMatchers  [][]*labels.Matcher
 	proxy               storepb.StoreServer
 	deduplicate         bool
@@ -136,7 +137,8 @@ func newQuerier(
 
 		mint:                mint,
 		maxt:                maxt,
-		replicaLabels:       rl,
+		replicaLabels:       replicaLabels,
+		replicaLabelSet:     rl,
 		storeDebugMatchers:  storeDebugMatchers,
 		proxy:               proxy,
 		deduplicate:         deduplicate,
@@ -149,7 +151,7 @@ func newQuerier(
 }
 
 func (q *querier) isDedupEnabled() bool {
-	return q.deduplicate && len(q.replicaLabels) > 0
+	return q.deduplicate && len(q.replicaLabelSet) > 0
 }
 
 type seriesServer struct {
@@ -309,6 +311,7 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 		SkipChunks:              q.skipChunks,
 		Step:                    hints.Step,
 		Range:                   hints.Range,
+		ReplicaLabels:           q.replicaLabels,
 	}, resp); err != nil {
 		return nil, errors.Wrap(err, "proxy Series()")
 	}
@@ -345,8 +348,6 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 		}, nil
 	}
 
-	// TODO(fabxc): this could potentially pushed further down into the store API to make true streaming possible.
-	sortDedupLabels(resp.seriesSet, q.replicaLabels)
 	set := &promSeriesSet{
 		mint:  q.mint,
 		maxt:  q.maxt,
@@ -357,7 +358,7 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 
 	// The merged series set assembles all potentially-overlapping time ranges of the same series into a single one.
 	// TODO(bwplotka): We could potentially dedup on chunk level, use chunk iterator for that when available.
-	return dedup.NewSeriesSet(set, q.replicaLabels, hints.Func, q.enableQueryPushdown), nil
+	return dedup.NewSeriesSet(set, q.replicaLabelSet, hints.Func, q.enableQueryPushdown), nil
 }
 
 // sortDedupLabels re-sorts the set so that the same series with different replica

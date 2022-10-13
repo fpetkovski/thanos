@@ -1859,6 +1859,161 @@ func TestSeries_BlockWithMultipleChunks(t *testing.T) {
 	}
 }
 
+func TestSeries_LabelsSortedWithoutReplicaLabels(t *testing.T) {
+	tests := map[string]struct {
+		series         [][]labels.Labels
+		reqMinTime     int64
+		reqMaxTime     int64
+		expectedSeries []labels.Labels
+	}{
+		"query the entire block": {
+			series: [][]labels.Labels{
+				{
+					labels.FromStrings("a", "1", "replica", "1", "z", "1"),
+					labels.FromStrings("a", "1", "replica", "1", "z", "2"),
+					labels.FromStrings("a", "1", "replica", "2", "z", "1"),
+					labels.FromStrings("a", "1", "replica", "2", "z", "2"),
+					labels.FromStrings("a", "2", "replica", "1", "z", "1"),
+					labels.FromStrings("a", "2", "replica", "2", "z", "1"),
+				},
+				{
+					labels.FromStrings("a", "1", "replica", "3", "z", "1"),
+					labels.FromStrings("a", "1", "replica", "3", "z", "2"),
+					labels.FromStrings("a", "1", "replica", "4", "z", "1"),
+					labels.FromStrings("a", "1", "replica", "4", "z", "2"),
+					labels.FromStrings("a", "2", "replica", "3", "z", "1"),
+					labels.FromStrings("a", "2", "replica", "4", "z", "1"),
+				},
+			},
+			reqMinTime: math.MinInt64,
+			reqMaxTime: math.MaxInt64,
+			expectedSeries: []labels.Labels{
+				// first replicated series
+				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "1"}},
+				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "2"}},
+				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "3"}},
+				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "4"}},
+
+				// second replicated series
+				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "2"}, {Name: "replica", Value: "1"}},
+				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "2"}, {Name: "replica", Value: "2"}},
+				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "2"}, {Name: "replica", Value: "3"}},
+				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "2"}, {Name: "replica", Value: "4"}},
+
+				// third replicated series
+				{{Name: "a", Value: "2"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "1"}},
+				{{Name: "a", Value: "2"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "2"}},
+				{{Name: "a", Value: "2"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "3"}},
+				{{Name: "a", Value: "2"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "4"}},
+			},
+		},
+	}
+
+	for testName, testData := range tests {
+		t.Run(testName, func(t *testing.T) {
+			tb := testutil.NewTB(t)
+
+			tmpDir := t.TempDir()
+
+			bktDir := filepath.Join(tmpDir, "bucket")
+			bkt, err := filesystem.NewBucket(bktDir)
+			testutil.Ok(t, err)
+			defer testutil.Ok(t, bkt.Close())
+
+			instrBkt := objstore.WithNoopInstr(bkt)
+			logger := log.NewNopLogger()
+
+			for i, series := range testData.series {
+				head := uploadSeriesToBucket(t, bkt, filepath.Join(tmpDir, strconv.Itoa(i)), series)
+				defer testutil.Ok(t, head.Close())
+			}
+
+			// Instance a real bucket store we'll use to query the series.
+			fetcher, err := block.NewMetaFetcher(logger, 10, instrBkt, tmpDir, nil, nil)
+			testutil.Ok(tb, err)
+
+			indexCache, err := storecache.NewInMemoryIndexCacheWithConfig(logger, nil, storecache.InMemoryIndexCacheConfig{})
+			testutil.Ok(tb, err)
+
+			store, err := NewBucketStore(
+				instrBkt,
+				fetcher,
+				tmpDir,
+				NewChunksLimiterFactory(100000/MaxSamplesPerChunk),
+				NewSeriesLimiterFactory(0),
+				NewGapBasedPartitioner(PartitionerMaxGapSize),
+				10,
+				false,
+				DefaultPostingOffsetInMemorySampling,
+				true,
+				false,
+				0,
+				WithLogger(logger),
+				WithIndexCache(indexCache),
+			)
+			testutil.Ok(tb, err)
+			testutil.Ok(tb, store.SyncBlocks(context.Background()))
+
+			req := &storepb.SeriesRequest{
+				MinTime: testData.reqMinTime,
+				MaxTime: testData.reqMaxTime,
+				Matchers: []storepb.LabelMatcher{
+					{Type: storepb.LabelMatcher_RE, Name: "a", Value: ".+"},
+				},
+				ReplicaLabels: []string{"replica"},
+			}
+
+			srv := newStoreSeriesServer(context.Background())
+			err = store.Series(req, srv)
+			testutil.Ok(t, err)
+			testutil.Assert(t, len(srv.SeriesSet) == len(testData.expectedSeries))
+
+			var response []labels.Labels
+			for _, respSeries := range srv.SeriesSet {
+				promLabels := labelpb.ZLabelsToPromLabels(respSeries.Labels)
+				response = append(response, promLabels)
+			}
+
+			testutil.Equals(t, testData.expectedSeries, response)
+		})
+	}
+}
+
+func uploadSeriesToBucket(t *testing.T, bkt *filesystem.Bucket, tmpDir string, series []labels.Labels) *tsdb.Head {
+	headOpts := tsdb.DefaultHeadOptions()
+	headOpts.ChunkDirRoot = filepath.Join(tmpDir, "block")
+
+	h, err := tsdb.NewHead(nil, nil, nil, nil, headOpts, nil)
+	testutil.Ok(t, err)
+
+	for _, s := range series {
+		for ts := int64(0); ts < 100; ts++ {
+			// Appending a single sample is very unoptimised, but guarantees each chunk is always MaxSamplesPerChunk
+			// (except the last one, which could be smaller).
+			app := h.Appender(context.Background())
+			_, err := app.Append(0, s, ts, float64(ts))
+			testutil.Ok(t, err)
+			testutil.Ok(t, app.Commit())
+		}
+	}
+
+	blk := createBlockFromHead(t, headOpts.ChunkDirRoot, h)
+
+	thanosMeta := metadata.Thanos{
+		Labels:     labels.Labels{{Name: "ext1", Value: "1"}}.Map(),
+		Downsample: metadata.ThanosDownsample{Resolution: 0},
+		Source:     metadata.TestSource,
+	}
+
+	_, err = metadata.InjectThanos(log.NewNopLogger(), filepath.Join(headOpts.ChunkDirRoot, blk.String()), thanosMeta, nil)
+	testutil.Ok(t, err)
+
+	testutil.Ok(t, block.Upload(context.Background(), log.NewNopLogger(), bkt, filepath.Join(headOpts.ChunkDirRoot, blk.String()), metadata.NoneFunc))
+	testutil.Ok(t, err)
+
+	return h
+}
+
 func mustMarshalAny(pb proto.Message) *types.Any {
 	out, err := types.MarshalAny(pb)
 	if err != nil {
@@ -2326,7 +2481,7 @@ func benchmarkBlockSeriesWithConcurrency(b *testing.B, concurrency int, blockMet
 				indexReader := blk.indexReader()
 				chunkReader := blk.chunkReader()
 
-				seriesSet, _, err := blockSeries(ctx, nil, indexReader, chunkReader, matchers, chunksLimiter, seriesLimiter, req.SkipChunks, req.MinTime, req.MaxTime, req.Aggregates, nil, dummyCounter)
+				seriesSet, _, err := blockSeries(ctx, nil, indexReader, chunkReader, matchers, chunksLimiter, seriesLimiter, req.SkipChunks, req.MinTime, req.MaxTime, req.Aggregates, nil, nil, dummyCounter)
 				testutil.Ok(b, err)
 
 				// Ensure at least 1 series has been returned (as expected).
