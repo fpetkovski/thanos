@@ -785,14 +785,14 @@ func (s *bucketSeriesSet) Err() error {
 // blockSeries returns series matching given matchers, that have some data in given time range.
 func blockSeries(
 	ctx context.Context,
-	extLset labels.Labels, // External labels added to the returned series labels.
-	indexr *bucketIndexReader, // Index reader for block.
-	chunkr *bucketChunkReader, // Chunk reader for block.
-	matchers []*labels.Matcher, // Series matchers.
-	chunksLimiter ChunksLimiter, // Rate limiter for loading chunks.
-	seriesLimiter SeriesLimiter, // Rate limiter for loading series.
-	skipChunks bool, // If true, chunks are not loaded.
-	minTime, maxTime int64, // Series must have data in this time range to be returned.
+	extLset labels.Labels,         // External labels added to the returned series labels.
+	indexr *bucketIndexReader,     // Index reader for block.
+	chunkr *bucketChunkReader,     // Chunk reader for block.
+	matchers []*labels.Matcher,    // Series matchers.
+	chunksLimiter ChunksLimiter,   // Rate limiter for loading chunks.
+	seriesLimiter SeriesLimiter,   // Rate limiter for loading series.
+	skipChunks bool,               // If true, chunks are not loaded.
+	minTime, maxTime int64,        // Series must have data in this time range to be returned.
 	loadAggregates []storepb.Aggr, // List of aggregates to load when loading chunks.
 	replicaLabels map[string]struct{},
 	shardMatcher *storepb.ShardMatcher,
@@ -894,20 +894,20 @@ func blockSeries(
 	return newBucketSeriesSet(res), indexr.stats.merge(chunkr.stats), nil
 }
 
-func sortLabelsForDedup(completeLabelset labels.Labels, replicaLabels map[string]struct{}) {
+func sortLabelsForDedup(labelSet labels.Labels, replicaLabels map[string]struct{}) {
 	if len(replicaLabels) == 0 {
 		return
 	}
 
-	sort.Slice(completeLabelset, func(i, j int) bool {
-		if _, ok := replicaLabels[completeLabelset[i].Name]; ok {
+	sort.Slice(labelSet, func(i, j int) bool {
+		if _, ok := replicaLabels[labelSet[i].Name]; ok {
 			return false
 		}
-		if _, ok := replicaLabels[completeLabelset[j].Name]; ok {
+		if _, ok := replicaLabels[labelSet[j].Name]; ok {
 			return true
 		}
 
-		return completeLabelset[i].Name < completeLabelset[j].Name
+		return labelSet[i].Name < labelSet[j].Name
 	})
 }
 
@@ -1062,6 +1062,7 @@ func (s *BucketStore) Series(req *storepb.SeriesRequest, srv storepb.Store_Serie
 		}
 	}
 
+	resHints.SeriesSorted = true
 	replicaLabelSet := req.ReplicaLabelSet()
 	s.mtx.RLock()
 	for _, bs := range s.blockSets {
@@ -1187,6 +1188,23 @@ func (s *BucketStore) Series(req *storepb.SeriesRequest, srv storepb.Store_Serie
 		s.metrics.seriesGetAllDuration.Observe(stats.GetAllDuration.Seconds())
 		s.metrics.seriesBlocksQueried.Observe(float64(stats.blocksQueried))
 	}
+
+	// Send response hints at the beginning of the stream. This helps the querier know very early in the
+	// streaming process whether a global sort on the entire data set is required.
+	if s.enableSeriesResponseHints {
+		var anyHints *types.Any
+
+		if anyHints, err = types.MarshalAny(resHints); err != nil {
+			err = status.Error(codes.Unknown, errors.Wrap(err, "marshal series response hints").Error())
+			return
+		}
+
+		if err = srv.Send(storepb.NewHintsSeriesResponse(anyHints)); err != nil {
+			err = status.Error(codes.Unknown, errors.Wrap(err, "send series response hints").Error())
+			return
+		}
+	}
+
 	// Merge the sub-results from each selected block.
 	tracing.DoInSpan(ctx, "bucket_store_merge_all", func(ctx context.Context) {
 		begin := time.Now()
@@ -1223,20 +1241,6 @@ func (s *BucketStore) Series(req *storepb.SeriesRequest, srv storepb.Store_Serie
 
 		err = nil
 	})
-
-	if s.enableSeriesResponseHints {
-		var anyHints *types.Any
-
-		if anyHints, err = types.MarshalAny(resHints); err != nil {
-			err = status.Error(codes.Unknown, errors.Wrap(err, "marshal series response hints").Error())
-			return
-		}
-
-		if err = srv.Send(storepb.NewHintsSeriesResponse(anyHints)); err != nil {
-			err = status.Error(codes.Unknown, errors.Wrap(err, "send series response hints").Error())
-			return
-		}
-	}
 
 	return err
 }

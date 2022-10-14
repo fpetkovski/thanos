@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-kit/log"
+	"github.com/gogo/protobuf/types"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -23,6 +24,7 @@ import (
 	"github.com/thanos-io/thanos/pkg/extprom"
 	"github.com/thanos-io/thanos/pkg/gate"
 	"github.com/thanos-io/thanos/pkg/store"
+	"github.com/thanos-io/thanos/pkg/store/hintspb"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
 	"github.com/thanos-io/thanos/pkg/store/storepb"
 	"github.com/thanos-io/thanos/pkg/tracing"
@@ -161,6 +163,7 @@ type seriesServer struct {
 
 	seriesSet []storepb.Series
 	warnings  []string
+	hints     []hintspb.SeriesResponseHints
 }
 
 func (s *seriesServer) Send(r *storepb.SeriesResponse) error {
@@ -174,8 +177,25 @@ func (s *seriesServer) Send(r *storepb.SeriesResponse) error {
 		return nil
 	}
 
+	if r.GetHints() != nil {
+		hint := hintspb.SeriesResponseHints{}
+		if err := types.UnmarshalAny(r.GetHints(), &hint); err != nil {
+			return err
+		}
+		s.hints = append(s.hints, hint)
+	}
+
 	// Unsupported field, skip.
 	return nil
+}
+
+func (s *seriesServer) hasUnsortedData() bool {
+	for _, h := range s.hints {
+		if !h.SeriesSorted {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *seriesServer) Context() context.Context {
@@ -346,6 +366,10 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 			aggrs: aggrs,
 			warns: warns,
 		}, nil
+	}
+
+	if resp.hasUnsortedData() {
+		sortDedupLabels(resp.seriesSet, q.replicaLabelSet)
 	}
 
 	set := &promSeriesSet{

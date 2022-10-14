@@ -372,6 +372,11 @@ func (p *PrometheusStore) handleStreamedPrometheusResponse(s storepb.Store_Serie
 	bodySizer := NewBytesRead(httpResp.Body)
 	seriesStats := &storepb.SeriesStatsCounter{}
 
+	extLabelsMap := makeLabelsMap(extLset)
+	if err := sendSortedSeriesHint(s, replicaLabelSet, extLabelsMap); err != nil {
+		return err
+	}
+
 	// TODO(bwplotka): Put read limit as a flag.
 	stream := remote.NewChunkedReader(bodySizer, remote.DefaultChunkedReadLimit, *data)
 	for {

@@ -28,6 +28,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/thanos-io/thanos/pkg/component"
+	"github.com/thanos-io/thanos/pkg/store/hintspb"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
 	"github.com/thanos-io/thanos/pkg/store/storepb"
 	storetestutil "github.com/thanos-io/thanos/pkg/store/storepb/testutil"
@@ -1880,6 +1881,7 @@ func benchProxySeries(t testutil.TB, totalSamples, totalSeries int) {
 					{Type: storepb.LabelMatcher_EQ, Name: "foo", Value: "bar"},
 				},
 			},
+			ExpectedHints:  []hintspb.SeriesResponseHints{{SeriesSorted: false}},
 			ExpectedSeries: expected,
 		},
 	)
@@ -1912,9 +1914,110 @@ func benchProxySeries(t testutil.TB, totalSamples, totalSeries int) {
 					{Type: storepb.LabelMatcher_EQ, Name: "foo", Value: "bar"},
 				},
 			},
+			ExpectedHints:  []hintspb.SeriesResponseHints{{SeriesSorted: false}},
 			ExpectedSeries: expected,
 		},
 	)
+}
+
+func TestProxySeriesHints(t *testing.T) {
+	testCases := []struct {
+		name                  string
+		responses             [][]*storepb.SeriesResponse
+		seriesSortedHintValue []bool
+	}{
+		{
+			name: "stores without sorted series hints",
+			responses: [][]*storepb.SeriesResponse{
+				{
+					storeSeriesResponse(t, labels.FromStrings("a", "a"), []sample{{0, 0}}),
+				},
+				{
+					storeSeriesResponse(t, labels.FromStrings("a", "a"), []sample{{0, 0}}),
+				},
+			},
+			seriesSortedHintValue: []bool{false},
+		},
+		{
+			name: "one with sorted series hints",
+			responses: [][]*storepb.SeriesResponse{
+				{
+					sortedSeriesHint(true),
+					storeSeriesResponse(t, labels.FromStrings("a", "a"), []sample{{0, 0}})},
+				{
+					storeSeriesResponse(t, labels.FromStrings("a", "a"), []sample{{0, 0}}),
+				},
+			},
+			seriesSortedHintValue: []bool{true, false},
+		},
+		{
+			name: "store send hints at the end",
+			responses: [][]*storepb.SeriesResponse{
+				{
+					sortedSeriesHint(true),
+					storeSeriesResponse(t, labels.FromStrings("a", "a"), []sample{{0, 0}})},
+				{
+					storeSeriesResponse(t, labels.FromStrings("a", "a"), []sample{{0, 0}}),
+					sortedSeriesHint(true),
+				},
+			},
+			seriesSortedHintValue: []bool{true, false, true},
+		},
+		{
+			name: "stores send hints at the beginning",
+			responses: [][]*storepb.SeriesResponse{
+				{
+					sortedSeriesHint(true),
+					storeSeriesResponse(t, labels.FromStrings("a", "a"), []sample{{0, 0}})},
+				{
+					sortedSeriesHint(true),
+					storeSeriesResponse(t, labels.FromStrings("a", "a"), []sample{{0, 0}}),
+				},
+			},
+			seriesSortedHintValue: []bool{true, true},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			logger := log.NewNopLogger()
+			clients := make([]Client, 0, len(tc.responses))
+			for _, responses := range tc.responses {
+				clients = append(clients, &testClient{
+					minTime: math.MinInt64,
+					maxTime: math.MaxInt64,
+					StoreClient: &mockedStoreAPI{
+						RespSeries: responses,
+					},
+				})
+			}
+			p := &ProxyStore{
+				logger:            logger,
+				stores:            func() []Client { return clients },
+				metrics:           newProxyStoreMetrics(nil),
+				responseTimeout:   0,
+				retrievalStrategy: EagerRetrieval,
+			}
+
+			req := &storepb.SeriesRequest{
+				MinTime: math.MinInt,
+				MaxTime: math.MaxInt,
+				Matchers: []storepb.LabelMatcher{
+					{Type: storepb.LabelMatcher_EQ, Name: "a", Value: "a"},
+				},
+			}
+			seriesSrv := &storeSeriesServer{ctx: context.Background()}
+			testutil.Ok(t, p.Series(req, seriesSrv))
+			for i, val := range tc.seriesSortedHintValue {
+				sortedSeriesHintEquals(t, val, seriesSrv.HintsSet[i])
+			}
+		})
+	}
+}
+
+func sortedSeriesHint(val bool) *storepb.SeriesResponse {
+	respHints := &hintspb.SeriesResponseHints{SeriesSorted: val}
+	return storepb.NewHintsSeriesResponse(mustMarshalAny(respHints))
 }
 
 func TestProxyStore_NotLeakingOnPrematureFinish(t *testing.T) {

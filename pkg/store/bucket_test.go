@@ -1624,6 +1624,7 @@ func TestSeries_RequestAndResponseHints(t *testing.T) {
 					QueriedBlocks: []hintspb.Block{
 						{Id: block1.String()},
 					},
+					SeriesSorted: true,
 				},
 			},
 		}, {
@@ -1642,6 +1643,7 @@ func TestSeries_RequestAndResponseHints(t *testing.T) {
 						{Id: block1.String()},
 						{Id: block2.String()},
 					},
+					SeriesSorted: true,
 				},
 			},
 		}, {
@@ -1664,6 +1666,7 @@ func TestSeries_RequestAndResponseHints(t *testing.T) {
 					QueriedBlocks: []hintspb.Block{
 						{Id: block1.String()},
 					},
+					SeriesSorted: true,
 				},
 			},
 		},
@@ -1859,14 +1862,13 @@ func TestSeries_BlockWithMultipleChunks(t *testing.T) {
 	}
 }
 
-func TestSeries_LabelsSortedWithoutReplicaLabels(t *testing.T) {
+func TestSeries_SeriesSortedWithoutReplicaLabels(t *testing.T) {
 	tests := map[string]struct {
 		series         [][]labels.Labels
-		reqMinTime     int64
-		reqMaxTime     int64
+		replicaLabels  []string
 		expectedSeries []labels.Labels
 	}{
-		"query the entire block": {
+		"use TSDB label as replica label": {
 			series: [][]labels.Labels{
 				{
 					labels.FromStrings("a", "1", "replica", "1", "z", "1"),
@@ -1879,32 +1881,54 @@ func TestSeries_LabelsSortedWithoutReplicaLabels(t *testing.T) {
 				{
 					labels.FromStrings("a", "1", "replica", "3", "z", "1"),
 					labels.FromStrings("a", "1", "replica", "3", "z", "2"),
-					labels.FromStrings("a", "1", "replica", "4", "z", "1"),
-					labels.FromStrings("a", "1", "replica", "4", "z", "2"),
 					labels.FromStrings("a", "2", "replica", "3", "z", "1"),
-					labels.FromStrings("a", "2", "replica", "4", "z", "1"),
 				},
 			},
-			reqMinTime: math.MinInt64,
-			reqMaxTime: math.MaxInt64,
+			replicaLabels: []string{"replica"},
 			expectedSeries: []labels.Labels{
 				// first replicated series
 				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "1"}},
 				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "2"}},
 				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "3"}},
-				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "4"}},
 
 				// second replicated series
 				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "2"}, {Name: "replica", Value: "1"}},
 				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "2"}, {Name: "replica", Value: "2"}},
 				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "2"}, {Name: "replica", Value: "3"}},
-				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "2"}, {Name: "replica", Value: "4"}},
 
 				// third replicated series
 				{{Name: "a", Value: "2"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "1"}},
 				{{Name: "a", Value: "2"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "2"}},
 				{{Name: "a", Value: "2"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "3"}},
-				{{Name: "a", Value: "2"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "4"}},
+			},
+		},
+		"use external label as replica label": {
+			series: [][]labels.Labels{
+				{
+					labels.FromStrings("a", "1", "replica", "1", "z", "1"),
+					labels.FromStrings("a", "1", "replica", "1", "z", "2"),
+					labels.FromStrings("a", "1", "replica", "2", "z", "1"),
+					labels.FromStrings("a", "1", "replica", "2", "z", "2"),
+					labels.FromStrings("a", "2", "replica", "1", "z", "1"),
+					labels.FromStrings("a", "2", "replica", "2", "z", "1"),
+				},
+				{
+					labels.FromStrings("a", "1", "replica", "3", "z", "1"),
+					labels.FromStrings("a", "1", "replica", "3", "z", "2"),
+					labels.FromStrings("a", "2", "replica", "3", "z", "1"),
+				},
+			},
+			replicaLabels: []string{"ext1"},
+			expectedSeries: []labels.Labels{
+				{{Name: "a", Value: "1"}, {Name: "replica", Value: "1"}, {Name: "z", Value: "1"}, {Name: "ext1", Value: "1"}},
+				{{Name: "a", Value: "1"}, {Name: "replica", Value: "1"}, {Name: "z", Value: "2"}, {Name: "ext1", Value: "1"}},
+				{{Name: "a", Value: "1"}, {Name: "replica", Value: "2"}, {Name: "z", Value: "1"}, {Name: "ext1", Value: "1"}},
+				{{Name: "a", Value: "1"}, {Name: "replica", Value: "2"}, {Name: "z", Value: "2"}, {Name: "ext1", Value: "1"}},
+				{{Name: "a", Value: "1"}, {Name: "replica", Value: "3"}, {Name: "z", Value: "1"}, {Name: "ext1", Value: "1"}},
+				{{Name: "a", Value: "1"}, {Name: "replica", Value: "3"}, {Name: "z", Value: "2"}, {Name: "ext1", Value: "1"}},
+				{{Name: "a", Value: "2"}, {Name: "replica", Value: "1"}, {Name: "z", Value: "1"}, {Name: "ext1", Value: "1"}},
+				{{Name: "a", Value: "2"}, {Name: "replica", Value: "2"}, {Name: "z", Value: "1"}, {Name: "ext1", Value: "1"}},
+				{{Name: "a", Value: "2"}, {Name: "replica", Value: "3"}, {Name: "z", Value: "1"}, {Name: "ext1", Value: "1"}},
 			},
 		},
 	}
@@ -1955,12 +1979,12 @@ func TestSeries_LabelsSortedWithoutReplicaLabels(t *testing.T) {
 			testutil.Ok(tb, store.SyncBlocks(context.Background()))
 
 			req := &storepb.SeriesRequest{
-				MinTime: testData.reqMinTime,
-				MaxTime: testData.reqMaxTime,
+				MinTime: math.MinInt,
+				MaxTime: math.MaxInt64,
 				Matchers: []storepb.LabelMatcher{
 					{Type: storepb.LabelMatcher_RE, Name: "a", Value: ".+"},
 				},
-				ReplicaLabels: []string{"replica"},
+				ReplicaLabels: testData.replicaLabels,
 			}
 
 			srv := newStoreSeriesServer(context.Background())
