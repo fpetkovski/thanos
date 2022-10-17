@@ -319,6 +319,10 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 		queryHints = storeHintsFromPromHints(hints)
 	}
 
+	replicaLabels := q.replicaLabels
+	if !q.isDedupEnabled() {
+		replicaLabels = nil
+	}
 	if err := q.proxy.Series(&storepb.SeriesRequest{
 		MinTime:                 hints.Start,
 		MaxTime:                 hints.End,
@@ -331,7 +335,7 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 		SkipChunks:              q.skipChunks,
 		Step:                    hints.Step,
 		Range:                   hints.Range,
-		ReplicaLabels:           q.replicaLabels,
+		ReplicaLabels:           replicaLabels,
 	}, resp); err != nil {
 		return nil, errors.Wrap(err, "proxy Series()")
 	}
