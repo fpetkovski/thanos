@@ -13,7 +13,6 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	"github.com/gogo/protobuf/types"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -25,7 +24,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/thanos-io/thanos/pkg/component"
-	"github.com/thanos-io/thanos/pkg/store/hintspb"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
 	"github.com/thanos-io/thanos/pkg/store/storepb"
 	"github.com/thanos-io/thanos/pkg/strutil"
@@ -237,20 +235,20 @@ func (s *ProxyStore) TimeRange() (int64, int64) {
 	return minTime, maxTime
 }
 
-func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.Store_SeriesServer) error {
+func (s *ProxyStore) SeriesStreamed(ctx context.Context, originalRequest *storepb.SeriesRequest) (SeriesResponseIterable, error) {
 	// TODO(bwplotka): This should be part of request logger, otherwise it does not make much sense. Also, could be
 	// tiggered by tracing span to reduce cognitive load.
 	reqLogger := log.With(s.logger, "component", "proxy", "request", originalRequest.String())
 
 	match, matchers, err := matchesExternalLabels(originalRequest.Matchers, s.selectorLabels)
 	if err != nil {
-		return status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if !match {
-		return nil
+		return nil, nil
 	}
 	if len(matchers) == 0 {
-		return status.Error(codes.InvalidArgument, errors.New("no matchers specified (excluding selector labels)").Error())
+		return nil, status.Error(codes.InvalidArgument, errors.New("no matchers specified (excluding selector labels)").Error())
 	}
 	storeMatchers, _ := storepb.PromMatchersToMatchers(matchers...) // Error would be returned by matchesExternalLabels, so skip check.
 
@@ -272,7 +270,7 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 	stores := []Client{}
 	for _, st := range s.stores() {
 		// We might be able to skip the store if its meta information indicates it cannot have series matching our query.
-		if ok, reason := storeMatches(srv.Context(), st, originalRequest.MinTime, originalRequest.MaxTime, matchers...); !ok {
+		if ok, reason := storeMatches(ctx, st, originalRequest.MinTime, originalRequest.MaxTime, matchers...); !ok {
 			storeDebugMsgs = append(storeDebugMsgs, fmt.Sprintf("store %s filtered out: %v", st, reason))
 			continue
 		}
@@ -283,43 +281,72 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 	if len(stores) == 0 {
 		err := errors.New("No StoreAPIs matched for this query")
 		level.Warn(reqLogger).Log("err", err, "stores", strings.Join(storeDebugMsgs, ";"))
-		if sendErr := srv.Send(storepb.NewWarnSeriesResponse(err)); sendErr != nil {
-			level.Error(reqLogger).Log("err", sendErr)
-			return status.Error(codes.Unknown, errors.Wrap(sendErr, "send series response").Error())
-		}
-		return nil
+
+		respHeap := NewDedupResponseHeap(NewProxyResponseHeap(&eagerRespSet{
+			bufferedResponses: []*storepb.SeriesResponse{
+				storepb.NewWarnSeriesResponse(err),
+			},
+			wg:           &sync.WaitGroup{},
+			shardMatcher: &storepb.ShardMatcher{},
+		}))
+
+		return respHeap, nil
 	}
 
 	storeResponses := make([]respSet, 0, len(stores))
+
+	allSendsSortedSeries := true
+	for _, st := range stores {
+		if !st.SendsSortedSeries() {
+			allSendsSortedSeries = false
+			level.Warn(reqLogger).Log("msg", "store sends unsorted data hence falling back to eager retrieval && explicit sorting; please update Thanos", "st", st.String())
+			break
+		}
+	}
+
+	retrievalStrategy := s.retrievalStrategy
+	if !allSendsSortedSeries {
+		retrievalStrategy = EagerRetrieval
+	}
 
 	for _, st := range stores {
 		st := st
 
 		storeDebugMsgs = append(storeDebugMsgs, fmt.Sprintf("store %s queried", st))
 
-		respSet, err := newAsyncRespSet(srv.Context(), st, r, s.responseTimeout, s.retrievalStrategy, st.SupportsSharding(), &s.buffers, r.ShardInfo, reqLogger, s.metrics.emptyStreamResponses)
+		respSet, err := newAsyncRespSet(ctx, st, r, s.responseTimeout, retrievalStrategy, st.SupportsSharding(), &s.buffers, r.ShardInfo, reqLogger, s.metrics.emptyStreamResponses)
 		if err != nil {
 			level.Error(reqLogger).Log("err", err)
 
 			if !r.PartialResponseDisabled || r.PartialResponseStrategy == storepb.PartialResponseStrategy_WARN {
-				if err := srv.Send(storepb.NewWarnSeriesResponse(err)); err != nil {
-					return err
-				}
+				storeResponses = append(storeResponses, &eagerRespSet{
+					bufferedResponses: []*storepb.SeriesResponse{
+						storepb.NewWarnSeriesResponse(err),
+					},
+					wg:           &sync.WaitGroup{},
+					shardMatcher: &storepb.ShardMatcher{},
+				})
 				continue
 			} else {
-				return err
+				return nil, err
 			}
 		}
 
 		storeResponses = append(storeResponses, respSet)
-		defer respSet.Close()
 	}
 
 	level.Debug(reqLogger).Log("msg", "Series: started fanout streams", "status", strings.Join(storeDebugMsgs, ";"))
 
-	var hintsReceived int
-	var hintSent bool
-	respHeap := NewDedupResponseHeap(NewProxyResponseHeap(storeResponses...))
+	return NewDedupResponseHeap(NewProxyResponseHeap(storeResponses...)), nil
+}
+
+func (s *ProxyStore) Series(r *storepb.SeriesRequest, srv storepb.Store_SeriesServer) error {
+	respHeap, err := s.SeriesStreamed(srv.Context(), r)
+	if err != nil {
+		return err
+	}
+	defer respHeap.Close()
+
 	for respHeap.Next() {
 		resp := respHeap.At()
 
@@ -327,42 +354,10 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 			return status.Error(codes.Aborted, resp.GetWarning())
 		}
 
-		// For backwards compatibility, we need to make sure that each store sends response hints indicating whether
-		// the store supports sorting series according with replica labels at the end.
-		// In case a store has not sent a hint, we assume it does not support this functionality and we emit
-		// a hint upstream to signal that a global sort is required.
-		if resp.GetHints() != nil {
-			hintsReceived++
-		} else if !hintSent && hintsReceived < len(stores) {
-			err := sendUnsortedSeriesHint(srv)
-			if err != nil {
-				return status.Error(codes.Unknown, errors.Wrap(err, "send series hint").Error())
-			}
-			hintSent = true
-		}
-
 		if err := srv.Send(resp); err != nil {
 			return status.Error(codes.Unknown, errors.Wrap(err, "send series response").Error())
 		}
 	}
-
-	return nil
-}
-
-func sendUnsortedSeriesHint(srv storepb.Store_SeriesServer) error {
-	var (
-		anyHints *types.Any
-		err      error
-	)
-	respHints := &hintspb.SeriesResponseHints{SeriesSorted: false}
-	if anyHints, err = types.MarshalAny(respHints); err != nil {
-		return status.Error(codes.Unknown, errors.Wrap(err, "marshal series response hints").Error())
-	}
-
-	if err := srv.Send(storepb.NewHintsSeriesResponse(anyHints)); err != nil {
-		return status.Error(codes.Aborted, err.Error())
-	}
-
 	return nil
 }
 

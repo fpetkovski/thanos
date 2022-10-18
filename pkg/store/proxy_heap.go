@@ -26,6 +26,12 @@ import (
 	"github.com/thanos-io/thanos/pkg/tracing"
 )
 
+type SeriesResponseIterable interface {
+	Next() bool
+	At() *storepb.SeriesResponse
+	Close()
+}
+
 // dedupResponseHeap is a wrapper around ProxyResponseHeap
 // that removes duplicated identical chunks identified by the same labelset and checksum.
 // It uses a hashing function to do that.
@@ -38,11 +44,15 @@ type dedupResponseHeap struct {
 	previousNext     bool
 }
 
-func NewDedupResponseHeap(h *ProxyResponseHeap) *dedupResponseHeap {
+func NewDedupResponseHeap(h *ProxyResponseHeap) SeriesResponseIterable {
 	return &dedupResponseHeap{
 		h:            h,
 		previousNext: h.Next(),
 	}
+}
+
+func (d *dedupResponseHeap) Close() {
+	// TODO: implement. Close all respSets.
 }
 
 func (d *dedupResponseHeap) Next() bool {
