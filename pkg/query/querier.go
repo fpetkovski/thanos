@@ -30,6 +30,12 @@ import (
 	"github.com/thanos-io/thanos/pkg/tracing"
 )
 
+// StoreServer is the server API for Store service.
+type StoreServerStreamed interface {
+	storepb.StoreServer
+	SeriesStreamed(context.Context, *storepb.SeriesRequest) (store.SeriesResponseIterable, error)
+}
+
 // QueryableCreator returns implementation of promql.Queryable that fetches data from the proxy store API endpoints.
 // If deduplication is enabled, all data retrieved from it will be deduplicated along all replicaLabels by default.
 // When the replicaLabels argument is not empty it overwrites the global replicaLabels flag. This allows specifying
@@ -39,7 +45,7 @@ import (
 type QueryableCreator func(deduplicate bool, replicaLabels []string, storeDebugMatchers [][]*labels.Matcher, maxResolutionMillis int64, partialResponse, enableQueryPushdown, skipChunks bool, shardInfo *storepb.ShardInfo) storage.Queryable
 
 // NewQueryableCreator creates QueryableCreator.
-func NewQueryableCreator(logger log.Logger, reg prometheus.Registerer, proxy storepb.StoreServer, maxConcurrentSelects int, selectTimeout time.Duration) QueryableCreator {
+func NewQueryableCreator(logger log.Logger, reg prometheus.Registerer, proxy StoreServerStreamed, maxConcurrentSelects int, selectTimeout time.Duration) QueryableCreator {
 	duration := promauto.With(
 		extprom.WrapRegistererWithPrefix("concurrent_selects_", reg),
 	).NewHistogram(gate.DurationHistogramOpts)
@@ -69,7 +75,7 @@ type queryable struct {
 	logger               log.Logger
 	replicaLabels        []string
 	storeDebugMatchers   [][]*labels.Matcher
-	proxy                storepb.StoreServer
+	proxy                StoreServerStreamed
 	deduplicate          bool
 	maxResolutionMillis  int64
 	partialResponse      bool
@@ -94,7 +100,7 @@ type querier struct {
 	replicaLabels       []string
 	replicaLabelSet     map[string]struct{}
 	storeDebugMatchers  [][]*labels.Matcher
-	proxy               storepb.StoreServer
+	proxy               StoreServerStreamed
 	deduplicate         bool
 	maxResolutionMillis int64
 	partialResponse     bool
@@ -113,7 +119,7 @@ func newQuerier(
 	mint, maxt int64,
 	replicaLabels []string,
 	storeDebugMatchers [][]*labels.Matcher,
-	proxy storepb.StoreServer,
+	proxy StoreServerStreamed,
 	deduplicate bool,
 	maxResolutionMillis int64,
 	partialResponse, enableQueryPushdown bool, skipChunks bool,
@@ -323,7 +329,7 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 	if !q.isDedupEnabled() {
 		replicaLabels = nil
 	}
-	if err := q.proxy.Series(&storepb.SeriesRequest{
+	responses, err := q.proxy.SeriesStreamed(ctx, &storepb.SeriesRequest{
 		MinTime:                 hints.Start,
 		MaxTime:                 hints.End,
 		Matchers:                sms,
@@ -336,9 +342,12 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 		Step:                    hints.Step,
 		Range:                   hints.Range,
 		ReplicaLabels:           replicaLabels,
-	}, resp); err != nil {
+	})
+	if err != nil {
 		return nil, errors.Wrap(err, "proxy Series()")
 	}
+	// Pass responses to the iterator.
+	var _ = responses
 
 	var warns storage.Warnings
 	for _, w := range resp.warnings {

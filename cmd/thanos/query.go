@@ -716,11 +716,21 @@ func runQuery(
 			info.WithStoreInfoFunc(func() *infopb.StoreInfo {
 				if httpProbe.IsReady() {
 					mint, maxt := proxy.TimeRange()
+
+					clients := endpoints.GetStoreClients()
+
+					sortedSeries := true
+					for _, cl := range clients {
+						if !cl.SendsSortedSeries() {
+							sortedSeries = false
+							break
+						}
+					}
 					return &infopb.StoreInfo{
 						MinTime:           mint,
 						MaxTime:           maxt,
 						SupportsSharding:  true,
-						SendsSortedSeries: true,
+						SendsSortedSeries: sortedSeries,
 					}
 				}
 				return nil
