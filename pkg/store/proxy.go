@@ -13,7 +13,6 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	"github.com/gogo/protobuf/types"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -25,7 +24,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/thanos-io/thanos/pkg/component"
-	"github.com/thanos-io/thanos/pkg/store/hintspb"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
 	"github.com/thanos-io/thanos/pkg/store/storepb"
 	"github.com/thanos-io/thanos/pkg/strutil"
@@ -266,7 +264,7 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 		PartialResponseDisabled: originalRequest.PartialResponseDisabled,
 		PartialResponseStrategy: originalRequest.PartialResponseStrategy,
 		ShardInfo:               originalRequest.ShardInfo,
-		ReplicaLabels:           originalRequest.ReplicaLabels,
+		SortWithoutLabels:       originalRequest.SortWithoutLabels,
 	}
 
 	stores := []Client{}
@@ -290,19 +288,28 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 		return nil
 	}
 
-	storeResponses := make([]respSet, 0, len(stores))
+	sortSeriesSet := false
+	for _, st := range stores {
+		if !st.SendsSortedSeries() {
+			sortSeriesSet = true
+			level.Warn(reqLogger).Log("msg", "store sends unsorted data hence falling back to eager retrieval && explicit sorting; please update Thanos", "st", st.String())
+			break
+		}
+	}
 
+	storeResponses := make([]respSet, 0, len(stores))
+	sortedSeriesSrv := newSortedSeriesServer(srv, r.SortWithoutLabelSet(), !sortSeriesSet)
 	for _, st := range stores {
 		st := st
 
 		storeDebugMsgs = append(storeDebugMsgs, fmt.Sprintf("store %s queried", st))
 
-		respSet, err := newAsyncRespSet(srv.Context(), st, r, s.responseTimeout, s.retrievalStrategy, st.SupportsSharding(), &s.buffers, r.ShardInfo, reqLogger, s.metrics.emptyStreamResponses)
+		respSet, err := newAsyncRespSet(sortedSeriesSrv.Context(), st, r, s.responseTimeout, s.retrievalStrategy, st.SupportsSharding(), &s.buffers, r.ShardInfo, reqLogger, s.metrics.emptyStreamResponses)
 		if err != nil {
 			level.Error(reqLogger).Log("err", err)
 
 			if !r.PartialResponseDisabled || r.PartialResponseStrategy == storepb.PartialResponseStrategy_WARN {
-				if err := srv.Send(storepb.NewWarnSeriesResponse(err)); err != nil {
+				if err := sortedSeriesSrv.Send(storepb.NewWarnSeriesResponse(err)); err != nil {
 					return err
 				}
 				continue
@@ -317,8 +324,6 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 
 	level.Debug(reqLogger).Log("msg", "Series: started fanout streams", "status", strings.Join(storeDebugMsgs, ";"))
 
-	var hintsReceived int
-	var hintSent bool
 	respHeap := NewDedupResponseHeap(NewProxyResponseHeap(storeResponses...))
 	for respHeap.Next() {
 		resp := respHeap.At()
@@ -327,43 +332,12 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 			return status.Error(codes.Aborted, resp.GetWarning())
 		}
 
-		// For backwards compatibility, we need to make sure that each store sends response hints indicating whether
-		// the store supports sorting series according with replica labels at the end.
-		// In case a store has not sent a hint, we assume it does not support this functionality and we emit
-		// a hint upstream to signal that a global sort is required.
-		if resp.GetHints() != nil {
-			hintsReceived++
-		} else if !hintSent && hintsReceived < len(stores) {
-			err := sendUnsortedSeriesHint(srv)
-			if err != nil {
-				return status.Error(codes.Unknown, errors.Wrap(err, "send series hint").Error())
-			}
-			hintSent = true
-		}
-
-		if err := srv.Send(resp); err != nil {
+		if err := sortedSeriesSrv.Send(resp); err != nil {
 			return status.Error(codes.Unknown, errors.Wrap(err, "send series response").Error())
 		}
 	}
 
-	return nil
-}
-
-func sendUnsortedSeriesHint(srv storepb.Store_SeriesServer) error {
-	var (
-		anyHints *types.Any
-		err      error
-	)
-	respHints := &hintspb.SeriesResponseHints{SeriesSorted: false}
-	if anyHints, err = types.MarshalAny(respHints); err != nil {
-		return status.Error(codes.Unknown, errors.Wrap(err, "marshal series response hints").Error())
-	}
-
-	if err := srv.Send(storepb.NewHintsSeriesResponse(anyHints)); err != nil {
-		return status.Error(codes.Aborted, err.Error())
-	}
-
-	return nil
+	return sortedSeriesSrv.Flush()
 }
 
 // storeMatches returns boolean if the given store may hold data for the given label matchers, time ranges and debug store matches gathered from context.

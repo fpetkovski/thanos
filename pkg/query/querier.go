@@ -5,7 +5,6 @@ package query
 
 import (
 	"context"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -24,7 +23,6 @@ import (
 	"github.com/thanos-io/thanos/pkg/extprom"
 	"github.com/thanos-io/thanos/pkg/gate"
 	"github.com/thanos-io/thanos/pkg/store"
-	"github.com/thanos-io/thanos/pkg/store/labelpb"
 	"github.com/thanos-io/thanos/pkg/store/storepb"
 	"github.com/thanos-io/thanos/pkg/tracing"
 )
@@ -366,7 +364,7 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 		SkipChunks:              q.skipChunks,
 		Step:                    hints.Step,
 		Range:                   hints.Range,
-		ReplicaLabels:           replicaLabels,
+		SortWithoutLabels:       replicaLabels,
 	}, resp); err != nil {
 		return nil, storepb.SeriesStatsCounter{}, errors.Wrap(err, "proxy Series()")
 	}
@@ -414,35 +412,6 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 	// The merged series set assembles all potentially-overlapping time ranges of the same series into a single one.
 	// TODO(bwplotka): We could potentially dedup on chunk level, use chunk iterator for that when available.
 	return dedup.NewSeriesSet(set, q.replicaLabelSet, hints.Func, q.enableQueryPushdown), resp.seriesSetStats, nil
-}
-
-// sortDedupLabels re-sorts the set so that the same series with different replica
-// labels are coming right after each other.
-func sortDedupLabels(set []storepb.Series, replicaLabels map[string]struct{}) {
-	for _, s := range set {
-		// Move the replica labels to the very end.
-		sort.Slice(s.Labels, func(i, j int) bool {
-			if _, ok := replicaLabels[s.Labels[i].Name]; ok {
-				return false
-			}
-			if _, ok := replicaLabels[s.Labels[j].Name]; ok {
-				return true
-			}
-			// Ensure that dedup marker goes just right before the replica labels.
-			if s.Labels[i].Name == dedup.PushdownMarker.Name {
-				return false
-			}
-			if s.Labels[j].Name == dedup.PushdownMarker.Name {
-				return true
-			}
-			return s.Labels[i].Name < s.Labels[j].Name
-		})
-	}
-	// With the re-ordered label sets, re-sorting all series aligns the same series
-	// from different replicas sequentially.
-	sort.Slice(set, func(i, j int) bool {
-		return labels.Compare(labelpb.ZLabelsToPromLabels(set[i].Labels), labelpb.ZLabelsToPromLabels(set[j].Labels)) < 0
-	})
 }
 
 // LabelValues returns all potential values for a label name.

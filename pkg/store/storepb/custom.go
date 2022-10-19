@@ -522,9 +522,9 @@ func (m *SeriesRequest) ToPromQL() string {
 	return m.QueryHints.toPromQL(m.Matchers)
 }
 
-func (m *SeriesRequest) ReplicaLabelSet() map[string]struct{} {
-	ls := make(map[string]struct{}, len(m.ReplicaLabels))
-	for _, l := range m.ReplicaLabels {
+func (m *SeriesRequest) SortWithoutLabelSet() map[string]struct{} {
+	ls := make(map[string]struct{}, len(m.SortWithoutLabels))
+	for _, l := range m.SortWithoutLabels {
 		ls[l] = struct{}{}
 	}
 	return ls

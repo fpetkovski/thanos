@@ -160,6 +160,7 @@ func testSelect(t testutil.TB, q *querier, expectedSeries []labels.Labels, match
 					}
 					testutil.Ok(t, iter.Err())
 				}
+
 				testutil.Equals(t, expectedSeries, gotSeries)
 			}
 			testutil.Ok(t, ss.Err())

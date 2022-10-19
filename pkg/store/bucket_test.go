@@ -1624,7 +1624,6 @@ func TestSeries_RequestAndResponseHints(t *testing.T) {
 					QueriedBlocks: []hintspb.Block{
 						{Id: block1.String()},
 					},
-					SeriesSorted: true,
 				},
 			},
 		}, {
@@ -1643,7 +1642,6 @@ func TestSeries_RequestAndResponseHints(t *testing.T) {
 						{Id: block1.String()},
 						{Id: block2.String()},
 					},
-					SeriesSorted: true,
 				},
 			},
 		}, {
@@ -1666,7 +1664,6 @@ func TestSeries_RequestAndResponseHints(t *testing.T) {
 					QueriedBlocks: []hintspb.Block{
 						{Id: block1.String()},
 					},
-					SeriesSorted: true,
 				},
 			},
 		},
@@ -1886,20 +1883,15 @@ func TestSeries_SeriesSortedWithoutReplicaLabels(t *testing.T) {
 			},
 			replicaLabels: []string{"replica"},
 			expectedSeries: []labels.Labels{
-				// first replicated series
-				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "1"}},
-				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "2"}},
-				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "3"}},
-
-				// second replicated series
-				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "2"}, {Name: "replica", Value: "1"}},
-				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "2"}, {Name: "replica", Value: "2"}},
-				{{Name: "a", Value: "1"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "2"}, {Name: "replica", Value: "3"}},
-
-				// third replicated series
-				{{Name: "a", Value: "2"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "1"}},
-				{{Name: "a", Value: "2"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "2"}},
-				{{Name: "a", Value: "2"}, {Name: "ext1", Value: "1"}, {Name: "z", Value: "1"}, {Name: "replica", Value: "3"}},
+				unsortedLabelsFromStrings("a", "1", "ext1", "0", "z", "1", "replica", "1"),
+				unsortedLabelsFromStrings("a", "1", "ext1", "0", "z", "1", "replica", "2"),
+				unsortedLabelsFromStrings("a", "1", "ext1", "0", "z", "2", "replica", "1"),
+				unsortedLabelsFromStrings("a", "1", "ext1", "0", "z", "2", "replica", "2"),
+				unsortedLabelsFromStrings("a", "1", "ext1", "1", "z", "1", "replica", "3"),
+				unsortedLabelsFromStrings("a", "1", "ext1", "1", "z", "2", "replica", "3"),
+				unsortedLabelsFromStrings("a", "2", "ext1", "0", "z", "1", "replica", "1"),
+				unsortedLabelsFromStrings("a", "2", "ext1", "0", "z", "1", "replica", "2"),
+				unsortedLabelsFromStrings("a", "2", "ext1", "1", "z", "1", "replica", "3"),
 			},
 		},
 		"use external label as replica label": {
@@ -1909,26 +1901,22 @@ func TestSeries_SeriesSortedWithoutReplicaLabels(t *testing.T) {
 					labels.FromStrings("a", "1", "replica", "1", "z", "2"),
 					labels.FromStrings("a", "1", "replica", "2", "z", "1"),
 					labels.FromStrings("a", "1", "replica", "2", "z", "2"),
-					labels.FromStrings("a", "2", "replica", "1", "z", "1"),
-					labels.FromStrings("a", "2", "replica", "2", "z", "1"),
 				},
 				{
-					labels.FromStrings("a", "1", "replica", "3", "z", "1"),
-					labels.FromStrings("a", "1", "replica", "3", "z", "2"),
-					labels.FromStrings("a", "2", "replica", "3", "z", "1"),
+					labels.FromStrings("a", "1", "replica", "1", "z", "1"),
+					labels.FromStrings("a", "1", "replica", "1", "z", "2"),
 				},
 			},
 			replicaLabels: []string{"ext1"},
 			expectedSeries: []labels.Labels{
-				{{Name: "a", Value: "1"}, {Name: "replica", Value: "1"}, {Name: "z", Value: "1"}, {Name: "ext1", Value: "1"}},
-				{{Name: "a", Value: "1"}, {Name: "replica", Value: "1"}, {Name: "z", Value: "2"}, {Name: "ext1", Value: "1"}},
-				{{Name: "a", Value: "1"}, {Name: "replica", Value: "2"}, {Name: "z", Value: "1"}, {Name: "ext1", Value: "1"}},
-				{{Name: "a", Value: "1"}, {Name: "replica", Value: "2"}, {Name: "z", Value: "2"}, {Name: "ext1", Value: "1"}},
-				{{Name: "a", Value: "1"}, {Name: "replica", Value: "3"}, {Name: "z", Value: "1"}, {Name: "ext1", Value: "1"}},
-				{{Name: "a", Value: "1"}, {Name: "replica", Value: "3"}, {Name: "z", Value: "2"}, {Name: "ext1", Value: "1"}},
-				{{Name: "a", Value: "2"}, {Name: "replica", Value: "1"}, {Name: "z", Value: "1"}, {Name: "ext1", Value: "1"}},
-				{{Name: "a", Value: "2"}, {Name: "replica", Value: "2"}, {Name: "z", Value: "1"}, {Name: "ext1", Value: "1"}},
-				{{Name: "a", Value: "2"}, {Name: "replica", Value: "3"}, {Name: "z", Value: "1"}, {Name: "ext1", Value: "1"}},
+				unsortedLabelsFromStrings("a", "1", "replica", "1", "z", "1", "ext1", "0"),
+				unsortedLabelsFromStrings("a", "1", "replica", "1", "z", "1", "ext1", "1"),
+
+				unsortedLabelsFromStrings("a", "1", "replica", "1", "z", "2", "ext1", "0"),
+				unsortedLabelsFromStrings("a", "1", "replica", "1", "z", "2", "ext1", "1"),
+
+				unsortedLabelsFromStrings("a", "1", "replica", "2", "z", "1", "ext1", "0"),
+				unsortedLabelsFromStrings("a", "1", "replica", "2", "z", "2", "ext1", "0"),
 			},
 		},
 	}
@@ -1948,7 +1936,8 @@ func TestSeries_SeriesSortedWithoutReplicaLabels(t *testing.T) {
 			logger := log.NewNopLogger()
 
 			for i, series := range testData.series {
-				head := uploadSeriesToBucket(t, bkt, filepath.Join(tmpDir, strconv.Itoa(i)), series)
+				replicaVal := strconv.Itoa(i)
+				head := uploadSeriesToBucket(t, bkt, replicaVal, filepath.Join(tmpDir, replicaVal), series)
 				defer testutil.Ok(t, head.Close())
 			}
 
@@ -1984,7 +1973,7 @@ func TestSeries_SeriesSortedWithoutReplicaLabels(t *testing.T) {
 				Matchers: []storepb.LabelMatcher{
 					{Type: storepb.LabelMatcher_RE, Name: "a", Value: ".+"},
 				},
-				ReplicaLabels: testData.replicaLabels,
+				SortWithoutLabels: testData.replicaLabels,
 			}
 
 			srv := newStoreSeriesServer(context.Background())
@@ -2003,9 +1992,9 @@ func TestSeries_SeriesSortedWithoutReplicaLabels(t *testing.T) {
 	}
 }
 
-func uploadSeriesToBucket(t *testing.T, bkt *filesystem.Bucket, tmpDir string, series []labels.Labels) *tsdb.Head {
+func uploadSeriesToBucket(t *testing.T, bkt *filesystem.Bucket, replica string, path string, series []labels.Labels) *tsdb.Head {
 	headOpts := tsdb.DefaultHeadOptions()
-	headOpts.ChunkDirRoot = filepath.Join(tmpDir, "block")
+	headOpts.ChunkDirRoot = filepath.Join(path, "block")
 
 	h, err := tsdb.NewHead(nil, nil, nil, nil, headOpts, nil)
 	testutil.Ok(t, err)
@@ -2024,7 +2013,7 @@ func uploadSeriesToBucket(t *testing.T, bkt *filesystem.Bucket, tmpDir string, s
 	blk := createBlockFromHead(t, headOpts.ChunkDirRoot, h)
 
 	thanosMeta := metadata.Thanos{
-		Labels:     labels.Labels{{Name: "ext1", Value: "1"}}.Map(),
+		Labels:     labels.Labels{{Name: "ext1", Value: replica}}.Map(),
 		Downsample: metadata.ThanosDownsample{Resolution: 0},
 		Source:     metadata.TestSource,
 	}
@@ -2505,7 +2494,7 @@ func benchmarkBlockSeriesWithConcurrency(b *testing.B, concurrency int, blockMet
 				indexReader := blk.indexReader()
 				chunkReader := blk.chunkReader()
 
-				seriesSet, _, err := blockSeries(ctx, nil, indexReader, chunkReader, matchers, chunksLimiter, seriesLimiter, req.SkipChunks, req.MinTime, req.MaxTime, req.Aggregates, nil, nil, dummyCounter)
+				seriesSet, _, err := blockSeries(ctx, nil, indexReader, chunkReader, matchers, chunksLimiter, seriesLimiter, req.SkipChunks, req.MinTime, req.MaxTime, req.Aggregates, nil, dummyCounter)
 				testutil.Ok(b, err)
 
 				// Ensure at least 1 series has been returned (as expected).

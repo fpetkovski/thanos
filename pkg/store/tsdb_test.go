@@ -13,13 +13,11 @@ import (
 	"testing"
 
 	"github.com/go-kit/log"
-	"github.com/gogo/protobuf/types"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb"
 
 	"github.com/thanos-io/thanos/pkg/component"
-	"github.com/thanos-io/thanos/pkg/store/hintspb"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
 	"github.com/thanos-io/thanos/pkg/store/storepb"
 	storetestutil "github.com/thanos-io/thanos/pkg/store/storepb/testutil"
@@ -187,13 +185,13 @@ func TestTSDBStore_Series(t *testing.T) {
 				Matchers: []storepb.LabelMatcher{
 					{Type: storepb.LabelMatcher_RE, Name: "a", Value: ".+"},
 				},
-				SkipChunks:    true,
-				ReplicaLabels: []string{"r"},
+				SkipChunks:        true,
+				SortWithoutLabels: []string{"r"},
 			},
 			expectedSeries: []rawSeries{
 				{lset: unsortedLabelsFromStrings("a", "1", "region", "eu-west", "z", "1", "r", "1")},
-				{lset: unsortedLabelsFromStrings("a", "1", "region", "eu-west", "z", "2", "r", "1")},
 				{lset: unsortedLabelsFromStrings("a", "1", "region", "eu-west", "z", "1", "r", "2")},
+				{lset: unsortedLabelsFromStrings("a", "1", "region", "eu-west", "z", "2", "r", "1")},
 				{lset: unsortedLabelsFromStrings("a", "1", "region", "eu-west", "z", "2", "r", "2")},
 				{lset: unsortedLabelsFromStrings("a", "2", "region", "eu-west", "z", "1", "r", "1")},
 				{lset: unsortedLabelsFromStrings("a", "2", "region", "eu-west", "z", "1", "r", "2")},
@@ -215,8 +213,8 @@ func TestTSDBStore_Series(t *testing.T) {
 				Matchers: []storepb.LabelMatcher{
 					{Type: storepb.LabelMatcher_RE, Name: "a", Value: ".+"},
 				},
-				SkipChunks:    true,
-				ReplicaLabels: []string{"r"},
+				SkipChunks:        true,
+				SortWithoutLabels: []string{"r"},
 			},
 			expectedSeries: []rawSeries{
 				{lset: unsortedLabelsFromStrings("a", "1", "region", "eu-west", "z", "1", "r", "1")},
@@ -254,9 +252,6 @@ func TestTSDBStore_Series(t *testing.T) {
 			} else {
 				testutil.Ok(t, err)
 				seriesEquals(t, tc.expectedSeries, srv.SeriesSet)
-
-				testutil.Assert(t, len(srv.HintsSet) == 1)
-				sortedSeriesHintEquals(t, tc.expectedSortedSeriesHint, srv.HintsSet[0])
 			}
 		}); !ok {
 			return
@@ -718,15 +713,8 @@ func benchTSDBStoreSeries(t testutil.TB, totalSamples, totalSeries int) {
 				PartialResponseStrategy: storepb.PartialResponseStrategy_ABORT,
 			},
 			ExpectedSeries: expected,
-			ExpectedHints:  []hintspb.SeriesResponseHints{{SeriesSorted: true}},
 		},
 	)
-}
-
-func sortedSeriesHintEquals(t *testing.T, expected bool, anyHint *types.Any) {
-	hint := hintspb.SeriesResponseHints{}
-	testutil.Ok(t, types.UnmarshalAny(anyHint, &hint))
-	testutil.Assert(t, hint.SeriesSorted == expected)
 }
 
 // labelsFromStrings returns is the same as labels.FromStrings,

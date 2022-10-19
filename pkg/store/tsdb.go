@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	"github.com/go-kit/log"
-	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
@@ -21,7 +20,6 @@ import (
 
 	"github.com/thanos-io/thanos/pkg/component"
 	"github.com/thanos-io/thanos/pkg/runutil"
-	"github.com/thanos-io/thanos/pkg/store/hintspb"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
 	"github.com/thanos-io/thanos/pkg/store/storepb"
 )
@@ -64,13 +62,12 @@ func NewTSDBStore(logger log.Logger, db TSDBReader, component component.StoreAPI
 	if logger == nil {
 		logger = log.NewNopLogger()
 	}
-
 	return &TSDBStore{
 		logger:           logger,
 		db:               db,
 		component:        component,
 		extLset:          extLset,
-		extLabelsMap:     makeLabelsMap(extLset),
+		extLabelsMap:     labelsToMap(extLset),
 		maxBytesPerFrame: RemoteReadFrameLimit,
 		buffers: sync.Pool{New: func() interface{} {
 			b := make([]byte, 0, initialBufSize)
@@ -150,6 +147,9 @@ func (s *TSDBStore) Series(r *storepb.SeriesRequest, srv storepb.Store_SeriesSer
 		return status.Error(codes.InvalidArgument, errors.New("no matchers specified (excluding external labels)").Error())
 	}
 
+	passThrough := !sortRequired(r.SortWithoutLabelSet(), s.extLabelsMap)
+	sortedSeriesSrv := newSortedSeriesServer(srv, r.SortWithoutLabelSet(), passThrough)
+
 	q, err := s.db.ChunkQuerier(context.Background(), r.MinTime, r.MaxTime)
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
@@ -165,12 +165,6 @@ func (s *TSDBStore) Series(r *storepb.SeriesRequest, srv storepb.Store_SeriesSer
 
 	shardMatcher := r.ShardInfo.Matcher(&s.buffers)
 	defer shardMatcher.Close()
-
-	replicaLabelSet := r.ReplicaLabelSet()
-	if err := sendSortedSeriesHint(srv, replicaLabelSet, s.extLabelsMap); err != nil {
-		return err
-	}
-
 	// Stream at most one series per frame; series may be split over multiple frames according to maxBytesInFrame.
 	for set.Next() {
 		series := set.At()
@@ -179,10 +173,9 @@ func (s *TSDBStore) Series(r *storepb.SeriesRequest, srv storepb.Store_SeriesSer
 			continue
 		}
 
-		sortLabelsForDedup(completeLabelset, replicaLabelSet)
 		storeSeries := storepb.Series{Labels: labelpb.ZLabelsFromPromLabels(completeLabelset)}
 		if r.SkipChunks {
-			if err := srv.Send(storepb.NewSeriesResponse(&storeSeries)); err != nil {
+			if err := sortedSeriesSrv.Send(storepb.NewSeriesResponse(&storeSeries)); err != nil {
 				return status.Error(codes.Aborted, err.Error())
 			}
 			continue
@@ -219,7 +212,7 @@ func (s *TSDBStore) Series(r *storepb.SeriesRequest, srv storepb.Store_SeriesSer
 			if frameBytesLeft > 0 && isNext {
 				continue
 			}
-			if err := srv.Send(storepb.NewSeriesResponse(&storepb.Series{Labels: storeSeries.Labels, Chunks: seriesChunks})); err != nil {
+			if err := sortedSeriesSrv.Send(storepb.NewSeriesResponse(&storepb.Series{Labels: storeSeries.Labels, Chunks: seriesChunks})); err != nil {
 				return status.Error(codes.Aborted, err.Error())
 			}
 
@@ -231,42 +224,17 @@ func (s *TSDBStore) Series(r *storepb.SeriesRequest, srv storepb.Store_SeriesSer
 		if err := chIter.Err(); err != nil {
 			return status.Error(codes.Internal, errors.Wrap(err, "chunk iter").Error())
 		}
+
 	}
 	if err := set.Err(); err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
 	for _, w := range set.Warnings() {
-		if err := srv.Send(storepb.NewWarnSeriesResponse(w)); err != nil {
+		if err := sortedSeriesSrv.Send(storepb.NewWarnSeriesResponse(w)); err != nil {
 			return status.Error(codes.Aborted, err.Error())
 		}
 	}
-
-	return nil
-}
-
-func sendSortedSeriesHint(srv storepb.Store_SeriesServer, replicaLabelSet map[string]struct{}, extLabelsMap map[string]struct{}) error {
-	seriesSorted := true
-	for lbl := range replicaLabelSet {
-		_, isExternalLabel := extLabelsMap[lbl]
-		if !isExternalLabel {
-			seriesSorted = false
-			break
-		}
-	}
-	var (
-		anyHints *types.Any
-		err      error
-	)
-	respHints := &hintspb.SeriesResponseHints{SeriesSorted: seriesSorted}
-	if anyHints, err = types.MarshalAny(respHints); err != nil {
-		return status.Error(codes.Unknown, errors.Wrap(err, "marshal series response hints").Error())
-	}
-
-	if err := srv.Send(storepb.NewHintsSeriesResponse(anyHints)); err != nil {
-		return status.Error(codes.Aborted, err.Error())
-	}
-
-	return nil
+	return sortedSeriesSrv.Flush()
 }
 
 // LabelNames returns all known label names constrained with the given matchers.
@@ -338,11 +306,10 @@ func (s *TSDBStore) LabelValues(ctx context.Context, r *storepb.LabelValuesReque
 	return &storepb.LabelValuesResponse{Values: res}, nil
 }
 
-func makeLabelsMap(extLset labels.Labels) map[string]struct{} {
-	m := make(map[string]struct{}, len(extLset))
-	for _, lbl := range extLset {
-		m[lbl.Name] = struct{}{}
+func labelsToMap(lset labels.Labels) map[string]struct{} {
+	r := make(map[string]struct{}, len(lset))
+	for _, l := range lset {
+		r[l.Name] = struct{}{}
 	}
-
-	return m
+	return r
 }

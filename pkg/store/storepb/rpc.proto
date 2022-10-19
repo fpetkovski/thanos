@@ -123,9 +123,9 @@ message SeriesRequest {
   // shard of blocks instead of entire blocks.
   ShardInfo shard_info = 13;
 
-  // replica_labels are labels used for deduplicating
-  // series during querying.
-  repeated string replica_labels = 14;
+  // sort_without_labels are labels which are excluded
+  // from comparison when sorting the response series set.
+  repeated string sort_without_labels = 14;
 }
 
 
