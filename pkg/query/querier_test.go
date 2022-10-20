@@ -641,7 +641,7 @@ func TestQuerier_Select(t *testing.T) {
 			} {
 				g := gate.New(2)
 
-				proxy := newProxyForStore(tcase.storeAPI)
+				proxy := newProxyForStore(false, tcase.storeAPI)
 				q := newQuerier(context.Background(), nil, tcase.mint, tcase.maxt, tcase.replicaLabels, nil, proxy, sc.dedup, 0, true, false, false, g, timeout, nil, NoopSeriesStatsReporter)
 
 				t.Cleanup(func() { testutil.Ok(t, q.Close()) })
@@ -685,13 +685,13 @@ func TestQuerier_Select(t *testing.T) {
 	}
 }
 
-func newProxyForStore(storeAPI ...storepb.StoreServer) *store.ProxyStore {
+func newProxyForStore(storesWithSortedSeries bool, storeAPI ...storepb.StoreServer) *store.ProxyStore {
 	labelsFunc := func() []labelpb.ZLabelSet { return nil }
 	timeFunc := func() (int64, int64) { return math.MinInt64, math.MaxInt64 }
 	clientsFunc := func() []store.Client {
 		clients := make([]store.Client, 0, len(storeAPI))
 		for _, s := range storeAPI {
-			clients = append(clients, receive.NewLocalClient(storepb.ServerAsClient(s, 0), labelsFunc, timeFunc))
+			clients = append(clients, receive.NewLocalClient(storepb.ServerAsClient(s, 0), storesWithSortedSeries, labelsFunc, timeFunc))
 		}
 		return clients
 	}
@@ -886,7 +886,7 @@ func TestQuerierWithDedupUnderstoodByPromQL_Rate(t *testing.T) {
 		timeout := 100 * time.Second
 		g := gate.New(2)
 
-		proxy := newProxyForStore(s)
+		proxy := newProxyForStore(false, s)
 		q := newQuerier(context.Background(), logger, realSeriesWithStaleMarkerMint, realSeriesWithStaleMarkerMaxt, []string{"replica"}, nil, proxy, false, 0, true, false, false, g, timeout, nil, NoopSeriesStatsReporter)
 
 		t.Cleanup(func() {
@@ -959,7 +959,7 @@ func TestQuerierWithDedupUnderstoodByPromQL_Rate(t *testing.T) {
 		timeout := 5 * time.Second
 		g := gate.New(2)
 
-		proxy := newProxyForStore(s)
+		proxy := newProxyForStore(false, s)
 		q := newQuerier(context.Background(), logger, realSeriesWithStaleMarkerMint, realSeriesWithStaleMarkerMaxt, []string{"replica"}, nil, proxy, true, 0, true, false, false, g, timeout, nil, NoopSeriesStatsReporter)
 
 		t.Cleanup(func() {

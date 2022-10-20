@@ -84,7 +84,7 @@ func benchQuerySelect(t testutil.TB, totalSamples, totalSeries int, dedup bool) 
 	q := &querier{
 		ctx:                 context.Background(),
 		logger:              logger,
-		proxy:               newProxyForStore(stores...),
+		proxy:               newProxyForStore(true, stores...),
 		replicaLabels:       []string{"z_replica"},
 		replicaLabelSet:     map[string]struct{}{"z_replica": {}},
 		deduplicate:         dedup,
