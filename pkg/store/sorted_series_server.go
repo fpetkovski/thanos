@@ -14,19 +14,21 @@ type sortedSeriesServer struct {
 	// This field just exist to pseudo-implement the unused methods of the interface.
 	storepb.Store_SeriesServer
 
-	responses           []*storepb.SeriesResponse
+	sortLabels          bool
+	sortSeriesSet       bool
 	sortWithoutLabelSet map[string]struct{}
-	passThrough         bool
+	responses           []*storepb.SeriesResponse
 }
 
-func newSortedSeriesServer(upstream storepb.Store_SeriesServer, sortWithoutLabelSet map[string]struct{}, passThrough bool) *sortedSeriesServer {
+func newSortedSeriesServer(upstream storepb.Store_SeriesServer, sortWithoutLabelSet map[string]struct{}, sortLabels bool, sortSeriesSet bool) *sortedSeriesServer {
 	return &sortedSeriesServer{
 		Store_SeriesServer: upstream,
 
-		passThrough:         passThrough,
+		sortLabels:          sortLabels,
+		sortSeriesSet:       sortSeriesSet,
 		sortWithoutLabelSet: sortWithoutLabelSet,
 
-		// Buffered responses when passThrough is false.
+		// Buffered responses when sortSeriesSet is true.
 		responses: make([]*storepb.SeriesResponse, 0),
 	}
 }
@@ -38,8 +40,11 @@ func (s *sortedSeriesServer) Send(r *storepb.SeriesResponse) error {
 		return s.Store_SeriesServer.Send(r)
 	}
 
-	moveLabelsToEnd(series.Labels, s.sortWithoutLabelSet)
-	if s.passThrough {
+	if s.sortLabels {
+		moveLabelsToEnd(series.Labels, s.sortWithoutLabelSet)
+	}
+
+	if !s.sortSeriesSet {
 		return s.Store_SeriesServer.Send(r)
 	}
 
@@ -48,7 +53,7 @@ func (s *sortedSeriesServer) Send(r *storepb.SeriesResponse) error {
 }
 
 func (s *sortedSeriesServer) Flush() error {
-	if s.passThrough {
+	if !s.sortSeriesSet {
 		return nil
 	}
 

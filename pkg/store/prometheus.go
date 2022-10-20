@@ -174,8 +174,8 @@ func (p *PrometheusStore) Series(r *storepb.SeriesRequest, s storepb.Store_Serie
 		}
 	}
 
-	passThrough := !sortRequired(r.SortWithoutLabelSet(), labelsToMap(extLset))
-	sortedSeriesSrv := newSortedSeriesServer(s, r.SortWithoutLabelSet(), passThrough)
+	sortSeriesSet := sortRequired(r.SortWithoutLabelSet(), labelsToMap(extLset))
+	sortedSeriesSrv := newSortedSeriesServer(s, r.SortWithoutLabelSet(), true, sortSeriesSet)
 
 	if r.SkipChunks {
 		labelMaps, err := p.client.SeriesInGRPC(sortedSeriesSrv.Context(), p.base, matchers, r.MinTime, r.MaxTime)

@@ -147,8 +147,8 @@ func (s *TSDBStore) Series(r *storepb.SeriesRequest, srv storepb.Store_SeriesSer
 		return status.Error(codes.InvalidArgument, errors.New("no matchers specified (excluding external labels)").Error())
 	}
 
-	passThrough := !sortRequired(r.SortWithoutLabelSet(), s.extLabelsMap)
-	sortedSeriesSrv := newSortedSeriesServer(srv, r.SortWithoutLabelSet(), passThrough)
+	sortSeriesSet := sortRequired(r.SortWithoutLabelSet(), s.extLabelsMap)
+	sortedSeriesSrv := newSortedSeriesServer(srv, r.SortWithoutLabelSet(), true, sortSeriesSet)
 
 	q, err := s.db.ChunkQuerier(context.Background(), r.MinTime, r.MaxTime)
 	if err != nil {

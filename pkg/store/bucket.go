@@ -1048,7 +1048,8 @@ func (s *BucketStore) Series(req *storepb.SeriesRequest, srv storepb.Store_Serie
 		}
 	}
 
-	sortedSeriesSrv := newSortedSeriesServer(srv, sortWithoutLabelSet, !sortSeries)
+	// Label from individual series are already sorted by wrapping respones in sortedSeriesSet.
+	sortedSeriesSrv := newSortedSeriesServer(srv, sortWithoutLabelSet, false, sortSeries)
 	for _, bs := range s.blockSets {
 		blockMatchers, ok := bs.labelMatchers(matchers...)
 		if !ok {
