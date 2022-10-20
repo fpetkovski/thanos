@@ -68,13 +68,12 @@ func TestTSDBStore_Series(t *testing.T) {
 	defer cancel()
 
 	for _, tc := range []struct {
-		name                     string
-		externalLabels           labels.Labels
-		series                   []labels.Labels
-		req                      *storepb.SeriesRequest
-		expectedSeries           []rawSeries
-		expectedSortedSeriesHint bool
-		expectedError            string
+		name           string
+		externalLabels labels.Labels
+		series         []labels.Labels
+		req            *storepb.SeriesRequest
+		expectedSeries []rawSeries
+		expectedError  string
 	}{
 		{
 			name:   "total match series",
@@ -92,7 +91,6 @@ func TestTSDBStore_Series(t *testing.T) {
 					chunks: [][]sample{{{1, 1}, {2, 2}, {3, 3}}},
 				},
 			},
-			expectedSortedSeriesHint: true,
 		},
 		{
 			name:   "partially match time range series",
@@ -110,7 +108,6 @@ func TestTSDBStore_Series(t *testing.T) {
 					chunks: [][]sample{{{1, 1}, {2, 2}}},
 				},
 			},
-			expectedSortedSeriesHint: true,
 		},
 		{
 			name:   "dont't match time range series",
@@ -122,8 +119,7 @@ func TestTSDBStore_Series(t *testing.T) {
 					{Type: storepb.LabelMatcher_EQ, Name: "a", Value: "1"},
 				},
 			},
-			expectedSeries:           []rawSeries{},
-			expectedSortedSeriesHint: true,
+			expectedSeries: []rawSeries{},
 		},
 		{
 			name:   "only match external label",
@@ -135,8 +131,7 @@ func TestTSDBStore_Series(t *testing.T) {
 					{Type: storepb.LabelMatcher_EQ, Name: "region", Value: "eu-west"},
 				},
 			},
-			expectedSortedSeriesHint: true,
-			expectedError:            "rpc error: code = InvalidArgument desc = no matchers specified (excluding external labels)",
+			expectedError: "rpc error: code = InvalidArgument desc = no matchers specified (excluding external labels)",
 		},
 		{
 			name:   "dont't match labels",
@@ -148,8 +143,7 @@ func TestTSDBStore_Series(t *testing.T) {
 					{Type: storepb.LabelMatcher_EQ, Name: "b", Value: "1"},
 				},
 			},
-			expectedSeries:           []rawSeries{},
-			expectedSortedSeriesHint: true,
+			expectedSeries: []rawSeries{},
 		},
 		{
 			name:   "no chunk",
@@ -167,7 +161,6 @@ func TestTSDBStore_Series(t *testing.T) {
 					lset: labels.FromStrings("a", "1", "region", "eu-west"),
 				},
 			},
-			expectedSortedSeriesHint: true,
 		},
 		{
 			name: "use replica label that is stored in TSDB",
@@ -196,11 +189,10 @@ func TestTSDBStore_Series(t *testing.T) {
 				{lset: unsortedLabelsFromStrings("a", "2", "region", "eu-west", "z", "1", "r", "1")},
 				{lset: unsortedLabelsFromStrings("a", "2", "region", "eu-west", "z", "1", "r", "2")},
 			},
-			expectedSortedSeriesHint: false,
 		},
 		{
 			name:           "use an external label as replica label",
-			externalLabels: labels.FromStrings("r", "1"),
+			externalLabels: labels.FromStrings("ext1", "1"),
 			series: []labels.Labels{
 				labels.FromStrings("a", "1", "z", "1"),
 				labels.FromStrings("a", "1", "z", "2"),
@@ -214,15 +206,14 @@ func TestTSDBStore_Series(t *testing.T) {
 					{Type: storepb.LabelMatcher_RE, Name: "a", Value: ".+"},
 				},
 				SkipChunks:        true,
-				SortWithoutLabels: []string{"r"},
+				SortWithoutLabels: []string{"ext1"},
 			},
 			expectedSeries: []rawSeries{
-				{lset: unsortedLabelsFromStrings("a", "1", "region", "eu-west", "z", "1", "r", "1")},
-				{lset: unsortedLabelsFromStrings("a", "1", "region", "eu-west", "z", "2", "r", "1")},
-				{lset: unsortedLabelsFromStrings("a", "2", "region", "eu-west", "z", "1", "r", "1")},
-				{lset: unsortedLabelsFromStrings("a", "2", "region", "eu-west", "z", "2", "r", "1")},
+				{lset: unsortedLabelsFromStrings("a", "1", "region", "eu-west", "z", "1", "ext1", "1")},
+				{lset: unsortedLabelsFromStrings("a", "1", "region", "eu-west", "z", "2", "ext1", "1")},
+				{lset: unsortedLabelsFromStrings("a", "2", "region", "eu-west", "z", "1", "ext1", "1")},
+				{lset: unsortedLabelsFromStrings("a", "2", "region", "eu-west", "z", "2", "ext1", "1")},
 			},
-			expectedSortedSeriesHint: true,
 		},
 	} {
 		if ok := t.Run(tc.name, func(t *testing.T) {
