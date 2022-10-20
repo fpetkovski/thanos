@@ -685,16 +685,18 @@ func TestQuerier_Select(t *testing.T) {
 	}
 }
 
-func newProxyForStore(storeAPI storepb.StoreServer) *store.ProxyStore {
+func newProxyForStore(storeAPI ...storepb.StoreServer) *store.ProxyStore {
 	labelsFunc := func() []labelpb.ZLabelSet { return nil }
 	timeFunc := func() (int64, int64) { return math.MinInt64, math.MaxInt64 }
 	clientsFunc := func() []store.Client {
-		return []store.Client{
-			receive.NewLocalClient(storepb.ServerAsClient(storeAPI, 0), labelsFunc, timeFunc),
+		clients := make([]store.Client, 0, len(storeAPI))
+		for _, s := range storeAPI {
+			clients = append(clients, receive.NewLocalClient(storepb.ServerAsClient(s, 0), labelsFunc, timeFunc))
 		}
+		return clients
 	}
 
-	return store.NewProxyStore(nil, nil, clientsFunc, component.Store, nil, 1*time.Minute, store.EagerRetrieval)
+	return store.NewProxyStore(nil, nil, clientsFunc, component.Store, nil, 1*time.Minute, store.LazyRetrieval)
 }
 
 func testSelectResponse(t *testing.T, expected []series, res storage.SeriesSet) {

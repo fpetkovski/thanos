@@ -130,7 +130,7 @@ func (l *localClient) SupportsSharding() bool {
 }
 
 func (l *localClient) SendsSortedSeries() bool {
-	return false
+	return true
 }
 
 type tenant struct {
