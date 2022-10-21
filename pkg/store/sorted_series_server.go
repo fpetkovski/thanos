@@ -6,6 +6,7 @@ package store
 import (
 	"sort"
 
+	"github.com/thanos-io/thanos/pkg/dedup"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
 	"github.com/thanos-io/thanos/pkg/store/storepb"
 )
@@ -81,6 +82,13 @@ func moveLabelsToEnd(labelSet []labelpb.ZLabel, labelsToMove map[string]struct{}
 			return false
 		}
 		if _, ok := labelsToMove[labelSet[j].Name]; ok {
+			return true
+		}
+		// Ensure that dedup marker goes just right before the replica labels.
+		if labelSet[i].Name == dedup.PushdownMarker.Name {
+			return false
+		}
+		if labelSet[j].Name == dedup.PushdownMarker.Name {
 			return true
 		}
 
