@@ -56,6 +56,7 @@ type MultiTSDB struct {
 	tenants               map[string]*tenant
 	allowOutOfOrderUpload bool
 	hashFunc              metadata.HashFunc
+	hashRing              Hashring
 }
 
 // NewMultiTSDB creates new MultiTSDB.
@@ -574,6 +575,10 @@ func (t *MultiTSDB) TenantAppendable(tenantID string) (Appendable, error) {
 		return nil, err
 	}
 	return tenant.readyStorage(), nil
+}
+
+func (t *MultiTSDB) Hashring(h Hashring) {
+	t.hashRing = h
 }
 
 // ErrNotReady is returned if the underlying storage is not ready yet.

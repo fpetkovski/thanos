@@ -271,7 +271,7 @@ func runReceive(
 
 	level.Debug(logger).Log("msg", "setting up hashring")
 	{
-		if err := setupHashring(g, logger, reg, conf, hashringChangedChan, webHandler, statusProber, enableIngestion); err != nil {
+		if err := setupHashring(g, logger, reg, conf, hashringChangedChan, webHandler, dbs, statusProber, enableIngestion); err != nil {
 			return err
 		}
 	}
@@ -425,15 +425,7 @@ func runReceive(
 
 // setupHashring sets up the hashring configuration provided.
 // If no hashring is provided, we setup a single node hashring with local endpoint.
-func setupHashring(g *run.Group,
-	logger log.Logger,
-	reg *prometheus.Registry,
-	conf *receiveConfig,
-	hashringChangedChan chan struct{},
-	webHandler *receive.Handler,
-	statusProber prober.Probe,
-	enableIngestion bool,
-) error {
+func setupHashring(g *run.Group, logger log.Logger, reg *prometheus.Registry, conf *receiveConfig, hashringChangedChan chan struct{}, webHandler *receive.Handler, dbs *receive.MultiTSDB, statusProber prober.Probe, enableIngestion bool) error {
 	// Note: the hashring configuration watcher
 	// is the sender and thus closes the chan.
 	// In the single-node case, which has no configuration
@@ -505,6 +497,7 @@ func setupHashring(g *run.Group,
 					return nil
 				}
 				webHandler.Hashring(h)
+				dbs.Hashring(h)
 				// If ingestion is enabled, send a signal to TSDB to flush.
 				if enableIngestion {
 					hashringChangedChan <- struct{}{}
