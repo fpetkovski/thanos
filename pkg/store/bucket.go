@@ -1040,17 +1040,9 @@ func (s *BucketStore) Series(req *storepb.SeriesRequest, srv storepb.Store_Serie
 
 	sortWithoutLabelSet := req.SortWithoutLabelSet()
 	s.mtx.RLock()
-	sortSeries := false
-	for _, bs := range s.blockSets {
-		if sortRequired(sortWithoutLabelSet, labelsToMap(bs.labels)) {
-			sortSeries = true
-			break
-		}
-	}
 
 	// Label from individual series are already sorted by wrapping responses in sortedSeriesSet.
 	// Because of that, we can set the sortLabels argument to false and save some CPU cycles.
-	sortedSeriesSrv := newSortedSeriesServer(srv, sortWithoutLabelSet, sortSeries)
 	for _, bs := range s.blockSets {
 		blockMatchers, ok := bs.labelMatchers(matchers...)
 		if !ok {
@@ -1195,7 +1187,7 @@ func (s *BucketStore) Series(req *storepb.SeriesRequest, srv storepb.Store_Serie
 				s.metrics.chunkSizeBytes.Observe(float64(chunksSize(series.Chunks)))
 			}
 			series.Labels = labelpb.ZLabelsFromPromLabels(lset)
-			if err = sortedSeriesSrv.Send(storepb.NewSeriesResponse(&series)); err != nil {
+			if err = srv.Send(storepb.NewSeriesResponse(&series)); err != nil {
 				err = status.Error(codes.Unknown, errors.Wrap(err, "send series response").Error())
 				return
 			}
@@ -1218,17 +1210,13 @@ func (s *BucketStore) Series(req *storepb.SeriesRequest, srv storepb.Store_Serie
 			return
 		}
 
-		if err = sortedSeriesSrv.Send(storepb.NewHintsSeriesResponse(anyHints)); err != nil {
+		if err = srv.Send(storepb.NewHintsSeriesResponse(anyHints)); err != nil {
 			err = status.Error(codes.Unknown, errors.Wrap(err, "send series response hints").Error())
 			return
 		}
 	}
 
-	if err != nil {
-		return err
-	}
-
-	return sortedSeriesSrv.Flush()
+	return err
 }
 
 func chunksSize(chks []storepb.AggrChunk) (size int) {
