@@ -302,8 +302,7 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 		}
 	}
 
-	sortLabels := sortSeriesSet
-	sortedSeriesSrv := newSortedSeriesServer(srv, r.SortWithoutLabelSet(), sortLabels, sortSeriesSet)
+	sortedSeriesSrv := newSortedSeriesServer(srv, r.SortWithoutLabelSet(), sortSeriesSet)
 	storeResponses := make([]respSet, 0, len(stores))
 	for _, st := range stores {
 		st := st

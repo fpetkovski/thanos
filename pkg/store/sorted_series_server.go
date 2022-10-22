@@ -6,7 +6,6 @@ package store
 import (
 	"sort"
 
-	"github.com/thanos-io/thanos/pkg/dedup"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
 	"github.com/thanos-io/thanos/pkg/store/storepb"
 )
@@ -15,17 +14,16 @@ type sortedSeriesServer struct {
 	// This field just exist to pseudo-implement the unused methods of the interface.
 	storepb.Store_SeriesServer
 
-	sortLabels          bool
+	stripLabels         bool
 	sortSeriesSet       bool
 	sortWithoutLabelSet map[string]struct{}
 	responses           []*storepb.SeriesResponse
 }
 
-func newSortedSeriesServer(upstream storepb.Store_SeriesServer, sortWithoutLabelSet map[string]struct{}, sortLabels bool, sortSeriesSet bool) *sortedSeriesServer {
+func newSortedSeriesServer(upstream storepb.Store_SeriesServer, sortWithoutLabelSet map[string]struct{}, sortSeriesSet bool) *sortedSeriesServer {
 	return &sortedSeriesServer{
 		Store_SeriesServer: upstream,
 
-		sortLabels:          sortLabels,
 		sortSeriesSet:       sortSeriesSet,
 		sortWithoutLabelSet: sortWithoutLabelSet,
 
@@ -41,9 +39,7 @@ func (s *sortedSeriesServer) Send(r *storepb.SeriesResponse) error {
 		return s.Store_SeriesServer.Send(r)
 	}
 
-	if s.sortLabels {
-		moveLabelsToEnd(series.Labels, s.sortWithoutLabelSet)
-	}
+	series.Labels = stripLabels(series.Labels, s.sortWithoutLabelSet)
 
 	if !s.sortSeriesSet {
 		return s.Store_SeriesServer.Send(r)
@@ -72,28 +68,21 @@ func (s *sortedSeriesServer) Flush() error {
 	return nil
 }
 
-func moveLabelsToEnd(labelSet []labelpb.ZLabel, labelsToMove map[string]struct{}) {
-	if len(labelsToMove) == 0 {
-		return
+func stripLabels(labelSet []labelpb.ZLabel, labelsToRemove map[string]struct{}) []labelpb.ZLabel {
+	if len(labelsToRemove) == 0 {
+		return labelSet
 	}
 
-	sort.Slice(labelSet, func(i, j int) bool {
-		if _, ok := labelsToMove[labelSet[i].Name]; ok {
-			return false
+	i := 0
+	for i < len(labelSet) {
+		lbl := labelSet[i]
+		if _, ok := labelsToRemove[lbl.Name]; ok {
+			labelSet = append(labelSet[:i], labelSet[i+1:]...)
+		} else {
+			i++
 		}
-		if _, ok := labelsToMove[labelSet[j].Name]; ok {
-			return true
-		}
-		// Ensure that dedup marker goes just right before the replica labels.
-		if labelSet[i].Name == dedup.PushdownMarker.Name {
-			return false
-		}
-		if labelSet[j].Name == dedup.PushdownMarker.Name {
-			return true
-		}
-
-		return labelSet[i].Name < labelSet[j].Name
-	})
+	}
+	return labelSet
 }
 
 func sortRequired(sortWithoutLabels map[string]struct{}, extLabelsMap map[string]struct{}) bool {

@@ -1050,7 +1050,7 @@ func (s *BucketStore) Series(req *storepb.SeriesRequest, srv storepb.Store_Serie
 
 	// Label from individual series are already sorted by wrapping responses in sortedSeriesSet.
 	// Because of that, we can set the sortLabels argument to false and save some CPU cycles.
-	sortedSeriesSrv := newSortedSeriesServer(srv, sortWithoutLabelSet, false, sortSeries)
+	sortedSeriesSrv := newSortedSeriesServer(srv, sortWithoutLabelSet, sortSeries)
 	for _, bs := range s.blockSets {
 		blockMatchers, ok := bs.labelMatchers(matchers...)
 		if !ok {

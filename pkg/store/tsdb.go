@@ -148,7 +148,7 @@ func (s *TSDBStore) Series(r *storepb.SeriesRequest, srv storepb.Store_SeriesSer
 	}
 
 	sortSeriesSet := sortRequired(r.SortWithoutLabelSet(), s.extLabelsMap)
-	sortedSeriesSrv := newSortedSeriesServer(srv, r.SortWithoutLabelSet(), true, sortSeriesSet)
+	sortedSeriesSrv := newSortedSeriesServer(srv, r.SortWithoutLabelSet(), sortSeriesSet)
 
 	q, err := s.db.ChunkQuerier(context.Background(), r.MinTime, r.MaxTime)
 	if err != nil {
