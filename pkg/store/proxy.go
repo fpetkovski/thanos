@@ -49,11 +49,16 @@ type Client interface {
 	// SupportsSharding returns true if sharding is supported by the underlying store.
 	SupportsSharding() bool
 
+	// Deprecated: Use SendsSeriesSortedForDedup.
 	// SendsSortedSeries returns true if the underlying store sends series sorded by
 	// their labels.
+	SendsSortedSeries() bool
+
+	// SendsSeriesSortedForDedup returns true if a store sends series sorted without
+	// taking replica labels into account.
 	// The field can be used to indicate to the querier whether it needs to sort
 	// received series before deduplication.
-	SendsSortedSeries() bool
+	SendsSeriesSortedForDedup() bool
 
 	// String returns the string representation of the store client.
 	String() string
@@ -290,7 +295,7 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 
 	sortSeriesSet := false
 	for _, st := range stores {
-		if !st.SendsSortedSeries() {
+		if !st.SendsSeriesSortedForDedup() {
 			sortSeriesSet = true
 			level.Warn(reqLogger).Log("msg", "store sends unsorted data hence falling back to eager retrieval && explicit sorting; please update Thanos", "st", st.String())
 			break

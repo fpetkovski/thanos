@@ -132,6 +132,10 @@ func (l *localClient) SupportsSharding() bool {
 }
 
 func (l *localClient) SendsSortedSeries() bool {
+	return true
+}
+
+func (l *localClient) SendsSeriesSortedForDedup() bool {
 	return l.sendsSortedSeries
 }
 
