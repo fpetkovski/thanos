@@ -68,7 +68,7 @@ func TestPlanners_Plan_Compatibility(t *testing.T) {
 	}
 
 	// This mimics our default ExponentialBlockRanges with min block size equals to 20.
-	tsdbComp, err := tsdb.NewLeveledCompactor(context.Background(), nil, nil, ranges, nil, nil)
+	tsdbComp, err := tsdb.NewLeveledCompactor(context.Background(), nil, nil, ranges, nil, nil, false)
 	testutil.Ok(t, err)
 	tsdbPlanner := &tsdbPlannerAdapter{comp: tsdbComp}
 	tsdbBasedPlanner := NewTSDBBasedPlanner(log.NewNopLogger(), ranges)
@@ -377,7 +377,7 @@ func TestPlanners_Plan_Compatibility(t *testing.T) {
 					return metasByMinTime[i].MinTime < metasByMinTime[j].MinTime
 				})
 
-				plan, err := tsdbBasedPlanner.Plan(context.Background(), metasByMinTime)
+				plan, _, err := tsdbBasedPlanner.Plan(context.Background(), metasByMinTime)
 				testutil.Ok(t, err)
 				testutil.Equals(t, c.expected, plan)
 			})
@@ -396,7 +396,7 @@ func TestRangeWithFailedCompactionWontGetSelected(t *testing.T) {
 	}
 
 	// This mimics our default ExponentialBlockRanges with min block size equals to 20.
-	tsdbComp, err := tsdb.NewLeveledCompactor(context.Background(), nil, nil, ranges, nil, nil)
+	tsdbComp, err := tsdb.NewLeveledCompactor(context.Background(), nil, nil, ranges, nil, nil, false)
 	testutil.Ok(t, err)
 	tsdbPlanner := &tsdbPlannerAdapter{comp: tsdbComp}
 	tsdbBasedPlanner := NewTSDBBasedPlanner(log.NewNopLogger(), ranges)
@@ -445,7 +445,7 @@ func TestRangeWithFailedCompactionWontGetSelected(t *testing.T) {
 				testutil.Equals(t, []*metadata.Meta(nil), plan)
 			})
 			t.Run("tsdbBasedPlanner", func(t *testing.T) {
-				plan, err := tsdbBasedPlanner.Plan(context.Background(), c.metas)
+				plan, _, err := tsdbBasedPlanner.Plan(context.Background(), c.metas)
 				testutil.Ok(t, err)
 				testutil.Equals(t, []*metadata.Meta(nil), plan)
 			})
@@ -638,7 +638,7 @@ func TestTSDBBasedPlanner_PlanWithNoCompactMarks(t *testing.T) {
 				return metasByMinTime[i].MinTime < metasByMinTime[j].MinTime
 			})
 			g.noCompactMarkedMap = c.noCompactMarks
-			plan, err := tsdbBasedPlanner.Plan(context.Background(), metasByMinTime)
+			plan, _, err := tsdbBasedPlanner.Plan(context.Background(), metasByMinTime)
 			testutil.Ok(t, err)
 			testutil.Equals(t, c.expected, plan)
 		})
@@ -658,7 +658,7 @@ func TestLargeTotalIndexSizeFilter_Plan(t *testing.T) {
 	g := &GatherNoCompactionMarkFilter{}
 
 	marked := promauto.With(nil).NewCounter(prometheus.CounterOpts{})
-	planner := WithLargeTotalIndexSizeFilter(NewPlanner(log.NewNopLogger(), ranges, g), bkt, 100, marked)
+	planner := WithLargeTotalIndexSizeFilter(NewPlanner(log.NewNopLogger(), ranges, g), bkt, false, 100, marked)
 	var lastMarkValue float64
 	for _, c := range []struct {
 		name  string
@@ -666,6 +666,7 @@ func TestLargeTotalIndexSizeFilter_Plan(t *testing.T) {
 
 		expected      []*metadata.Meta
 		expectedMarks float64
+		expectedSplit bool
 	}{
 		{
 			name: "Outside range and excluded",
@@ -674,6 +675,7 @@ func TestLargeTotalIndexSizeFilter_Plan(t *testing.T) {
 					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(1, nil), MinTime: 0, MaxTime: 20}},
 			},
 			expectedMarks: 0,
+			expectedSplit: false,
 		},
 		{
 			name: "Blocks to fill the entire parent, but with first one too large.",
@@ -692,6 +694,7 @@ func TestLargeTotalIndexSizeFilter_Plan(t *testing.T) {
 				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(2, nil), MinTime: 20, MaxTime: 40}},
 				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(3, nil), MinTime: 40, MaxTime: 60}},
 			},
+			expectedSplit: false,
 		},
 		{
 			name: "Blocks to fill the entire parent, but with second one too large.",
@@ -706,6 +709,7 @@ func TestLargeTotalIndexSizeFilter_Plan(t *testing.T) {
 					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(4, nil), MinTime: 60, MaxTime: 80}},
 			},
 			expectedMarks: 1,
+			expectedSplit: false,
 		},
 		{
 			name: "Blocks to fill the entire parent, but with last size exceeded (should not matter and not even marked).",
@@ -724,6 +728,7 @@ func TestLargeTotalIndexSizeFilter_Plan(t *testing.T) {
 				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(2, nil), MinTime: 20, MaxTime: 40}},
 				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(3, nil), MinTime: 40, MaxTime: 60}},
 			},
+			expectedSplit: false,
 		},
 		{
 			name: "Blocks to fill the entire parent, but with pre-last one and first too large.",
@@ -744,6 +749,7 @@ func TestLargeTotalIndexSizeFilter_Plan(t *testing.T) {
 				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(3, nil), MinTime: 40, MaxTime: 50}},
 			},
 			expectedMarks: 2,
+			expectedSplit: false,
 		},
 		{
 			name: `Block for the next parent range appeared, and we have a gap with size 20 between second and third block.
@@ -759,6 +765,7 @@ func TestLargeTotalIndexSizeFilter_Plan(t *testing.T) {
 					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(5, nil), MinTime: 80, MaxTime: 100}},
 			},
 			expectedMarks: 1,
+			expectedSplit: false,
 		},
 		{
 			name: "We have 20, 60, 20, 60, 240 range blocks. We could compact 20 + 60 + 60, but sixth 6th is excluded",
@@ -779,6 +786,7 @@ func TestLargeTotalIndexSizeFilter_Plan(t *testing.T) {
 				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(4, nil), MinTime: 60, MaxTime: 120}},
 			},
 			expectedMarks: 1,
+			expectedSplit: false,
 		},
 		// |--------------|
 		//               |----------------|
@@ -794,6 +802,7 @@ func TestLargeTotalIndexSizeFilter_Plan(t *testing.T) {
 					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(3, nil), MinTime: 40, MaxTime: 60}},
 			},
 			expectedMarks: 1,
+			expectedSplit: false,
 		},
 	} {
 		if !t.Run(c.name, func(t *testing.T) {
@@ -814,13 +823,14 @@ func TestLargeTotalIndexSizeFilter_Plan(t *testing.T) {
 					return metasByMinTime[i].MinTime < metasByMinTime[j].MinTime
 				})
 
-				plan, err := planner.Plan(context.Background(), metasByMinTime)
+				plan, split, err := planner.Plan(context.Background(), metasByMinTime)
 				testutil.Ok(t, err)
 
 				for _, m := range plan {
 					// For less boilerplate.
 					m.Thanos = metadata.Thanos{}
 				}
+				testutil.Equals(t, c.expectedSplit, split)
 				testutil.Equals(t, c.expected, plan)
 				testutil.Equals(t, c.expectedMarks, promtest.ToFloat64(marked)-lastMarkValue)
 				lastMarkValue = promtest.ToFloat64(marked)
@@ -847,8 +857,253 @@ func TestLargeTotalIndexSizeFilter_Plan(t *testing.T) {
 					m.Thanos = metadata.Thanos{}
 				}
 
-				plan, err := planner.Plan(context.Background(), metasByMinTime)
+				plan, split, err := planner.Plan(context.Background(), metasByMinTime)
 				testutil.Ok(t, err)
+				testutil.Equals(t, c.expectedSplit, split)
+				testutil.Equals(t, c.expected, plan)
+				testutil.Equals(t, c.expectedMarks, promtest.ToFloat64(marked)-lastMarkValue)
+
+				lastMarkValue = promtest.ToFloat64(marked)
+			})
+
+		}) {
+			return
+		}
+	}
+}
+
+func TestLargeTotalIndexSizeVerticalSplit_Plan(t *testing.T) {
+	ranges := []int64{
+		20,
+		60,
+		180,
+		540,
+		1620,
+	}
+
+	bkt := objstore.NewInMemBucket()
+	g := &GatherNoCompactionMarkFilter{}
+
+	marked := promauto.With(nil).NewCounter(prometheus.CounterOpts{})
+	planner := WithLargeTotalIndexSizeFilter(NewPlanner(log.NewNopLogger(), ranges, g), bkt, true, 100, marked)
+	var lastMarkValue float64
+	for _, c := range []struct {
+		name  string
+		metas []*metadata.Meta
+
+		expected      []*metadata.Meta
+		expectedMarks float64
+		expectedSplit bool
+	}{
+		// {
+		// 	name: "Outside range and excluded",
+		// 	metas: []*metadata.Meta{
+		// 		{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 100}}},
+		// 			BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(1, nil), MinTime: 0, MaxTime: 20}},
+		// 	},
+		// 	expectedMarks: 0,
+		// 	expectedSplit: false,
+		// },
+		{
+			name: "Blocks to fill the entire parent, but with first one too large.",
+			metas: []*metadata.Meta{
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 41}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(1, nil), MinTime: 0, MaxTime: 20}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 30}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(2, nil), MinTime: 20, MaxTime: 40}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 30}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(3, nil), MinTime: 40, MaxTime: 60}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 30}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(4, nil), MinTime: 60, MaxTime: 80}},
+			},
+			expectedMarks: 0,
+			expected: []*metadata.Meta{
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(1, nil), MinTime: 0, MaxTime: 20}},
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(2, nil), MinTime: 20, MaxTime: 40}},
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(3, nil), MinTime: 40, MaxTime: 60}},
+			},
+			expectedSplit: true,
+		},
+		{
+			name: "Blocks to fill the entire parent, but with second one too large.",
+			metas: []*metadata.Meta{
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 30}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(1, nil), MinTime: 0, MaxTime: 20}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 41}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(2, nil), MinTime: 20, MaxTime: 40}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 30}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(3, nil), MinTime: 40, MaxTime: 60}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 20}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(4, nil), MinTime: 60, MaxTime: 80}},
+			},
+			expectedMarks: 0,
+			expected: []*metadata.Meta{
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(1, nil), MinTime: 0, MaxTime: 20}},
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(2, nil), MinTime: 20, MaxTime: 40}},
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(3, nil), MinTime: 40, MaxTime: 60}},
+			},
+			expectedSplit: true,
+		},
+		{
+			name: "Blocks to fill the entire parent, but with last size exceeded (should not matter and not even marked).",
+			metas: []*metadata.Meta{
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 10}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(1, nil), MinTime: 0, MaxTime: 20}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 10}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(2, nil), MinTime: 20, MaxTime: 40}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 10}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(3, nil), MinTime: 40, MaxTime: 60}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 90}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(4, nil), MinTime: 60, MaxTime: 80}},
+			},
+			expected: []*metadata.Meta{
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(1, nil), MinTime: 0, MaxTime: 20}},
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(2, nil), MinTime: 20, MaxTime: 40}},
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(3, nil), MinTime: 40, MaxTime: 60}},
+			},
+			expectedSplit: false,
+		},
+		{
+			name: "Blocks to fill the entire parent, but with pre-last one and first too large.",
+			metas: []*metadata.Meta{
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 90}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(1, nil), MinTime: 0, MaxTime: 20}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 30}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(2, nil), MinTime: 20, MaxTime: 40}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 30}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(3, nil), MinTime: 40, MaxTime: 50}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 90}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(4, nil), MinTime: 50, MaxTime: 60}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 90}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(5, nil), MinTime: 60, MaxTime: 80}},
+			},
+			expected: []*metadata.Meta{
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(1, nil), MinTime: 0, MaxTime: 20}},
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(2, nil), MinTime: 20, MaxTime: 40}},
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(3, nil), MinTime: 40, MaxTime: 50}},
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(4, nil), MinTime: 50, MaxTime: 60}},
+			},
+			expectedMarks: 0,
+			expectedSplit: true,
+		},
+		{
+			name: `Block for the next parent range appeared, and we have a gap with size 20 between second and third block.
+		Second block is excluded.`,
+			metas: []*metadata.Meta{
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 30}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(1, nil), MinTime: 0, MaxTime: 20}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 90}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(2, nil), MinTime: 20, MaxTime: 40}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 30}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(4, nil), MinTime: 60, MaxTime: 80}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 30}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(5, nil), MinTime: 80, MaxTime: 100}},
+			},
+			expected: []*metadata.Meta{
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(1, nil), MinTime: 0, MaxTime: 20}},
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(2, nil), MinTime: 20, MaxTime: 40}},
+			},
+			expectedMarks: 0,
+			expectedSplit: true,
+		},
+		{
+			name: "We have 20, 60, 20, 60, 240 range blocks. We could compact 20 + 60 + 60, but sixth 6th is excluded",
+			metas: []*metadata.Meta{
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 30}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(2, nil), MinTime: 20, MaxTime: 40}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 30}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(4, nil), MinTime: 60, MaxTime: 120}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 30}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(5, nil), MinTime: 960, MaxTime: 980}}, // Fresh one.
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 90}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(6, nil), MinTime: 120, MaxTime: 180}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 30}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(7, nil), MinTime: 720, MaxTime: 960}},
+			},
+			expected: []*metadata.Meta{
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(2, nil), MinTime: 20, MaxTime: 40}},
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(4, nil), MinTime: 60, MaxTime: 120}},
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(6, nil), MinTime: 120, MaxTime: 180}},
+			},
+			expectedMarks: 0,
+			expectedSplit: true,
+		},
+		// |--------------|
+		//               |----------------|
+		//                                |--------------|
+		{
+			name: "Overlapping blocks 1, but total is too large",
+			metas: []*metadata.Meta{
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 90}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(1, nil), MinTime: 0, MaxTime: 20}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 30}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(2, nil), MinTime: 19, MaxTime: 40}},
+				{Thanos: metadata.Thanos{Files: []metadata.File{{RelPath: block.IndexFilename, SizeBytes: 30}}},
+					BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(3, nil), MinTime: 40, MaxTime: 60}},
+			},
+			expected: []*metadata.Meta{
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(1, nil), MinTime: 0, MaxTime: 20}},
+				{BlockMeta: tsdb.BlockMeta{Version: 1, ULID: ulid.MustNew(2, nil), MinTime: 19, MaxTime: 40}},
+			},
+			expectedMarks: 0,
+			expectedSplit: true,
+		},
+	} {
+		if !t.Run(c.name, func(t *testing.T) {
+			t.Run("from meta", func(t *testing.T) {
+				obj := bkt.Objects()
+				for o := range obj {
+					delete(obj, o)
+				}
+
+				metasByMinTime := make([]*metadata.Meta, len(c.metas))
+				for i := range metasByMinTime {
+					orig := c.metas[i]
+					m := &metadata.Meta{}
+					*m = *orig
+					metasByMinTime[i] = m
+				}
+				sort.Slice(metasByMinTime, func(i, j int) bool {
+					return metasByMinTime[i].MinTime < metasByMinTime[j].MinTime
+				})
+
+				plan, split, err := planner.Plan(context.Background(), metasByMinTime)
+				testutil.Ok(t, err)
+
+				for _, m := range plan {
+					// For less boilerplate.
+					m.Thanos = metadata.Thanos{}
+				}
+				testutil.Equals(t, c.expectedSplit, split)
+				testutil.Equals(t, c.expected, plan)
+				testutil.Equals(t, c.expectedMarks, promtest.ToFloat64(marked)-lastMarkValue)
+				lastMarkValue = promtest.ToFloat64(marked)
+			})
+			t.Run("from bkt", func(t *testing.T) {
+				obj := bkt.Objects()
+				for o := range obj {
+					delete(obj, o)
+				}
+
+				metasByMinTime := make([]*metadata.Meta, len(c.metas))
+				for i := range metasByMinTime {
+					orig := c.metas[i]
+					m := &metadata.Meta{}
+					*m = *orig
+					metasByMinTime[i] = m
+				}
+				sort.Slice(metasByMinTime, func(i, j int) bool {
+					return metasByMinTime[i].MinTime < metasByMinTime[j].MinTime
+				})
+
+				for _, m := range metasByMinTime {
+					testutil.Ok(t, bkt.Upload(context.Background(), filepath.Join(m.ULID.String(), block.IndexFilename), bytes.NewReader(make([]byte, m.Thanos.Files[0].SizeBytes))))
+					m.Thanos = metadata.Thanos{}
+				}
+
+				plan, split, err := planner.Plan(context.Background(), metasByMinTime)
+				testutil.Ok(t, err)
+				testutil.Equals(t, c.expectedSplit, split)
 				testutil.Equals(t, c.expected, plan)
 				testutil.Equals(t, c.expectedMarks, promtest.ToFloat64(marked)-lastMarkValue)
 

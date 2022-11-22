@@ -90,6 +90,13 @@ type Thanos struct {
 
 	// Rewrites is present when any rewrite (deletion, relabel etc) were applied to this block. Optional.
 	Rewrites []Rewrite `json:"rewrites,omitempty"`
+
+	VerticalSplit *VerticalSplit `json:"vertical_split,omitempty"`
+}
+
+type VerticalSplit struct {
+	Level int   `json:"level"`
+	Split int64 `json:"split"`
 }
 
 type Rewrite struct {
@@ -154,7 +161,13 @@ func InjectThanos(logger log.Logger, bdir string, meta Thanos, downsampledMeta *
 // Returns a unique identifier for the compaction group the block belongs to.
 // It considers the downsampling resolution and the block's labels.
 func (m *Thanos) GroupKey() string {
-	return fmt.Sprintf("%d@%v", m.Downsample.Resolution, labels.FromMap(m.Labels).Hash())
+	var split int64 = 0
+	level := 0
+	if m.VerticalSplit != nil {
+		split = m.VerticalSplit.Split
+		level = m.VerticalSplit.Level
+	}
+	return fmt.Sprintf("%d@L%d/S%d/%v", m.Downsample.Resolution, level, split, labels.FromMap(m.Labels).Hash())
 }
 
 // WriteToDir writes the encoded meta into <dir>/meta.json.
