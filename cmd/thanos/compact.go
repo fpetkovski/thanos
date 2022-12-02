@@ -736,7 +736,7 @@ func (cc *compactConfig) registerFlag(cmd extkingpin.FlagClause) {
 	cmd.Flag("downsample.concurrency", "Number of goroutines to use when downsampling blocks.").
 		Default("1").IntVar(&cc.downsampleConcurrency)
 
-	cmd.Flag("compact.vertical-shard-total", "Enable Vertical block splitting if block size is equal or greate then --compact.block-max-index-size.").
+	cmd.Flag("compact.enable-vertical-block-split", "Enable Vertical block splitting if block size is equal or greate then --compact.block-max-index-size.").
 		Default("false").BoolVar(&cc.enableVerticalBlockSplit)
 
 	cmd.Flag("delete-delay", "Time before a block marked for deletion is deleted from bucket. "+

@@ -1114,23 +1114,9 @@ func (cg *Group) compact(ctx context.Context, dir string, planner Planner, comp 
 		level.Info(cg.logger).Log("msg", "compacted blocks", "new", compID,
 			"blocks", sourceBlockStr, "duration", time.Since(begin), "duration_ms", time.Since(begin).Milliseconds(), "overlapping_blocks", overlappingBlocks)
 
-		// 0 0
-		// 1-0, 1-1, 1-2, 1-3
-		// 2-0, 2-1 2-2 2-3
-		// 2-4, 2-5, 2-6, 2-7
-		// 2-8, 2-9, 2-10, 2-11
-		// 2-12, 2-13, 2-14, 2-15
-		// 2-0 -> 3-0, 3-1, 3-2, 3-3
-		// 2-1 -> 3-4, 3-5, 3-6, 3-7
-		// 2-2 -> 3-8, 3-9, 3-10, 3-11
-		// 2-3 -> 3-12, 3-13, 3-14, 3-15
-		// 2-4 -> 3-16, 3-17, 3-18, 3-19
-		// 2-5 -> 3-[(16 + 5*4 ) + 0]
-		// 2-6 -> 3-[(16 + 6*4)  + 0]
-
-		// 2 ^ (level) + (2 * local level - 1) + index
 		bdir := filepath.Join(dir, compID.String())
 		index := filepath.Join(bdir, block.IndexFilename)
+		// 2 ^ (level) + (2 * local level - 1) + index
 		nextSplit := math.Pow(2.0, float64(vSplit.Level)) + float64(vSplit.Split)*2
 		newMeta, err := metadata.InjectThanos(cg.logger, bdir, metadata.Thanos{
 			Labels:       cg.labels.Map(),
