@@ -1099,8 +1099,6 @@ func (cg *Group) compactBlocks(ctx context.Context, dir string, blocks Compactio
 					level.Warn(cg.logger).Log("msg", "failed to mark for deletion an empty block found during compaction", "block", meta.ULID)
 				}
 			}
-			// Even though this block was empty, there may be more work to do.
-			return true, nil
 		}
 		// Even though this block was empty, there may be more work to do.
 		return true, nil
@@ -1112,15 +1110,17 @@ func (cg *Group) compactBlocks(ctx context.Context, dir string, blocks Compactio
 	level.Info(cg.logger).Log("msg", "compacted blocks", "new", compIDs,
 		"blocks", sourceBlockStr, "duration", time.Since(begin), "duration_ms", time.Since(begin).Milliseconds(), "overlapping_blocks", hasOverlappingBlocks)
 
-	for _, compID := range compIDs {
+	for i, compID := range compIDs {
+		shardID := i
 		bdir := filepath.Join(dir, compID.String())
 		index := filepath.Join(bdir, block.IndexFilename)
 
 		newMeta, err := metadata.InjectThanos(cg.logger, bdir, metadata.Thanos{
-			Labels:       cg.labels.Map(),
-			Downsample:   metadata.ThanosDownsample{Resolution: cg.resolution},
-			Source:       metadata.CompactorSource,
-			SegmentFiles: block.GetSegmentFiles(bdir),
+			Labels:          cg.labels.Map(),
+			Downsample:      metadata.ThanosDownsample{Resolution: cg.resolution},
+			Source:          metadata.CompactorSource,
+			SegmentFiles:    block.GetSegmentFiles(bdir),
+			VerticalShardID: &shardID,
 		}, nil)
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to finalize the block %s", bdir)
@@ -1146,7 +1146,7 @@ func (cg *Group) compactBlocks(ctx context.Context, dir string, blocks Compactio
 			}
 		}
 
-		level.Info(cg.logger).Log("msg", "compacted blocks", "new", compIDs,
+		level.Info(cg.logger).Log("msg", "compacted block", "new", compID,
 			"blocks", sourceBlockStr, "duration", time.Since(begin), "duration_ms", time.Since(begin).Milliseconds(), "overlapping_blocks", hasOverlappingBlocks)
 
 		begin = time.Now()
@@ -1170,7 +1170,7 @@ func (cg *Group) compactBlocks(ctx context.Context, dir string, blocks Compactio
 			cg.groupGarbageCollectedBlocks.Inc()
 		}
 
-		level.Info(cg.logger).Log("msg", "finished compacting blocks", "result_block", compIDs, "source_blocks", sourceBlockStr,
+		level.Info(cg.logger).Log("msg", "finished compacting blocks", "shard", shardID, "result_block", compID, "source_blocks", sourceBlockStr,
 			"duration", time.Since(compactionBegin), "duration_ms", time.Since(compactionBegin).Milliseconds())
 	}
 
