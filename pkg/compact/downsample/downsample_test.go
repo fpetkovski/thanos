@@ -754,11 +754,7 @@ func TestCounterSeriesIteratorSeek(t *testing.T) {
 	x := NewApplyCounterResetsIterator(its...)
 
 	valueType := x.Seek(150)
-<<<<<<< HEAD
 	testutil.Equals(t, chunkenc.ValFloat, valueType, "Seek should return float value type")
-=======
-	testutil.Equals(t, chunkenc.ValFloat, valueType, "Seek should return true")
->>>>>>> 3e9d8f46 (Updated prometheus to v0.40.1)
 	testutil.Ok(t, x.Err())
 	for {
 		ts, v := x.At()
@@ -784,11 +780,7 @@ func TestCounterSeriesIteratorSeekExtendTs(t *testing.T) {
 	x := NewApplyCounterResetsIterator(its...)
 
 	valueType := x.Seek(500)
-<<<<<<< HEAD
 	testutil.Equals(t, chunkenc.ValNone, valueType, "Seek should return none value type")
-=======
-	testutil.Equals(t, chunkenc.ValNone, valueType, "Seek should return false")
->>>>>>> 3e9d8f46 (Updated prometheus to v0.40.1)
 }
 
 func TestCounterSeriesIteratorSeekAfterNext(t *testing.T) {
@@ -810,11 +802,7 @@ func TestCounterSeriesIteratorSeekAfterNext(t *testing.T) {
 	x.Next()
 
 	valueType := x.Seek(50)
-<<<<<<< HEAD
 	testutil.Equals(t, chunkenc.ValFloat, valueType, "Seek should return float value type")
-=======
-	testutil.Equals(t, chunkenc.ValFloat, valueType, "Seek should return true")
->>>>>>> 3e9d8f46 (Updated prometheus to v0.40.1)
 	testutil.Ok(t, x.Err())
 	for {
 		ts, v := x.At()
