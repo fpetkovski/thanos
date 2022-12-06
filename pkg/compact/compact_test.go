@@ -90,38 +90,36 @@ func TestRetryError(t *testing.T) {
 }
 
 func TestGroupKey(t *testing.T) {
+	shardID := 1
 	for _, tcase := range []struct {
 		input    metadata.Thanos
 		expected string
 	}{
 		{
 			input:    metadata.Thanos{},
-			expected: "0@L0/S0/17241709254077376921",
+			expected: "0@S0/17241709254077376921",
 		},
 		{
 			input: metadata.Thanos{
 				Labels:     map[string]string{},
 				Downsample: metadata.ThanosDownsample{Resolution: 0},
 			},
-			expected: "0@L0/S0/17241709254077376921",
+			expected: "0@S0/17241709254077376921",
 		},
 		{
 			input: metadata.Thanos{
 				Labels:     map[string]string{"foo": "bar", "foo1": "bar2"},
 				Downsample: metadata.ThanosDownsample{Resolution: 0},
 			},
-			expected: "0@L0/S0/2124638872457683483",
+			expected: "0@S0/2124638872457683483",
 		},
 		{
 			input: metadata.Thanos{
-				Labels:     map[string]string{`foo/some..thing/some.thing/../`: `a_b_c/bar-something-a\metric/a\x`},
-				Downsample: metadata.ThanosDownsample{Resolution: 0},
-				VerticalShardID: &metadata.VerticalShard{
-					Split:   1,
-					ShardID: 2,
-				},
+				Labels:          map[string]string{`foo/some..thing/some.thing/../`: `a_b_c/bar-something-a\metric/a\x`},
+				Downsample:      metadata.ThanosDownsample{Resolution: 0},
+				VerticalShardID: &shardID,
 			},
-			expected: "0@L2/S1/16590761456214576373",
+			expected: "0@S1/16590761456214576373",
 		},
 	} {
 		if ok := t.Run("", func(t *testing.T) {
@@ -364,7 +362,7 @@ func TestCompactProgressCalculate(t *testing.T) {
 		int64(2 * time.Hour / time.Millisecond),
 		int64(4 * time.Hour / time.Millisecond),
 		int64(8 * time.Hour / time.Millisecond),
-	})
+	}, testGroupConcurrency)
 
 	keys := make([]string, 3)
 	m := make([]metadata.Meta, 3)
@@ -452,6 +450,21 @@ func TestCompactProgressCalculate(t *testing.T) {
 				keys[2]: {
 					compactionRuns:   1.0,
 					compactionBlocks: 2.0,
+				},
+			},
+		},
+		{
+			testName: "multiple_vertical_compactions",
+			input: []*metadata.Meta{
+				createBlockMeta(1, 0, 10, map[string]string{"a": "1"}, 0, []uint64{}),
+				createBlockMeta(2, 5, 15, map[string]string{"a": "1"}, 0, []uint64{}),
+				createBlockMeta(3, 20, 30, map[string]string{"a": "1"}, 0, []uint64{}),
+				createBlockMeta(4, 25, 40, map[string]string{"a": "1"}, 0, []uint64{}),
+			},
+			expected: map[string]planResult{
+				keys[0]: {
+					compactionRuns:   2.0,
+					compactionBlocks: 4.0,
 				},
 			},
 		},
