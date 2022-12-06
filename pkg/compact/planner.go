@@ -17,7 +17,6 @@ import (
 
 	"github.com/thanos-io/thanos/pkg/block"
 	"github.com/thanos-io/thanos/pkg/block/metadata"
-	"github.com/thanos-io/thanos/pkg/compact/downsample"
 )
 
 type tsdbBasedPlanner struct {
@@ -50,9 +49,8 @@ func NewPlanner(logger log.Logger, ranges []int64, noCompBlocks *GatherNoCompact
 }
 
 // TODO(bwplotka): Consider smarter algorithm, this prefers smaller iterative compactions vs big single one: https://github.com/thanos-io/thanos/issues/3405
-func (p *tsdbBasedPlanner) Plan(_ context.Context, metasByMinTime []*metadata.Meta) ([]*metadata.Meta, bool, error) {
-	meta, err := p.plan(p.noCompBlocksFunc(), metasByMinTime)
-	return meta, false, err
+func (p *tsdbBasedPlanner) Plan(_ context.Context, metasByMinTime []*metadata.Meta) ([]*metadata.Meta, error) {
+	return p.plan(p.noCompBlocksFunc(), metasByMinTime)
 }
 
 func (p *tsdbBasedPlanner) plan(noCompactMarked map[ulid.ULID]*metadata.NoCompactMark, metasByMinTime []*metadata.Meta) ([]*metadata.Meta, error) {
@@ -232,7 +230,6 @@ type largeTotalIndexSizeFilter struct {
 	bkt                    objstore.Bucket
 	markedForNoCompact     prometheus.Counter
 	totalMaxIndexSizeBytes int64
-	verticalSplitEnabled   bool
 }
 
 var _ Planner = &largeTotalIndexSizeFilter{}
@@ -242,22 +239,22 @@ var _ Planner = &largeTotalIndexSizeFilter{}
 // NOTE: The estimation is very rough as it assumes extreme cases of indexes sharing no bytes, thus summing all source index sizes.
 // Adjust limit accordingly reducing to some % of actual limit you want to give.
 // TODO(bwplotka): This is short term fix for https://github.com/thanos-io/thanos/issues/1424, replace with vertical block sharding https://github.com/thanos-io/thanos/pull/3390.
-func WithLargeTotalIndexSizeFilter(with *tsdbBasedPlanner, bkt objstore.Bucket, verticalSplitEnabled bool, totalMaxIndexSizeBytes int64, markedForNoCompact prometheus.Counter) *largeTotalIndexSizeFilter {
-	return &largeTotalIndexSizeFilter{tsdbBasedPlanner: with, bkt: bkt, verticalSplitEnabled: verticalSplitEnabled, totalMaxIndexSizeBytes: totalMaxIndexSizeBytes, markedForNoCompact: markedForNoCompact}
+func WithLargeTotalIndexSizeFilter(with *tsdbBasedPlanner, bkt objstore.Bucket, totalMaxIndexSizeBytes int64, markedForNoCompact prometheus.Counter) *largeTotalIndexSizeFilter {
+	return &largeTotalIndexSizeFilter{tsdbBasedPlanner: with, bkt: bkt, totalMaxIndexSizeBytes: totalMaxIndexSizeBytes, markedForNoCompact: markedForNoCompact}
 }
 
-func (t *largeTotalIndexSizeFilter) Plan(ctx context.Context, metasByMinTime []*metadata.Meta) ([]*metadata.Meta, bool, error) {
+func (t *largeTotalIndexSizeFilter) Plan(ctx context.Context, metasByMinTime []*metadata.Meta) ([]*metadata.Meta, error) {
 	noCompactMarked := t.noCompBlocksFunc()
 	copiedNoCompactMarked := make(map[ulid.ULID]*metadata.NoCompactMark, len(noCompactMarked))
 	for k, v := range noCompactMarked {
 		copiedNoCompactMarked[k] = v
 	}
-	split := false
+
 PlanLoop:
 	for {
 		plan, err := t.plan(copiedNoCompactMarked, metasByMinTime)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		var totalIndexBytes, maxIndexSize int64 = 0, math.MinInt64
 		var biggestIndex int
@@ -272,7 +269,7 @@ PlanLoop:
 				// Get size from bkt instead.
 				attr, err := t.bkt.Attributes(ctx, filepath.Join(p.ULID.String(), block.IndexFilename))
 				if err != nil {
-					return nil, split, errors.Wrapf(err, "get attr of %v", filepath.Join(p.ULID.String(), block.IndexFilename))
+					return nil, errors.Wrapf(err, "get attr of %v", filepath.Join(p.ULID.String(), block.IndexFilename))
 				}
 				indexSize = attr.Size
 			}
@@ -284,30 +281,25 @@ PlanLoop:
 			totalIndexBytes += indexSize
 			// Leave 15% headroom for index compaction bloat.
 			if totalIndexBytes >= int64(float64(t.totalMaxIndexSizeBytes)*0.85) {
-				if t.verticalSplitEnabled && p.Thanos.Downsample.Resolution != downsample.ResLevel2 {
-					split = true
-				} else {
-					// Marking blocks for no compact to limit size.
-					// TODO(bwplotka): Make sure to reset cache once this is done: https://github.com/thanos-io/thanos/issues/3408
-					if err := block.MarkForNoCompact(
-						ctx,
-						t.logger,
-						t.bkt,
-						plan[biggestIndex].ULID,
-						metadata.IndexSizeExceedingNoCompactReason,
-						fmt.Sprintf("largeTotalIndexSizeFilter: Total compacted block's index size could exceed: %v with this block. See https://github.com/thanos-io/thanos/issues/1424", t.totalMaxIndexSizeBytes),
-						t.markedForNoCompact,
-					); err != nil {
-						return nil, split, errors.Wrapf(err, "mark %v for no compaction", plan[biggestIndex].ULID.String())
-					}
-					// Make sure wrapped planner exclude this block.
-					copiedNoCompactMarked[plan[biggestIndex].ULID] = &metadata.NoCompactMark{ID: plan[biggestIndex].ULID, Version: metadata.NoCompactMarkVersion1}
-					continue PlanLoop
+				// Marking blocks for no compact to limit size.
+				// TODO(bwplotka): Make sure to reset cache once this is done: https://github.com/thanos-io/thanos/issues/3408
+				if err := block.MarkForNoCompact(
+					ctx,
+					t.logger,
+					t.bkt,
+					plan[biggestIndex].ULID,
+					metadata.IndexSizeExceedingNoCompactReason,
+					fmt.Sprintf("largeTotalIndexSizeFilter: Total compacted block's index size could exceed: %v with this block. See https://github.com/thanos-io/thanos/issues/1424", t.totalMaxIndexSizeBytes),
+					t.markedForNoCompact,
+				); err != nil {
+					return nil, errors.Wrapf(err, "mark %v for no compaction", plan[biggestIndex].ULID.String())
 				}
-
+				// Make sure wrapped planner exclude this block.
+				copiedNoCompactMarked[plan[biggestIndex].ULID] = &metadata.NoCompactMark{ID: plan[biggestIndex].ULID, Version: metadata.NoCompactMarkVersion1}
+				continue PlanLoop
 			}
 		}
 		// Planned blocks should not exceed limit.
-		return plan, split, nil
+		return plan, nil
 	}
 }

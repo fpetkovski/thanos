@@ -232,7 +232,7 @@ type DefaultGrouper struct {
 	hashFunc                      metadata.HashFunc
 	blockFilesConcurrency         int
 	compactBlocksFetchConcurrency int
-	enableVerticalBlockSplit      bool
+	verticalBlockShards           uint64
 }
 
 // NewDefaultGrouper makes a new DefaultGrouper.
@@ -248,7 +248,7 @@ func NewDefaultGrouper(
 	hashFunc metadata.HashFunc,
 	blockFilesConcurrency int,
 	compactBlocksFetchConcurrency int,
-	enableVerticalBlockSplit bool,
+	verticalBlockShards uint64,
 ) *DefaultGrouper {
 	return &DefaultGrouper{
 		bkt:                      bkt,
@@ -281,7 +281,7 @@ func NewDefaultGrouper(
 		hashFunc:                      hashFunc,
 		blockFilesConcurrency:         blockFilesConcurrency,
 		compactBlocksFetchConcurrency: compactBlocksFetchConcurrency,
-		enableVerticalBlockSplit:      enableVerticalBlockSplit,
+		verticalBlockShards:           verticalBlockShards,
 	}
 }
 
@@ -313,7 +313,7 @@ func (g *DefaultGrouper) Groups(blocks map[ulid.ULID]*metadata.Meta) (res []*Gro
 				g.hashFunc,
 				g.blockFilesConcurrency,
 				g.compactBlocksFetchConcurrency,
-				g.enableVerticalBlockSplit,
+				g.verticalBlockShards,
 			)
 			if err != nil {
 				return nil, errors.Wrap(err, "create compaction group")
@@ -354,7 +354,7 @@ type Group struct {
 	hashFunc                      metadata.HashFunc
 	blockFilesConcurrency         int
 	compactBlocksFetchConcurrency int
-	enableVerticalBlockSplit      bool
+	verticalBlockShards           uint64
 }
 
 // NewGroup returns a new compaction group.
@@ -377,7 +377,7 @@ func NewGroup(
 	hashFunc metadata.HashFunc,
 	blockFilesConcurrency int,
 	compactBlocksFetchConcurrency int,
-	enableVerticalBlockSplit bool,
+	verticalBlockShards uint64,
 ) (*Group, error) {
 	if logger == nil {
 		logger = log.NewNopLogger()
@@ -406,7 +406,7 @@ func NewGroup(
 		hashFunc:                      hashFunc,
 		blockFilesConcurrency:         blockFilesConcurrency,
 		compactBlocksFetchConcurrency: compactBlocksFetchConcurrency,
-		enableVerticalBlockSplit:      enableVerticalBlockSplit,
+		verticalBlockShards:           verticalBlockShards,
 	}
 	return g, nil
 }
@@ -542,7 +542,7 @@ func (ps *CompactionProgressCalculator) ProgressCalculate(ctx context.Context, g
 			if len(g.IDs()) == 1 {
 				continue
 			}
-			plan, _, err := ps.planner.Plan(ctx, g.metasByMinTime)
+			plan, err := ps.planner.Plan(ctx, g.metasByMinTime)
 			if err != nil {
 				return errors.Wrapf(err, "could not plan")
 			}
@@ -734,7 +734,7 @@ func (rs *RetentionProgressCalculator) ProgressCalculate(ctx context.Context, gr
 type Planner interface {
 	// Plan returns a list of blocks that should be compacted into single one.
 	// The blocks can be overlapping. The provided metadata has to be ordered by minTime.
-	Plan(ctx context.Context, metasByMinTime []*metadata.Meta) ([]*metadata.Meta, bool, error)
+	Plan(ctx context.Context, metasByMinTime []*metadata.Meta) ([]*metadata.Meta, error)
 }
 
 // Compactor provides compaction against an underlying storage of time series data.
@@ -1001,7 +1001,7 @@ func (cg *Group) compact(ctx context.Context, dir string, planner Planner, comp 
 	var shouldSplitVertically = false
 	var toCompact []*metadata.Meta
 	if err := tracing.DoInSpanWithErr(ctx, "compaction_planning", func(ctx context.Context) (e error) {
-		toCompact, shouldSplitVertically, e = planner.Plan(ctx, cg.metasByMinTime)
+		toCompact, e = planner.Plan(ctx, cg.metasByMinTime)
 		return e
 	}); err != nil {
 		return false, nil, errors.Wrap(err, "plan compaction")
@@ -1083,7 +1083,7 @@ func (cg *Group) compact(ctx context.Context, dir string, planner Planner, comp 
 	ulids := make([]ulid.ULID, 0)
 	if err := tracing.DoInSpanWithErr(ctx, "compaction", func(ctx context.Context) (e error) {
 		if shouldSplitVertically {
-			ulids, e = comp.CompactWithSplitting(dir, toCompactDirs, nil, 2)
+			ulids, e = comp.CompactWithSplitting(dir, toCompactDirs, nil, cg.verticalBlockShards)
 		} else {
 			var id ulid.ULID
 			id, e = comp.Compact(dir, toCompactDirs, nil)
@@ -1117,15 +1117,15 @@ func (cg *Group) compact(ctx context.Context, dir string, planner Planner, comp 
 		bdir := filepath.Join(dir, compID.String())
 		index := filepath.Join(bdir, block.IndexFilename)
 		// 2 ^ (level) + (2 * local level - 1) + index
-		nextSplit := math.Pow(2.0, float64(vSplit.Level)) + float64(vSplit.Split)*2
+		nextSplit := math.Pow(2.0, float64(vSplit.ShardID)) + float64(vSplit.Split)*2
 		newMeta, err := metadata.InjectThanos(cg.logger, bdir, metadata.Thanos{
 			Labels:       cg.labels.Map(),
 			Downsample:   metadata.ThanosDownsample{Resolution: cg.resolution},
 			Source:       metadata.CompactorSource,
 			SegmentFiles: block.GetSegmentFiles(bdir),
-			VerticalSplit: &metadata.VerticalSplit{
-				Level: vSplit.Level + 1,
-				Split: int64(nextSplit) + int64(idx),
+			VerticalShardID: &metadata.VerticalShard{
+				ShardID: vSplit.ShardID + 1,
+				Split:   int64(nextSplit) + int64(idx),
 			},
 		}, nil)
 		if err != nil {
@@ -1180,13 +1180,13 @@ func (cg *Group) compact(ctx context.Context, dir string, planner Planner, comp 
 	return true, compID, nil
 }
 
-func (cg *Group) getVerticalSplitInfo(toCompact []*metadata.Meta) *metadata.VerticalSplit {
+func (cg *Group) getVerticalSplitInfo(toCompact []*metadata.Meta) *metadata.VerticalShard {
 	for _, comp := range toCompact {
-		if comp.Thanos.VerticalSplit != nil {
-			return comp.Thanos.VerticalSplit
+		if comp.Thanos.VerticalShardID != nil {
+			return comp.Thanos.VerticalShardID
 		}
 	}
-	return &metadata.VerticalSplit{Split: 0, Level: 0}
+	return &metadata.VerticalShard{Split: 0, ShardID: 0}
 
 }
 func (cg *Group) deleteBlock(id ulid.ULID, bdir string) error {

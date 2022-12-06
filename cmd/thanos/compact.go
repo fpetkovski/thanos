@@ -27,6 +27,7 @@ import (
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/thanos-io/objstore/client"
+
 	blocksAPI "github.com/thanos-io/thanos/pkg/api/blocks"
 	"github.com/thanos-io/thanos/pkg/block"
 	"github.com/thanos-io/thanos/pkg/block/metadata"
@@ -320,7 +321,7 @@ func runCompact(
 
 	// Instantiate the compactor with different time slices. Timestamps in TSDB
 	// are in milliseconds.
-	comp, err := tsdb.NewLeveledCompactor(ctx, reg, logger, levels, downsample.NewPool(), mergeFunc, false)
+	comp, err := tsdb.NewLeveledCompactor(ctx, reg, logger, levels, downsample.NewPool(), mergeFunc, conf.enableVerticalCompaction)
 	if err != nil {
 		return errors.Wrap(err, "create compactor")
 	}
@@ -350,13 +351,12 @@ func runCompact(
 		metadata.HashFunc(conf.hashFunc),
 		conf.blockFilesConcurrency,
 		conf.compactBlocksFetchConcurrency,
-		conf.enableVerticalBlockSplit,
+		conf.verticalBlockShards,
 	)
 	tsdbPlanner := compact.NewPlanner(logger, levels, noCompactMarkerFilter)
 	planner := compact.WithLargeTotalIndexSizeFilter(
 		tsdbPlanner,
 		bkt,
-		conf.enableVerticalBlockSplit,
 		int64(conf.maxBlockIndexSize),
 		compactMetrics.blocksMarked.WithLabelValues(metadata.NoCompactMarkFilename, metadata.IndexSizeExceedingNoCompactReason),
 	)
@@ -663,7 +663,7 @@ type compactConfig struct {
 	compactionConcurrency                          int
 	downsampleConcurrency                          int
 	compactBlocksFetchConcurrency                  int
-	enableVerticalBlockSplit                       bool
+	verticalBlockShards                            uint64
 	deleteDelay                                    model.Duration
 	dedupReplicaLabels                             []string
 	selectorRelabelConf                            extflag.PathOrContent
@@ -736,8 +736,8 @@ func (cc *compactConfig) registerFlag(cmd extkingpin.FlagClause) {
 	cmd.Flag("downsample.concurrency", "Number of goroutines to use when downsampling blocks.").
 		Default("1").IntVar(&cc.downsampleConcurrency)
 
-	cmd.Flag("compact.enable-vertical-block-split", "Enable Vertical block splitting if block size is equal or greate then --compact.block-max-index-size.").
-		Default("false").BoolVar(&cc.enableVerticalBlockSplit)
+	cmd.Flag("compact.vertical-block-shards", "The number of independent shards to create for newly compacted blocks.").
+		Default("1").Uint64Var(&cc.verticalBlockShards)
 
 	cmd.Flag("delete-delay", "Time before a block marked for deletion is deleted from bucket. "+
 		"If delete-delay is non zero, blocks will be marked for deletion and compactor component will delete blocks marked for deletion from the bucket. "+
