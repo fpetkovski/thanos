@@ -755,7 +755,7 @@ type Compactor interface {
 	//  * Returns empty ulid.ULID{}.
 	Compact(dest string, dirs []string, open []*tsdb.Block) (ulid.ULID, error)
 
-	CompactWithSplitting(dest string, dirs []string, open []*tsdb.Block, shardCount uint64) (result []ulid.ULID, _ error)
+	CompactWithSplitting(dest string, dirs []string, open []*tsdb.Block, shardCount uint64) ([]ulid.ULID, error)
 }
 
 // Compact plans and runs a single compaction against the group. The compacted result
@@ -998,7 +998,11 @@ func (cg *Group) compact(ctx context.Context, dir string, planner Planner, comp 
 
 		overlappingBlocks = true
 	}
-	var shouldSplitVertically = false
+	var shouldSplitVertically bool
+	if cg.verticalBlockShards > 1 {
+		shouldSplitVertically = true
+	}
+
 	var toCompact []*metadata.Meta
 	if err := tracing.DoInSpanWithErr(ctx, "compaction_planning", func(ctx context.Context) (e error) {
 		toCompact, e = planner.Plan(ctx, cg.metasByMinTime)
