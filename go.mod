@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	cloud.google.com/go/storage v1.27.0 // indirect
-	cloud.google.com/go/trace v1.3.0
+	cloud.google.com/go/trace v1.4.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.8.3
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137
@@ -52,7 +52,7 @@ require (
 	github.com/lightstep/lightstep-tracer-go v0.25.0
 	github.com/lovoo/gcloud-opentracing v0.3.0
 	github.com/miekg/dns v1.1.50
-	github.com/minio/minio-go/v7 v7.0.37
+	github.com/minio/minio-go/v7 v7.0.45
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f
 	github.com/oklog/run v1.1.0
 	github.com/oklog/ulid v1.3.1
@@ -69,11 +69,11 @@ require (
 	github.com/prometheus/common v0.37.0
 	github.com/prometheus/exporter-toolkit v0.8.1
 	// Prometheus maps version 2.x.y to tags v0.x.y.
-	github.com/prometheus/prometheus v0.40.3
+	github.com/prometheus/prometheus v0.40.1
 	github.com/sony/gobreaker v0.5.0
 	github.com/stretchr/testify v1.8.1
-	github.com/thanos-community/promql-engine v0.0.0-20221208071256-05248ae34b96
-	github.com/thanos-io/objstore v0.0.0-20221111162010-dc083e736d11
+	github.com/thanos-community/promql-engine v0.0.0-20221101075408-6d5b22b2cd4d
+	github.com/thanos-io/objstore v0.0.0-20221205132204-5aafc0079f06
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/vimeo/galaxycache v0.0.0-20210323154928-b7e5d71c067a
@@ -96,8 +96,8 @@ require (
 	golang.org/x/sync v0.1.0
 	golang.org/x/text v0.4.0
 	golang.org/x/time v0.1.0
-	google.golang.org/api v0.102.0 // indirect
-	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c // indirect
+	google.golang.org/api v0.102.0
+	google.golang.org/genproto v0.0.0-20221109142239-94d6d90a7d66
 	google.golang.org/grpc v1.50.1
 	google.golang.org/grpc/examples v0.0.0-20211119005141-f45e61797429
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
@@ -107,7 +107,7 @@ require (
 )
 
 require (
-	github.com/efficientgo/core v1.0.0-rc.0
+	github.com/efficientgo/core v1.0.0-rc.0.0.20221201130417-ba593f67d2a4
 	github.com/efficientgo/tools/core v0.0.0-20220817170617-6c25e3b627dd
 	github.com/minio/sha256-simd v1.0.0
 )
@@ -115,7 +115,7 @@ require (
 require (
 	cloud.google.com/go v0.105.0 // indirect
 	cloud.google.com/go/compute v1.12.1 // indirect
-	cloud.google.com/go/iam v0.6.0 // indirect
+	cloud.google.com/go/iam v0.7.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.1.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.1.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.0.0 // indirect
@@ -128,7 +128,11 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.11.1
 )
 
-require go.opentelemetry.io/contrib/propagators/autoprop v0.34.0
+require (
+	cloud.google.com/go/monitoring v1.9.0
+	go.opentelemetry.io/contrib/propagators/autoprop v0.34.0
+	google.golang.org/protobuf v1.28.1
+)
 
 require (
 	cloud.google.com/go/compute/metadata v0.2.1 // indirect
@@ -192,7 +196,7 @@ require (
 	github.com/google/pprof v0.0.0-20221102093814-76f304f74e5e // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.0 // indirect
-	github.com/googleapis/gax-go/v2 v2.6.0 // indirect
+	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-hclog v0.16.2 // indirect
@@ -264,7 +268,6 @@ require (
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	gonum.org/v1/gonum v0.12.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/ini.v1 v1.66.6 // indirect
 	howett.net/plist v0.0.0-20181124034731-591f970eefbb // indirect
 )
@@ -273,11 +276,9 @@ replace (
 	// Using a 3rd-party branch for custom dialer - see https://github.com/bradfitz/gomemcache/pull/86.
 	// Required by Cortex https://github.com/cortexproject/cortex/pull/3051.
 	github.com/bradfitz/gomemcache => github.com/themihai/gomemcache v0.0.0-20180902122335-24332e2d58ab
+	github.com/thanos-community/promql-engine => /Users/fpetkovski/Projects/promql-engine
 
 	github.com/vimeo/galaxycache => github.com/thanos-community/galaxycache v0.0.0-20211122094458-3a32041a1f1e
-
-	// Until https://github.com/weaveworks/common/pull/262 is merged
-	github.com/weaveworks/common => github.com/rabenhorst/common v0.0.0-20221114111857-9eb1f146696e
 
 	// Override due to https://github.com/weaveworks/common/issues/239
 	google.golang.org/grpc => google.golang.org/grpc v1.45.0

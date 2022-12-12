@@ -57,6 +57,7 @@ func main() {
 	registerTools(app)
 	registerReceive(app)
 	registerQueryFrontend(app)
+	registerStackdriver(app)
 
 	cmd, setup := app.Parse()
 	logger := logging.NewLogger(*logLevel, *logFormat, *debugName)

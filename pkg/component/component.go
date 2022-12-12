@@ -122,6 +122,7 @@ var (
 	Rule            = sourceStoreAPI{component: component{name: "rule"}}
 	Sidecar         = sourceStoreAPI{component: component{name: "sidecar"}}
 	Store           = storeAPI{component: component{name: "store"}}
+	Stackdriver     = sourceStoreAPI{component: component{name: "stackdriver"}}
 	UnknownStoreAPI = storeAPI{component: component{name: "unknown-store-api"}}
 	Query           = storeAPI{component: component{name: "query"}}
 )
