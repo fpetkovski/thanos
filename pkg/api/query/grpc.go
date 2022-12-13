@@ -9,11 +9,12 @@ import (
 
 	"github.com/prometheus/prometheus/promql"
 	v1 "github.com/prometheus/prometheus/web/api/v1"
+	"google.golang.org/grpc"
+
 	"github.com/thanos-io/thanos/pkg/api/query/querypb"
 	"github.com/thanos-io/thanos/pkg/query"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
 	"github.com/thanos-io/thanos/pkg/store/storepb/prompb"
-	"google.golang.org/grpc"
 )
 
 type GRPCAPI struct {
@@ -84,6 +85,10 @@ func (g *GRPCAPI) Query(request *querypb.QueryRequest, server querypb.Query_Quer
 	if len(request.ReplicaLabels) != 0 {
 		replicaLabels = request.ReplicaLabels
 	}
+	queryString, hints, err := extractHints(request.Query)
+	if err != nil {
+		return err
+	}
 
 	queryable := g.queryableCreate(
 		request.EnableDedup,
@@ -95,8 +100,10 @@ func (g *GRPCAPI) Query(request *querypb.QueryRequest, server querypb.Query_Quer
 		false,
 		request.ShardInfo,
 		query.NoopSeriesStatsReporter,
+		hints,
 	)
-	qry, err := g.queryEngine.NewInstantQuery(queryable, &promql.QueryOpts{LookbackDelta: lookbackDelta}, request.Query, ts)
+
+	qry, err := g.queryEngine.NewInstantQuery(queryable, &promql.QueryOpts{LookbackDelta: lookbackDelta}, queryString, ts)
 	if err != nil {
 		return err
 	}
@@ -159,6 +166,10 @@ func (g *GRPCAPI) QueryRange(request *querypb.QueryRangeRequest, srv querypb.Que
 	if len(request.ReplicaLabels) != 0 {
 		replicaLabels = request.ReplicaLabels
 	}
+	queryString, hints, err := extractHints(request.Query)
+	if err != nil {
+		return err
+	}
 
 	queryable := g.queryableCreate(
 		request.EnableDedup,
@@ -170,13 +181,14 @@ func (g *GRPCAPI) QueryRange(request *querypb.QueryRangeRequest, srv querypb.Que
 		false,
 		request.ShardInfo,
 		query.NoopSeriesStatsReporter,
+		hints,
 	)
 
 	startTime := time.Unix(request.StartTimeSeconds, 0)
 	endTime := time.Unix(request.EndTimeSeconds, 0)
 	interval := time.Duration(request.IntervalSeconds) * time.Second
 
-	qry, err := g.queryEngine.NewRangeQuery(queryable, &promql.QueryOpts{LookbackDelta: lookbackDelta}, request.Query, startTime, endTime, interval)
+	qry, err := g.queryEngine.NewRangeQuery(queryable, &promql.QueryOpts{LookbackDelta: lookbackDelta}, queryString, startTime, endTime, interval)
 	if err != nil {
 		return err
 	}

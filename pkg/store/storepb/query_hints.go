@@ -8,12 +8,20 @@ import (
 	"strings"
 )
 
+func (m *QueryHints) RangeMillis() int64 {
+	if m.Range == nil {
+		return 0
+	}
+
+	return m.Range.Millis
+}
+
 func (m *QueryHints) toPromQL(labelMatchers []LabelMatcher) string {
 	grouping := m.Grouping.toPromQL()
 	matchers := MatchersToString(labelMatchers...)
 	queryRange := m.Range.toPromQL()
 
-	query := fmt.Sprintf("%s %s (%s%s)", m.Func.Name, grouping, matchers, queryRange)
+	query := fmt.Sprintf("%s %s (%s%s)", m.AggrFunc.Name, grouping, matchers, queryRange)
 	// Remove double spaces if some expressions are missing.
 	return strings.Join(strings.Fields(query), " ")
 }

@@ -43,6 +43,7 @@ import (
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/util/stats"
 	v1 "github.com/prometheus/prometheus/web/api/v1"
+
 	"github.com/thanos-io/thanos/pkg/api"
 	"github.com/thanos-io/thanos/pkg/exemplars"
 	"github.com/thanos-io/thanos/pkg/exemplars/exemplarspb"
@@ -407,6 +408,11 @@ func (qapi *QueryAPI) query(r *http.Request) (interface{}, []error, *api.ApiErro
 	span, ctx := tracing.StartSpan(ctx, "promql_instant_query")
 	defer span.Finish()
 
+	queryString, hints, err := extractHints(r.FormValue("query"))
+	if err != nil {
+		return nil, nil, &api.ApiError{Typ: api.ErrorBadData, Err: err}, func() {}
+	}
+
 	var seriesStats []storepb.SeriesStatsCounter
 	qry, err := qapi.queryEngine.NewInstantQuery(
 		qapi.queryableCreate(
@@ -419,9 +425,10 @@ func (qapi *QueryAPI) query(r *http.Request) (interface{}, []error, *api.ApiErro
 			false,
 			shardInfo,
 			query.NewAggregateStatsReporter(&seriesStats),
+			hints,
 		),
 		&promql.QueryOpts{LookbackDelta: lookbackDelta},
-		r.FormValue("query"),
+		queryString,
 		ts,
 	)
 
@@ -558,6 +565,11 @@ func (qapi *QueryAPI) queryRange(r *http.Request) (interface{}, []error, *api.Ap
 	span, ctx := tracing.StartSpan(ctx, "promql_range_query")
 	defer span.Finish()
 
+	queryString, hints, err := extractHints(r.FormValue("query"))
+	if err != nil {
+		return nil, nil, &api.ApiError{Typ: api.ErrorBadData, Err: err}, func() {}
+	}
+
 	var seriesStats []storepb.SeriesStatsCounter
 	qry, err := qapi.queryEngine.NewRangeQuery(
 		qapi.queryableCreate(
@@ -570,9 +582,10 @@ func (qapi *QueryAPI) queryRange(r *http.Request) (interface{}, []error, *api.Ap
 			false,
 			shardInfo,
 			query.NewAggregateStatsReporter(&seriesStats),
+			hints,
 		),
 		&promql.QueryOpts{LookbackDelta: lookbackDelta},
-		r.FormValue("query"),
+		queryString,
 		start,
 		end,
 		step,
@@ -659,6 +672,7 @@ func (qapi *QueryAPI) labelValues(r *http.Request) (interface{}, []error, *api.A
 		true,
 		nil,
 		query.NoopSeriesStatsReporter,
+		nil,
 	).Querier(ctx, timestamp.FromTime(start), timestamp.FromTime(end))
 	if err != nil {
 		return nil, nil, &api.ApiError{Typ: api.ErrorExec, Err: err}, func() {}
@@ -755,6 +769,7 @@ func (qapi *QueryAPI) series(r *http.Request) (interface{}, []error, *api.ApiErr
 		true,
 		nil,
 		query.NoopSeriesStatsReporter,
+		nil,
 	).Querier(r.Context(), timestamp.FromTime(start), timestamp.FromTime(end))
 
 	if err != nil {
@@ -815,6 +830,7 @@ func (qapi *QueryAPI) labelNames(r *http.Request) (interface{}, []error, *api.Ap
 		true,
 		nil,
 		query.NoopSeriesStatsReporter,
+		nil,
 	).Querier(r.Context(), timestamp.FromTime(start), timestamp.FromTime(end))
 	if err != nil {
 		return nil, nil, &api.ApiError{Typ: api.ErrorExec, Err: err}, func() {}
@@ -1156,5 +1172,78 @@ func NewMetricMetadataHandler(client metadata.UnaryClient, enablePartialResponse
 		}
 
 		return t, warnings, nil, func() {}
+	}
+}
+
+func extractHints(query string) (string, map[string]storepb.QueryHints, error) {
+	node, err := parser.ParseExpr(query)
+	if err != nil {
+		return "", nil, err
+	}
+
+	var (
+		i             int
+		hints         = make(map[string]storepb.QueryHints)
+		selectorHints = storepb.QueryHints{}
+	)
+
+	traverse(&node, func(expr *parser.Expr) {
+		switch e := (*expr).(type) {
+		case *parser.VectorSelector:
+			shardID := strconv.Itoa(i)
+			i++
+
+			hints[shardID] = selectorHints
+			selectorHints = storepb.QueryHints{}
+
+			e.LabelMatchers = append(e.LabelMatchers, &labels.Matcher{
+				Type:  labels.MatchEqual,
+				Name:  "__thanos_selector_id",
+				Value: shardID,
+			})
+			*expr = e
+		case *parser.MatrixSelector:
+			selectorHints.Range = &storepb.Range{Millis: e.Range.Milliseconds()}
+		case *parser.Call:
+			selectorHints.TimeFunc = &storepb.Func{Name: e.Func.Name}
+		case *parser.AggregateExpr:
+			selectorHints.AggrFunc = &storepb.Func{Name: e.Op.String()}
+			selectorHints.Grouping = &storepb.Grouping{
+				By:     !e.Without,
+				Labels: e.Grouping,
+			}
+		}
+	})
+
+	return node.String(), hints, nil
+}
+
+func traverse(expr *parser.Expr, transform func(*parser.Expr)) {
+	switch node := (*expr).(type) {
+	case *parser.StepInvariantExpr:
+		transform(&node.Expr)
+	case *parser.VectorSelector:
+		transform(expr)
+	case *parser.MatrixSelector:
+		transform(expr)
+		traverse(&node.VectorSelector, transform)
+	case *parser.AggregateExpr:
+		transform(expr)
+		traverse(&node.Expr, transform)
+	case *parser.Call:
+		transform(expr)
+		for _, n := range node.Args {
+			traverse(&n, transform)
+		}
+	case *parser.BinaryExpr:
+		transform(expr)
+		traverse(&node.LHS, transform)
+		traverse(&node.RHS, transform)
+	case *parser.UnaryExpr:
+		traverse(&node.Expr, transform)
+	case *parser.ParenExpr:
+		traverse(&node.Expr, transform)
+	case *parser.SubqueryExpr:
+		traverse(&node.Expr, transform)
 	}
 }

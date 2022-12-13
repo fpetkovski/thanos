@@ -56,6 +56,7 @@ type QueryableCreator func(
 	skipChunks bool,
 	shardInfo *storepb.ShardInfo,
 	seriesStatsReporter seriesStatsReporter,
+	queryHints map[string]storepb.QueryHints,
 ) storage.Queryable
 
 // NewQueryableCreator creates QueryableCreator.
@@ -80,6 +81,7 @@ func NewQueryableCreator(
 		skipChunks bool,
 		shardInfo *storepb.ShardInfo,
 		seriesStatsReporter seriesStatsReporter,
+		queryHints map[string]storepb.QueryHints,
 	) storage.Queryable {
 		return &queryable{
 			logger:              logger,
@@ -98,6 +100,7 @@ func NewQueryableCreator(
 			enableQueryPushdown:  enableQueryPushdown,
 			shardInfo:            shardInfo,
 			seriesStatsReporter:  seriesStatsReporter,
+			queryHints:           queryHints,
 		}
 	}
 }
@@ -117,11 +120,12 @@ type queryable struct {
 	enableQueryPushdown  bool
 	shardInfo            *storepb.ShardInfo
 	seriesStatsReporter  seriesStatsReporter
+	queryHints           map[string]storepb.QueryHints
 }
 
 // Querier returns a new storage querier against the underlying proxy store API.
 func (q *queryable) Querier(ctx context.Context, mint, maxt int64) (storage.Querier, error) {
-	return newQuerier(ctx, q.logger, mint, maxt, q.replicaLabels, q.storeDebugMatchers, q.proxy, q.deduplicate, q.maxResolutionMillis, q.partialResponse, q.enableQueryPushdown, q.skipChunks, q.gateProviderFn(), q.selectTimeout, q.shardInfo, q.seriesStatsReporter), nil
+	return newQuerier(ctx, q.logger, mint, maxt, q.replicaLabels, q.storeDebugMatchers, q.proxy, q.deduplicate, q.maxResolutionMillis, q.partialResponse, q.enableQueryPushdown, q.skipChunks, q.gateProviderFn(), q.selectTimeout, q.shardInfo, q.seriesStatsReporter, q.queryHints), nil
 }
 
 type querier struct {
@@ -142,6 +146,7 @@ type querier struct {
 	selectTimeout       time.Duration
 	shardInfo           *storepb.ShardInfo
 	seriesStatsReporter seriesStatsReporter
+	queryHints          map[string]storepb.QueryHints
 }
 
 // newQuerier creates implementation of storage.Querier that fetches data from the proxy
@@ -163,6 +168,7 @@ func newQuerier(
 	selectTimeout time.Duration,
 	shardInfo *storepb.ShardInfo,
 	seriesStatsReporter seriesStatsReporter,
+	queryHints map[string]storepb.QueryHints,
 ) *querier {
 	if logger == nil {
 		logger = log.NewNopLogger()
@@ -193,6 +199,7 @@ func newQuerier(
 		enableQueryPushdown: enableQueryPushdown,
 		shardInfo:           shardInfo,
 		seriesStatsReporter: seriesStatsReporter,
+		queryHints:          queryHints,
 	}
 }
 
@@ -232,7 +239,12 @@ func (s *seriesServer) Context() context.Context {
 
 // aggrsFromFunc infers aggregates of the underlying data based on the wrapping
 // function of a series selection.
-func aggrsFromFunc(f string) []storepb.Aggr {
+func aggrsFromFunc(sf *storepb.Func) []storepb.Aggr {
+	if sf == nil {
+		return []storepb.Aggr{storepb.Aggr_COUNT, storepb.Aggr_SUM}
+	}
+
+	f := sf.Name
 	if f == "min" || strings.HasPrefix(f, "min_") {
 		return []storepb.Aggr{storepb.Aggr_MIN}
 	}
@@ -256,7 +268,7 @@ func aggrsFromFunc(f string) []storepb.Aggr {
 func storeHintsFromPromHints(hints *storage.SelectHints) *storepb.QueryHints {
 	return &storepb.QueryHints{
 		StepMillis: hints.Step,
-		Func: &storepb.Func{
+		AggrFunc: &storepb.Func{
 			Name: hints.Func,
 		},
 		Grouping: &storepb.Grouping{
@@ -267,17 +279,24 @@ func storeHintsFromPromHints(hints *storage.SelectHints) *storepb.QueryHints {
 	}
 }
 
-func (q *querier) Select(_ bool, hints *storage.SelectHints, ms ...*labels.Matcher) storage.SeriesSet {
-	if hints == nil {
-		hints = &storage.SelectHints{
-			Start: q.mint,
-			End:   q.maxt,
-		}
-	}
+func (q *querier) Select(_ bool, selectHints *storage.SelectHints, allMatchers ...*labels.Matcher) storage.SeriesSet {
+	var (
+		hints          storepb.QueryHints
+		ms             = make([]*labels.Matcher, 0, len(allMatchers)-1)
+		matcherStrings = make([]string, 0, len(allMatchers)-1)
+	)
 
-	matchers := make([]string, len(ms))
-	for i, m := range ms {
-		matchers[i] = m.String()
+	for _, m := range allMatchers {
+		if m.Name == "__thanos_selector_id" {
+			hints = q.queryHints[m.Value]
+			hints.StartMillis = selectHints.Start
+			hints.EndMillis = selectHints.End
+			hints.StepMillis = selectHints.Step
+			continue
+		}
+
+		ms = append(ms, m)
+		matcherStrings = append(matcherStrings, m.String())
 	}
 
 	// The querier has a context but it gets canceled, as soon as query evaluation is completed, by the engine.
@@ -285,9 +304,7 @@ func (q *querier) Select(_ bool, hints *storage.SelectHints, ms ...*labels.Match
 	ctx := tracing.CopyTraceContext(context.Background(), q.ctx)
 	ctx, cancel := context.WithTimeout(ctx, q.selectTimeout)
 	span, ctx := tracing.StartSpan(ctx, "querier_select", opentracing.Tags{
-		"minTime":  hints.Start,
-		"maxTime":  hints.End,
-		"matchers": "{" + strings.Join(matchers, ",") + "}",
+		"matchers": "{" + strings.Join(matcherStrings, ",") + "}",
 	})
 
 	promise := make(chan storage.SeriesSet, 1)
@@ -330,13 +347,13 @@ func (q *querier) Select(_ bool, hints *storage.SelectHints, ms ...*labels.Match
 	}}
 }
 
-func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms ...*labels.Matcher) (storage.SeriesSet, storepb.SeriesStatsCounter, error) {
+func (q *querier) selectFn(ctx context.Context, hints storepb.QueryHints, ms ...*labels.Matcher) (storage.SeriesSet, storepb.SeriesStatsCounter, error) {
 	sms, err := storepb.PromMatchersToMatchers(ms...)
 	if err != nil {
 		return nil, storepb.SeriesStatsCounter{}, errors.Wrap(err, "convert matchers")
 	}
 
-	aggrs := aggrsFromFunc(hints.Func)
+	aggrs := aggrsFromFunc(hints.AggrFunc)
 
 	// TODO(bwplotka): Pass it using the SeriesRequest instead of relying on context.
 	ctx = context.WithValue(ctx, store.StoreMatcherKey, q.storeDebugMatchers)
@@ -345,7 +362,7 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 	resp := &seriesServer{ctx: ctx}
 	var queryHints *storepb.QueryHints
 	if q.enableQueryPushdown {
-		queryHints = storeHintsFromPromHints(hints)
+		queryHints = &hints
 	}
 
 	replicaLabels := q.replicaLabels
@@ -353,8 +370,8 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 		replicaLabels = nil
 	}
 	if err := q.proxy.Series(&storepb.SeriesRequest{
-		MinTime:                 hints.Start,
-		MaxTime:                 hints.End,
+		MinTime:                 hints.StartMillis,
+		MaxTime:                 hints.EndMillis,
 		Matchers:                sms,
 		MaxResolutionWindow:     q.maxResolutionMillis,
 		Aggregates:              aggrs,
@@ -362,8 +379,8 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 		ShardInfo:               q.shardInfo,
 		PartialResponseDisabled: !q.partialResponse,
 		SkipChunks:              q.skipChunks,
-		Step:                    hints.Step,
-		Range:                   hints.Range,
+		Step:                    hints.StepMillis,
+		Range:                   hints.RangeMillis(),
 		SortWithoutLabels:       replicaLabels,
 	}, resp); err != nil {
 		return nil, storepb.SeriesStatsCounter{}, errors.Wrap(err, "proxy Series()")
@@ -377,7 +394,7 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 	// Delete the metric's name from the result because that's what the
 	// PromQL does either way and we want our iterator to work with data
 	// that was either pushed down or not.
-	if q.enableQueryPushdown && (hints.Func == "max_over_time" || hints.Func == "min_over_time") {
+	if q.enableQueryPushdown && hints.TimeFunc != nil && (hints.TimeFunc.Name == "max_over_time" || hints.TimeFunc.Name == "min_over_time") {
 		for i := range resp.seriesSet {
 			lbls := resp.seriesSet[i].Labels
 			for j, lbl := range lbls {
@@ -411,7 +428,7 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 
 	// The merged series set assembles all potentially-overlapping time ranges of the same series into a single one.
 	// TODO(bwplotka): We could potentially dedup on chunk level, use chunk iterator for that when available.
-	return dedup.NewSeriesSet(set, q.replicaLabelSet, hints.Func, q.enableQueryPushdown), resp.seriesSetStats, nil
+	return dedup.NewSeriesSet(set, q.replicaLabelSet, hints.AggrFunc.Name, q.enableQueryPushdown), resp.seriesSetStats, nil
 }
 
 // LabelValues returns all potential values for a label name.

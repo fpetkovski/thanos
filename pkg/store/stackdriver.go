@@ -20,7 +20,10 @@ import (
 	"github.com/thanos-io/thanos/pkg/store/storepb"
 )
 
-const projectIDLabel = "project_id"
+const (
+	projectIDLabel    = "project_id"
+	metricLabelPrefix = "metric:"
+)
 
 type StackdriverStore struct {
 }
@@ -29,7 +32,7 @@ func NewStackdriverStore() *StackdriverStore {
 	return &StackdriverStore{}
 }
 
-func (store StackdriverStore) Info(ctx context.Context, request *storepb.InfoRequest) (*storepb.InfoResponse, error) {
+func (sdStore StackdriverStore) Info(ctx context.Context, request *storepb.InfoRequest) (*storepb.InfoResponse, error) {
 	return &storepb.InfoResponse{
 		MinTime:   math.MinInt64,
 		MaxTime:   math.MaxInt64,
@@ -37,32 +40,26 @@ func (store StackdriverStore) Info(ctx context.Context, request *storepb.InfoReq
 	}, nil
 }
 
-func (store StackdriverStore) Series(request *storepb.SeriesRequest, server storepb.Store_SeriesServer) error {
+func (sdStore StackdriverStore) Series(request *storepb.SeriesRequest, server storepb.Store_SeriesServer) error {
 	metricsClient, err := monitoring.NewMetricClient(server.Context())
 	if err != nil {
 		return err
 	}
 
-	params, err := getStackdriverParameters(request)
+	params, err := sdStore.getStackdriverParameters(request)
 	if err != nil {
 		return err
 	}
 
 	fmt.Println("Filters", params.filters)
 	fmt.Println("Project", params.projectName)
+	fmt.Println("Hints", request.QueryHints)
 
+	aggregation := sdStore.getAggregation(request.QueryHints)
 	it := metricsClient.ListTimeSeries(server.Context(), &monitoringpb.ListTimeSeriesRequest{
-		Name:     "projects/" + params.projectName,
-		Filter:   strings.Join(params.filters, " AND "),
-		PageSize: 10000000,
-		Aggregation: &monitoringpb.Aggregation{
-			AlignmentPeriod: &durationpb.Duration{
-				Seconds: 30 * 4,
-			},
-			CrossSeriesReducer: monitoringpb.Aggregation_REDUCE_SUM,
-			PerSeriesAligner:   monitoringpb.Aggregation_ALIGN_RATE,
-			GroupByFields:      []string{"resource.labels.cluster_name"},
-		},
+		Name:        "projects/" + params.projectName,
+		Filter:      strings.Join(params.filters, " AND "),
+		Aggregation: aggregation,
 		Interval: &monitoringpb.TimeInterval{
 			StartTime: timestamppb.New(time.UnixMilli(request.MinTime)),
 			EndTime:   timestamppb.New(time.UnixMilli(request.MaxTime)),
@@ -70,9 +67,7 @@ func (store StackdriverStore) Series(request *storepb.SeriesRequest, server stor
 	})
 
 	for {
-		start := time.Now()
 		timeSeries, err := it.Next()
-		fmt.Println("Got series in", time.Since(start))
 		if err == iterator.Done {
 			return nil
 		}
@@ -80,29 +75,34 @@ func (store StackdriverStore) Series(request *storepb.SeriesRequest, server stor
 			return err
 		}
 
-		start = time.Now()
-		fmt.Println("Sending series", timeSeries.Metric.Labels, timeSeries.Resource.Labels, len(timeSeries.Points))
-		if err := store.sendResponse(server, timeSeries); err != nil {
+		if len(timeSeries.Metric.Labels) == 0 {
+			timeSeries.Metric.Labels = make(map[string]string)
+		}
+		timeSeries.Resource.Labels[labels.MetricName] = params.metricName
+
+		if err := sdStore.sendResponse(server, request, aggregation.PerSeriesAligner, timeSeries); err != nil {
 			return err
 		}
-		fmt.Println("Sent series in", time.Since(start), "seconds")
 	}
 }
 
-func (store *StackdriverStore) sendResponse(
+func (sdStore *StackdriverStore) sendResponse(
 	server storepb.Store_SeriesServer,
+	request *storepb.SeriesRequest,
+	aligner monitoringpb.Aggregation_Aligner,
 	timeSeries *monitoringpb.TimeSeries,
 ) error {
 	lbls := make([]labelpb.ZLabel, 0, len(timeSeries.Metric.Labels)+len(timeSeries.Resource.Labels))
 	for name, value := range timeSeries.Metric.Labels {
 		lbls = append(lbls, labelpb.ZLabel{
-			Name:  "metric_" + name,
+			Name:  metricLabelPrefix + name,
 			Value: value,
 		})
 	}
+
 	for name, value := range timeSeries.Resource.Labels {
 		lbls = append(lbls, labelpb.ZLabel{
-			Name:  "resource_" + name,
+			Name:  name,
 			Value: value,
 		})
 	}
@@ -113,9 +113,15 @@ func (store *StackdriverStore) sendResponse(
 		return err
 	}
 
-	var minTime int64 = math.MaxInt64
-	var maxTime int64 = math.MinInt64
-	n := len(timeSeries.Points)
+	var (
+		minTime      int64   = math.MaxInt64
+		maxTime      int64   = math.MinInt64
+		cumVal       float64 = 0
+		n                    = len(timeSeries.Points)
+		invertRate           = aligner == monitoringpb.Aggregation_ALIGN_RATE
+		invertFactor         = float64(request.QueryHints.RangeMillis() / 2000)
+	)
+
 	for i := range timeSeries.Points {
 		point := timeSeries.Points[n-i-1]
 		if point.Interval.StartTime.GetSeconds() < minTime {
@@ -124,7 +130,14 @@ func (store *StackdriverStore) sendResponse(
 		if point.Interval.EndTime.GetSeconds() > maxTime {
 			maxTime = point.Interval.EndTime.GetSeconds()
 		}
-		a.Append(point.Interval.EndTime.GetSeconds()*1000, point.Value.GetDoubleValue())
+
+		ts := point.Interval.EndTime.GetSeconds() * 1000
+		v := point.Value.GetDoubleValue()
+		if invertRate {
+			v = v*invertFactor + cumVal
+			cumVal = v
+		}
+		a.Append(ts, v)
 	}
 
 	series := &storepb.Series{
@@ -151,7 +164,7 @@ type stackdriverQueryParams struct {
 	queryRange  int64
 }
 
-func getStackdriverParameters(request *storepb.SeriesRequest) (stackdriverQueryParams, error) {
+func (sdStore *StackdriverStore) getStackdriverParameters(request *storepb.SeriesRequest) (stackdriverQueryParams, error) {
 	var params stackdriverQueryParams
 
 	for _, m := range request.Matchers {
@@ -161,13 +174,8 @@ func getStackdriverParameters(request *storepb.SeriesRequest) (stackdriverQueryP
 		case projectIDLabel:
 			params.projectName = m.Value
 		default:
-			if strings.HasPrefix(m.Name, "resource_") {
-				m.Name = "resource.labels." + m.Name[len("resource_"):]
-			} else if strings.HasPrefix(m.Name, "metric_") {
-				m.Name = "metric.labels." + m.Name[len("metric_"):]
-			}
-
-			params.filters = append(params.filters, matcherToStackdriverFilter(m))
+			m.Name = sdStore.mapLabelName(m.Name)
+			params.filters = append(params.filters, m.PromString())
 		}
 	}
 
@@ -177,36 +185,101 @@ func getStackdriverParameters(request *storepb.SeriesRequest) (stackdriverQueryP
 	if params.metricName == "" {
 		return stackdriverQueryParams{}, errors.New("metric name has to be specified")
 	}
-	params.filters = append(params.filters, matcherToStackdriverFilter(storepb.LabelMatcher{
+
+	metricMatcher := storepb.LabelMatcher{
 		Type:  storepb.LabelMatcher_EQ,
 		Name:  "metric.type",
 		Value: params.metricName,
-	}))
-
+	}
+	params.filters = append(params.filters, metricMatcher.PromString())
 	params.queryRange = (request.MaxTime - request.MinTime) / 1000
 	return params, nil
 }
 
-func matcherToStackdriverFilter(m storepb.LabelMatcher) string {
-	var matcherType string
-	switch m.Type {
-	case storepb.LabelMatcher_EQ:
-		matcherType = "="
-	case storepb.LabelMatcher_NEQ:
-		matcherType = "!="
-	case storepb.LabelMatcher_RE:
-		matcherType = "=~"
-	case storepb.LabelMatcher_NRE:
-		matcherType = "!~"
+func (sdStore StackdriverStore) getAggregation(hints *storepb.QueryHints) *monitoringpb.Aggregation {
+	if hints == nil {
+		return nil
 	}
 
-	return fmt.Sprintf(`%s %s "%s"`, m.Name, matcherType, m.Value)
+	if hints.Grouping != nil && !hints.Grouping.By {
+		return nil
+	}
+
+	var lbls []string
+	if hints.Grouping != nil {
+		for _, lbl := range hints.Grouping.Labels {
+			lbls = append(lbls, sdStore.mapLabelName(lbl))
+		}
+	}
+
+	// Use a default alignment interval of 2 minute.
+	var alignmentInterval int64 = 120
+	if hints.TimeFunc != nil {
+		// Align samples using half of the range interval so that
+		// rate/increase in PromQL can have two input samples.
+		alignmentInterval = hints.RangeMillis() / 1000 / 2
+	}
+
+	return &monitoringpb.Aggregation{
+		AlignmentPeriod: &durationpb.Duration{
+			Seconds: alignmentInterval,
+		},
+		CrossSeriesReducer: reducerFromAggrFunc(hints.AggrFunc),
+		PerSeriesAligner:   alignerFromTimeFunc(hints.TimeFunc),
+		GroupByFields:      lbls,
+	}
 }
 
-func (store StackdriverStore) LabelNames(ctx context.Context, request *storepb.LabelNamesRequest) (*storepb.LabelNamesResponse, error) {
+func (sdStore StackdriverStore) mapLabelName(lbl string) string {
+	if strings.HasPrefix(lbl, metricLabelPrefix) {
+		return "metric.labels." + lbl[len(metricLabelPrefix):]
+	}
+
+	return "resource.labels." + lbl
+}
+
+func alignerFromTimeFunc(timeFunc *storepb.Func) monitoringpb.Aggregation_Aligner {
+	if timeFunc == nil {
+		return monitoringpb.Aggregation_ALIGN_MEAN
+	}
+	switch timeFunc.Name {
+	case "rate", "increase", "delta", "idelta", "irate":
+		return monitoringpb.Aggregation_ALIGN_RATE
+	case "avg_over_time":
+		return monitoringpb.Aggregation_ALIGN_MEAN
+	case "sum_over_time":
+		return monitoringpb.Aggregation_ALIGN_SUM
+	case "count_over_time":
+		return monitoringpb.Aggregation_ALIGN_COUNT
+	default:
+		return monitoringpb.Aggregation_ALIGN_MEAN
+	}
+}
+
+func reducerFromAggrFunc(timeFunc *storepb.Func) monitoringpb.Aggregation_Reducer {
+	if timeFunc == nil {
+		return monitoringpb.Aggregation_REDUCE_NONE
+	}
+	switch timeFunc.Name {
+	case "sum":
+		return monitoringpb.Aggregation_REDUCE_SUM
+	case "min":
+		return monitoringpb.Aggregation_REDUCE_MIN
+	case "max":
+		return monitoringpb.Aggregation_REDUCE_MAX
+	case "count":
+		return monitoringpb.Aggregation_REDUCE_COUNT
+	case "avg":
+		return monitoringpb.Aggregation_REDUCE_MEAN
+	default:
+		return monitoringpb.Aggregation_REDUCE_NONE
+	}
+}
+
+func (sdStore StackdriverStore) LabelNames(ctx context.Context, request *storepb.LabelNamesRequest) (*storepb.LabelNamesResponse, error) {
 	return &storepb.LabelNamesResponse{}, nil
 }
 
-func (store StackdriverStore) LabelValues(ctx context.Context, request *storepb.LabelValuesRequest) (*storepb.LabelValuesResponse, error) {
+func (sdStore StackdriverStore) LabelValues(ctx context.Context, request *storepb.LabelValuesRequest) (*storepb.LabelValuesResponse, error) {
 	return &storepb.LabelValuesResponse{}, nil
 }
