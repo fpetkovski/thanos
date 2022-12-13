@@ -13,6 +13,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
 	"google.golang.org/api/iterator"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
@@ -53,7 +54,15 @@ func (store StackdriverStore) Series(request *storepb.SeriesRequest, server stor
 	it := metricsClient.ListTimeSeries(server.Context(), &monitoringpb.ListTimeSeriesRequest{
 		Name:     "projects/" + params.projectName,
 		Filter:   strings.Join(params.filters, " AND "),
-		PageSize: 1000,
+		PageSize: 10000000,
+		Aggregation: &monitoringpb.Aggregation{
+			AlignmentPeriod: &durationpb.Duration{
+				Seconds: 30 * 4,
+			},
+			CrossSeriesReducer: monitoringpb.Aggregation_REDUCE_SUM,
+			PerSeriesAligner:   monitoringpb.Aggregation_ALIGN_RATE,
+			GroupByFields:      []string{"resource.labels.cluster_name"},
+		},
 		Interval: &monitoringpb.TimeInterval{
 			StartTime: timestamppb.New(time.UnixMilli(request.MinTime)),
 			EndTime:   timestamppb.New(time.UnixMilli(request.MaxTime)),
@@ -61,18 +70,22 @@ func (store StackdriverStore) Series(request *storepb.SeriesRequest, server stor
 	})
 
 	for {
+		start := time.Now()
 		timeSeries, err := it.Next()
+		fmt.Println("Got series in", time.Since(start))
 		if err == iterator.Done {
 			return nil
 		}
 		if err != nil {
-			fmt.Println(err.Error())
 			return err
 		}
 
+		start = time.Now()
+		fmt.Println("Sending series", timeSeries.Metric.Labels, timeSeries.Resource.Labels, len(timeSeries.Points))
 		if err := store.sendResponse(server, timeSeries); err != nil {
 			return err
 		}
+		fmt.Println("Sent series in", time.Since(start), "seconds")
 	}
 }
 
@@ -80,10 +93,16 @@ func (store *StackdriverStore) sendResponse(
 	server storepb.Store_SeriesServer,
 	timeSeries *monitoringpb.TimeSeries,
 ) error {
-	lbls := make([]labelpb.ZLabel, 0, len(timeSeries.Metric.Labels))
+	lbls := make([]labelpb.ZLabel, 0, len(timeSeries.Metric.Labels)+len(timeSeries.Resource.Labels))
 	for name, value := range timeSeries.Metric.Labels {
 		lbls = append(lbls, labelpb.ZLabel{
-			Name:  name,
+			Name:  "metric_" + name,
+			Value: value,
+		})
+	}
+	for name, value := range timeSeries.Resource.Labels {
+		lbls = append(lbls, labelpb.ZLabel{
+			Name:  "resource_" + name,
 			Value: value,
 		})
 	}
@@ -96,15 +115,16 @@ func (store *StackdriverStore) sendResponse(
 
 	var minTime int64 = math.MaxInt64
 	var maxTime int64 = math.MinInt64
-	for _, s := range timeSeries.Points {
-		if s.Interval.StartTime.GetSeconds() < minTime {
-			minTime = s.Interval.StartTime.GetSeconds()
+	n := len(timeSeries.Points)
+	for i := range timeSeries.Points {
+		point := timeSeries.Points[n-i-1]
+		if point.Interval.StartTime.GetSeconds() < minTime {
+			minTime = point.Interval.StartTime.GetSeconds()
 		}
-		if s.Interval.EndTime.GetSeconds() > maxTime {
-			maxTime = s.Interval.EndTime.GetSeconds()
+		if point.Interval.EndTime.GetSeconds() > maxTime {
+			maxTime = point.Interval.EndTime.GetSeconds()
 		}
-		fmt.Println(s.Value.GetDoubleValue())
-		a.Append(s.Interval.StartTime.GetSeconds()*1000, s.Value.GetDoubleValue())
+		a.Append(point.Interval.EndTime.GetSeconds()*1000, point.Value.GetDoubleValue())
 	}
 
 	series := &storepb.Series{
@@ -141,7 +161,12 @@ func getStackdriverParameters(request *storepb.SeriesRequest) (stackdriverQueryP
 		case projectIDLabel:
 			params.projectName = m.Value
 		default:
-			m.Name = "metric.labels." + m.Name
+			if strings.HasPrefix(m.Name, "resource_") {
+				m.Name = "resource.labels." + m.Name[len("resource_"):]
+			} else if strings.HasPrefix(m.Name, "metric_") {
+				m.Name = "metric.labels." + m.Name[len("metric_"):]
+			}
+
 			params.filters = append(params.filters, matcherToStackdriverFilter(m))
 		}
 	}

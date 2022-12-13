@@ -97,7 +97,7 @@ require (
 	golang.org/x/text v0.4.0
 	golang.org/x/time v0.1.0
 	google.golang.org/api v0.102.0
-	google.golang.org/genproto v0.0.0-20221109142239-94d6d90a7d66
+	google.golang.org/genproto v0.0.0-20221109142239-94d6d90a7d66 // indirect
 	google.golang.org/grpc v1.50.1
 	google.golang.org/grpc/examples v0.0.0-20211119005141-f45e61797429
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
@@ -279,6 +279,9 @@ replace (
 	github.com/thanos-community/promql-engine => /Users/fpetkovski/Projects/promql-engine
 
 	github.com/vimeo/galaxycache => github.com/thanos-community/galaxycache v0.0.0-20211122094458-3a32041a1f1e
+
+	// Until https://github.com/weaveworks/common/pull/262 is merged
+	github.com/weaveworks/common => github.com/rabenhorst/common v0.0.0-20221114111857-9eb1f146696e
 
 	// Override due to https://github.com/weaveworks/common/issues/239
 	google.golang.org/grpc => google.golang.org/grpc v1.45.0
