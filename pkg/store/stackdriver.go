@@ -91,6 +91,10 @@ func (sdStore stackdriverStore) Series(request *storepb.SeriesRequest, server st
 		return err
 	}
 
+	if request.SkipChunks {
+		return sdStore.rawSeries(request, server)
+	}
+
 	params, err := sdStore.getQueryParams(request.Matchers)
 	if err != nil {
 		return err
@@ -210,6 +214,90 @@ func (sdStore *stackdriverStore) sendResponse(
 	}
 
 	return server.Send(storepb.NewSeriesResponse(series))
+}
+
+func (sdStore *stackdriverStore) rawSeries(request *storepb.SeriesRequest, server storepb.Store_SeriesServer) error {
+	params, err := sdStore.getQueryParams(request.Matchers)
+	if err != nil {
+		return err
+	}
+	if params.metricName == "" {
+		return errors.New("metric name has to be specified")
+	}
+	if params.projectName == "" {
+		params.projectName = "shopify-observability-prom"
+	}
+
+	sdStore.mu.RLock()
+	defer sdStore.mu.RUnlock()
+
+	metrics, err := sdStore.getMetricDescriptors(server.Context(), request.Matchers)
+	if err != nil {
+		return err
+	}
+
+	resourceClient, err := monitoring.NewMetricClient(server.Context())
+	if err != nil {
+		return err
+	}
+
+	var once sync.Once
+	for {
+		it, err := metrics.Next()
+		if err == iterator.Done {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+
+		once.Do(func() {
+			if len(it.MonitoredResourceTypes) == 0 {
+				return
+			}
+
+			resources := resourceClient.ListMonitoredResourceDescriptors(server.Context(), &monitoringpb.ListMonitoredResourceDescriptorsRequest{
+				Name:   "projects/" + params.projectName,
+				Filter: "resource.type=" + it.MonitoredResourceTypes[0],
+			})
+			for {
+				it, err := resources.Next()
+				if err == iterator.Done {
+					break
+				}
+				if err != nil {
+					return
+				}
+				for _, lbl := range it.Labels {
+					if err := server.Send(storepb.NewSeriesResponse(&storepb.Series{
+						Labels: []labelpb.ZLabel{{
+							Name:  labels.MetricName,
+							Value: params.metricName,
+						}, {
+							Name:  lbl.Key,
+							Value: "_",
+						}},
+					})); err != nil {
+						continue
+					}
+				}
+			}
+		})
+
+		for _, lbl := range it.Labels {
+			if err := server.Send(storepb.NewSeriesResponse(&storepb.Series{
+				Labels: []labelpb.ZLabel{{
+					Name:  labels.MetricName,
+					Value: params.metricName,
+				}, {
+					Name:  lbl.Key,
+					Value: "_",
+				}},
+			})); err != nil {
+				return err
+			}
+		}
+	}
 }
 
 type stackdriverQueryParams struct {
