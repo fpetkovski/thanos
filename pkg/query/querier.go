@@ -281,7 +281,7 @@ func storeHintsFromPromHints(hints *storage.SelectHints) *storepb.QueryHints {
 
 func (q *querier) Select(_ bool, selectHints *storage.SelectHints, allMatchers ...*labels.Matcher) storage.SeriesSet {
 	var (
-		hints          storepb.QueryHints
+		hints          = storepb.QueryHints{StartMillis: q.mint, EndMillis: q.maxt}
 		ms             = make([]*labels.Matcher, 0, len(allMatchers)-1)
 		matcherStrings = make([]string, 0, len(allMatchers)-1)
 	)
@@ -289,9 +289,7 @@ func (q *querier) Select(_ bool, selectHints *storage.SelectHints, allMatchers .
 	for _, m := range allMatchers {
 		if m.Name == "__thanos_selector_id" {
 			hints = q.queryHints[m.Value]
-			hints.StartMillis = selectHints.Start
-			hints.EndMillis = selectHints.End
-			hints.StepMillis = selectHints.Step
+			hints.MergePromHints(selectHints)
 			continue
 		}
 
@@ -428,7 +426,7 @@ func (q *querier) selectFn(ctx context.Context, hints storepb.QueryHints, ms ...
 
 	// The merged series set assembles all potentially-overlapping time ranges of the same series into a single one.
 	// TODO(bwplotka): We could potentially dedup on chunk level, use chunk iterator for that when available.
-	return dedup.NewSeriesSet(set, q.replicaLabelSet, hints.AggrFunc.Name, q.enableQueryPushdown), resp.seriesSetStats, nil
+	return dedup.NewSeriesSet(set, q.replicaLabelSet, hints.AggrFuncName(), q.enableQueryPushdown), resp.seriesSetStats, nil
 }
 
 // LabelValues returns all potential values for a label name.

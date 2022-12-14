@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
@@ -13,6 +15,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
 	"google.golang.org/api/iterator"
+	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -25,14 +28,56 @@ const (
 	metricLabelPrefix = "metric:"
 )
 
-type StackdriverStore struct {
+type stackdriverStore struct {
+	mu *sync.RWMutex
+
+	// metricNamesMap is a map from Prometheus-compatible metric names
+	// to the original metric name in Stackdriver.
+	metricNamesMap map[string]string
+	// metricDescriptors is a list of all metric descriptors found in Stackdriver.
+	metricDescriptors []*metricpb.MetricDescriptor
 }
 
-func NewStackdriverStore() *StackdriverStore {
-	return &StackdriverStore{}
+func NewStackdriverStore() *stackdriverStore {
+	return &stackdriverStore{
+		mu:                &sync.RWMutex{},
+		metricNamesMap:    make(map[string]string),
+		metricDescriptors: make([]*metricpb.MetricDescriptor, 0),
+	}
 }
 
-func (sdStore StackdriverStore) Info(ctx context.Context, request *storepb.InfoRequest) (*storepb.InfoResponse, error) {
+func (sdStore *stackdriverStore) RefreshMetrics(ctx context.Context) error {
+	it, err := sdStore.getMetricDescriptors(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	namesMap := make(map[string]string)
+	metrics := make([]*metricpb.MetricDescriptor, 0)
+	for {
+		descriptor, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		metrics = append(metrics, descriptor)
+		promName := strings.ReplaceAll(strings.ReplaceAll(descriptor.Type, ".", ":"), "/", "_")
+		namesMap[promName] = descriptor.Type
+		descriptor.Type = promName
+	}
+
+	sdStore.mu.Lock()
+	sdStore.metricDescriptors = metrics
+	sdStore.metricNamesMap = namesMap
+	sdStore.mu.Unlock()
+
+	return nil
+}
+
+func (sdStore stackdriverStore) Info(ctx context.Context, request *storepb.InfoRequest) (*storepb.InfoResponse, error) {
 	return &storepb.InfoResponse{
 		MinTime:   math.MinInt64,
 		MaxTime:   math.MaxInt64,
@@ -40,15 +85,21 @@ func (sdStore StackdriverStore) Info(ctx context.Context, request *storepb.InfoR
 	}, nil
 }
 
-func (sdStore StackdriverStore) Series(request *storepb.SeriesRequest, server storepb.Store_SeriesServer) error {
+func (sdStore stackdriverStore) Series(request *storepb.SeriesRequest, server storepb.Store_SeriesServer) error {
 	metricsClient, err := monitoring.NewMetricClient(server.Context())
 	if err != nil {
 		return err
 	}
 
-	params, err := sdStore.getStackdriverParameters(request)
+	params, err := sdStore.getQueryParams(request.Matchers)
 	if err != nil {
 		return err
+	}
+	if params.metricName == "" {
+		return errors.New("metric name has to be specified")
+	}
+	if params.projectName == "" {
+		return errors.New("project_id label has to be specified")
 	}
 
 	fmt.Println("Filters", params.filters)
@@ -86,7 +137,7 @@ func (sdStore StackdriverStore) Series(request *storepb.SeriesRequest, server st
 	}
 }
 
-func (sdStore *StackdriverStore) sendResponse(
+func (sdStore *stackdriverStore) sendResponse(
 	server storepb.Store_SeriesServer,
 	request *storepb.SeriesRequest,
 	aligner monitoringpb.Aggregation_Aligner,
@@ -106,6 +157,10 @@ func (sdStore *StackdriverStore) sendResponse(
 			Value: value,
 		})
 	}
+
+	sort.Slice(lbls, func(i, j int) bool {
+		return lbls[i].Name < lbls[j].Name
+	})
 
 	c := chunkenc.NewXORChunk()
 	a, err := c.Appender()
@@ -161,13 +216,12 @@ type stackdriverQueryParams struct {
 	projectName string
 	metricName  string
 	filters     []string
-	queryRange  int64
 }
 
-func (sdStore *StackdriverStore) getStackdriverParameters(request *storepb.SeriesRequest) (stackdriverQueryParams, error) {
+func (sdStore *stackdriverStore) getQueryParams(matchers []storepb.LabelMatcher) (stackdriverQueryParams, error) {
 	var params stackdriverQueryParams
 
-	for _, m := range request.Matchers {
+	for _, m := range matchers {
 		switch m.Name {
 		case labels.MetricName:
 			params.metricName = m.Value
@@ -179,24 +233,26 @@ func (sdStore *StackdriverStore) getStackdriverParameters(request *storepb.Serie
 		}
 	}
 
-	if params.projectName == "" {
-		return stackdriverQueryParams{}, errors.New("project_id label has to be specified")
-	}
-	if params.metricName == "" {
-		return stackdriverQueryParams{}, errors.New("metric name has to be specified")
+	if params.metricName != "" {
+		sdStore.mu.RLock()
+		stackdriverMetricName, ok := sdStore.metricNamesMap[params.metricName]
+		sdStore.mu.RUnlock()
+		if !ok {
+			stackdriverMetricName = params.metricName
+		}
+
+		metricMatcher := storepb.LabelMatcher{
+			Type:  storepb.LabelMatcher_EQ,
+			Name:  "metric.type",
+			Value: stackdriverMetricName,
+		}
+		params.filters = append(params.filters, metricMatcher.PromString())
 	}
 
-	metricMatcher := storepb.LabelMatcher{
-		Type:  storepb.LabelMatcher_EQ,
-		Name:  "metric.type",
-		Value: params.metricName,
-	}
-	params.filters = append(params.filters, metricMatcher.PromString())
-	params.queryRange = (request.MaxTime - request.MinTime) / 1000
 	return params, nil
 }
 
-func (sdStore StackdriverStore) getAggregation(hints *storepb.QueryHints) *monitoringpb.Aggregation {
+func (sdStore *stackdriverStore) getAggregation(hints *storepb.QueryHints) *monitoringpb.Aggregation {
 	if hints == nil {
 		return nil
 	}
@@ -225,12 +281,12 @@ func (sdStore StackdriverStore) getAggregation(hints *storepb.QueryHints) *monit
 			Seconds: alignmentInterval,
 		},
 		CrossSeriesReducer: reducerFromAggrFunc(hints.AggrFunc),
-		PerSeriesAligner:   alignerFromTimeFunc(hints.TimeFunc),
+		PerSeriesAligner:   alignerFromHints(hints),
 		GroupByFields:      lbls,
 	}
 }
 
-func (sdStore StackdriverStore) mapLabelName(lbl string) string {
+func (sdStore *stackdriverStore) mapLabelName(lbl string) string {
 	if strings.HasPrefix(lbl, metricLabelPrefix) {
 		return "metric.labels." + lbl[len(metricLabelPrefix):]
 	}
@@ -238,11 +294,15 @@ func (sdStore StackdriverStore) mapLabelName(lbl string) string {
 	return "resource.labels." + lbl
 }
 
-func alignerFromTimeFunc(timeFunc *storepb.Func) monitoringpb.Aggregation_Aligner {
-	if timeFunc == nil {
+func alignerFromHints(hints *storepb.QueryHints) monitoringpb.Aggregation_Aligner {
+	if hints == nil || (hints.TimeFunc == nil && hints.AggrFunc == nil) {
+		return monitoringpb.Aggregation_ALIGN_NONE
+	}
+	if hints.TimeFunc == nil && hints.AggrFunc != nil {
 		return monitoringpb.Aggregation_ALIGN_MEAN
 	}
-	switch timeFunc.Name {
+
+	switch hints.TimeFunc.Name {
 	case "rate", "increase", "delta", "idelta", "irate":
 		return monitoringpb.Aggregation_ALIGN_RATE
 	case "avg_over_time":
@@ -276,10 +336,76 @@ func reducerFromAggrFunc(timeFunc *storepb.Func) monitoringpb.Aggregation_Reduce
 	}
 }
 
-func (sdStore StackdriverStore) LabelNames(ctx context.Context, request *storepb.LabelNamesRequest) (*storepb.LabelNamesResponse, error) {
-	return &storepb.LabelNamesResponse{}, nil
+func (sdStore stackdriverStore) LabelNames(ctx context.Context, request *storepb.LabelNamesRequest) (*storepb.LabelNamesResponse, error) {
+	sdStore.mu.RLock()
+	defer sdStore.mu.RUnlock()
+
+	lset := make(map[string]struct{})
+	for _, metric := range sdStore.metricDescriptors {
+		for _, lbl := range metric.Labels {
+			lset[lbl.Key] = struct{}{}
+		}
+	}
+
+	lbls := make([]string, 0, len(lset))
+	for lbl := range lset {
+		lbls = append(lbls, lbl)
+	}
+	sort.Strings(lbls)
+	return &storepb.LabelNamesResponse{
+		Names: lbls,
+	}, nil
 }
 
-func (sdStore StackdriverStore) LabelValues(ctx context.Context, request *storepb.LabelValuesRequest) (*storepb.LabelValuesResponse, error) {
-	return &storepb.LabelValuesResponse{}, nil
+func (sdStore stackdriverStore) LabelValues(ctx context.Context, request *storepb.LabelValuesRequest) (*storepb.LabelValuesResponse, error) {
+	sdStore.mu.RLock()
+	defer sdStore.mu.RUnlock()
+
+	valuesMap := make(map[string]struct{})
+	lset := make(map[string]struct{})
+	for _, metric := range sdStore.metricDescriptors {
+		for _, lbl := range metric.Labels {
+			lset[lbl.Key] = struct{}{}
+		}
+
+		if request.Label == labels.MetricName {
+			valuesMap[metric.Type] = struct{}{}
+			continue
+		}
+
+		for _, lbl := range metric.Labels {
+			if lbl.Key == request.Label {
+				valuesMap[lbl.Key] = struct{}{}
+			}
+		}
+	}
+
+	values := make([]string, 0, len(valuesMap))
+	for value := range valuesMap {
+		values = append(values, value)
+	}
+
+	return &storepb.LabelValuesResponse{
+		Values: values,
+	}, nil
+}
+
+func (sdStore *stackdriverStore) getMetricDescriptors(ctx context.Context, matchers []storepb.LabelMatcher) (*monitoring.MetricDescriptorIterator, error) {
+	metricsClient, err := monitoring.NewMetricClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	params, err := sdStore.getQueryParams(matchers)
+	if err != nil {
+		return nil, err
+	}
+	if params.projectName == "" {
+		params.projectName = "shopify-observability-prom"
+	}
+
+	return metricsClient.ListMetricDescriptors(ctx, &monitoringpb.ListMetricDescriptorsRequest{
+		Name:   "projects/" + params.projectName,
+		Filter: strings.Join(params.filters, " AND "),
+	}), nil
 }

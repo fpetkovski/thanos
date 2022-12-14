@@ -1,6 +1,9 @@
 package main
 
 import (
+	"context"
+	"time"
+
 	"github.com/efficientgo/core/errors"
 	extflag "github.com/efficientgo/tools/extkingpin"
 	"github.com/go-kit/log"
@@ -15,6 +18,7 @@ import (
 	"github.com/thanos-io/thanos/pkg/extprom"
 	"github.com/thanos-io/thanos/pkg/logging"
 	"github.com/thanos-io/thanos/pkg/prober"
+	"github.com/thanos-io/thanos/pkg/runutil"
 	grpcserver "github.com/thanos-io/thanos/pkg/server/grpc"
 	"github.com/thanos-io/thanos/pkg/store"
 )
@@ -60,21 +64,34 @@ func runStackdriverStore(
 		prober.NewInstrumentation(comp, logger, extprom.WrapRegistererWithPrefix("thanos_", reg)),
 	)
 
-	sdStore := store.StackdriverStore{}
+	sdStore := store.NewStackdriverStore()
 	srv := grpcserver.New(logger, reg, tracer, grpcLogOpts, tagOpts, comp, grpcProbe,
 		grpcserver.WithServer(store.RegisterStoreServer(sdStore)),
 		grpcserver.WithListen(conf.grpc.bindAddress),
 	)
 
-	g.Add(func() error {
-		statusProber.Healthy()
-		return srv.ListenAndServe()
-	}, func(err error) {
+	stopDiscovery := make(chan struct{})
+	shutdown := func(err error) {
 		statusProber.NotReady(err)
 		defer statusProber.NotHealthy(err)
 
+		close(stopDiscovery)
 		srv.Shutdown(err)
-	})
+	}
+
+	g.Add(func() error {
+		if err := sdStore.RefreshMetrics(context.Background()); err != nil {
+			return err
+		}
+		return runutil.Repeat(1*time.Hour, stopDiscovery, func() error {
+			return sdStore.RefreshMetrics(context.Background())
+		})
+	}, shutdown)
+
+	g.Add(func() error {
+		statusProber.Healthy()
+		return srv.ListenAndServe()
+	}, shutdown)
 
 	return g.Run()
 }
