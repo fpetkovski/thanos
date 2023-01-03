@@ -509,16 +509,21 @@ func (e *EndpointSet) GetStoreClients() []store.Client {
 }
 
 // GetQueryAPIClients returns a list of all active query API clients.
-func (e *EndpointSet) GetQueryAPIClients() []querypb.QueryClient {
+func (e *EndpointSet) GetQueryAPIClients() []Client {
 	endpoints := e.getQueryableRefs()
 
-	stores := make([]querypb.QueryClient, 0, len(endpoints))
+	queryClients := make([]Client, 0, len(endpoints))
 	for _, er := range endpoints {
 		if er.HasQueryAPI() {
-			stores = append(stores, querypb.NewQueryClient(er.cc))
+			_, maxt := er.timeRange()
+			queryClients = append(queryClients, Client{
+				maxt:        maxt,
+				labelSets:   er.labelSets(),
+				queryClient: querypb.NewQueryClient(er.cc),
+			})
 		}
 	}
-	return stores
+	return queryClients
 }
 
 // GetRulesClients returns a list of all active rules clients.
