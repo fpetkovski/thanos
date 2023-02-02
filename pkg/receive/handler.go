@@ -581,6 +581,9 @@ func (h *Handler) forward(ctx context.Context, tenant string, r replica, wreq *p
 
 	wreqs := make(map[endpointReplica]trackedSeries)
 	for tsID, ts := range wreq.Timeseries {
+		if len(ts.Samples) == 0 && len(ts.Exemplars) == 0 && len(ts.Histograms) == 0 {
+			continue
+		}
 		for _, rn := range replicas {
 			endpoint, err := h.hashring.GetN(tenant, &ts, rn)
 			if err != nil {
