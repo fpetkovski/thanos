@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -671,6 +672,7 @@ func runQuery(
 			queryEngine = engine.New(engine.Opts{EngineOpts: engineOpts, LogicalOptimizers: logicalOptimizers})
 		} else {
 			opts := engine.Opts{
+				DebugWriter:       os.Stdout,
 				EngineOpts:        engineOpts,
 				LogicalOptimizers: logicalOptimizers,
 			}
