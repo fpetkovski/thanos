@@ -24,6 +24,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/thanos-io/thanos/pkg/api/status"
+	"github.com/thanos-io/thanos/pkg/info/infopb"
 
 	"github.com/thanos-io/objstore"
 
@@ -128,6 +129,22 @@ func (l *localClient) TimeRange() (mint int64, maxt int64) {
 func (l *localClient) GuaranteedMinTime() int64 {
 	mint, _ := l.timeRangeFunc()
 	return store.GuaranteedMinTime(l.nowFunc(), mint, l.tsdbOpts.RetentionDuration, l.tsdbOpts.MinBlockDuration)
+}
+
+func (l *localClient) TSDBInfos() []infopb.TSDBInfo {
+	labelsets := l.labelSetFunc()
+	if len(labelsets) == 0 {
+		return []infopb.TSDBInfo{}
+	}
+
+	mint, maxt := l.timeRangeFunc()
+	return []infopb.TSDBInfo{
+		{
+			Labels:  labelsets[0],
+			MinTime: mint,
+			MaxTime: maxt,
+		},
+	}
 }
 
 func (l *localClient) String() string {

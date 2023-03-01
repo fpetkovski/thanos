@@ -25,6 +25,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/thanos-io/thanos/pkg/component"
+	"github.com/thanos-io/thanos/pkg/info/infopb"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
 	"github.com/thanos-io/thanos/pkg/store/storepb"
 	"github.com/thanos-io/thanos/pkg/strutil"
@@ -53,6 +54,9 @@ type Client interface {
 
 	// TimeRange returns minimum and maximum time range of data in the store.
 	TimeRange() (mint int64, maxt int64)
+
+	// TSDBInfos returns metadata about each TSDB backed by the client.
+	TSDBInfos() []infopb.TSDBInfo
 
 	// GuaranteedMinTime returns the minimum time that a store always guarantees to have.
 	GuaranteedMinTime() int64
@@ -278,6 +282,14 @@ func (s *ProxyStore) TimeRange() (int64, int64) {
 	}
 
 	return minTime, maxTime
+}
+
+func (s *ProxyStore) TSDBInfos() []infopb.TSDBInfo {
+	infos := make([]infopb.TSDBInfo, 0)
+	for _, store := range s.stores() {
+		infos = append(infos, store.TSDBInfos()...)
+	}
+	return infos
 }
 
 func (s *ProxyStore) GuaranteedMinTime() int64 {

@@ -804,6 +804,7 @@ func runQuery(
 						GuaranteedMinTime:            proxy.GuaranteedMinTime(),
 						SupportsSharding:             true,
 						SupportsWithoutReplicaLabels: true,
+						TsdbInfos:                    proxy.TSDBInfos(),
 					}
 				}
 				return nil

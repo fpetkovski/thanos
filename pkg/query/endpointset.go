@@ -528,9 +528,9 @@ func (e *EndpointSet) GetQueryAPIClients() []Client {
 	queryClients := make([]Client, 0, len(endpoints))
 	for _, er := range endpoints {
 		if er.HasQueryAPI() {
-			_, maxt := er.timeRange()
+			//_, _ := er.timeRange()
 			client := querypb.NewQueryClient(er.cc)
-			queryClients = append(queryClients, NewClient(client, er.addr, er.GuaranteedMinTime(), maxt, er.labelSets()))
+			queryClients = append(queryClients, NewClient(client, er.addr, er.TSDBInfos()))
 		}
 	}
 	return queryClients
@@ -797,6 +797,18 @@ func (er *endpointRef) TimeRange() (mint, maxt int64) {
 
 	mint, maxt = er.timeRange()
 	return mint, maxt
+}
+
+func (er *endpointRef) TSDBInfos() []infopb.TSDBInfo {
+	er.mtx.RLock()
+	defer er.mtx.RUnlock()
+
+	if er.metadata == nil || er.metadata.Store == nil {
+		return nil
+	}
+
+	// Currently, min/max time of only StoreAPI is being updated by all components.
+	return er.metadata.Store.TsdbInfos
 }
 
 func (er *endpointRef) timeRange() (int64, int64) {

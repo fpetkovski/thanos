@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/thanos-io/thanos/pkg/info/infopb"
 	"hash"
 	"io"
 	"net/http"
@@ -146,6 +147,7 @@ func (p *PrometheusStore) putBuffer(b *[]byte) {
 // Series returns all series for a requested time range and label matcher.
 func (p *PrometheusStore) Series(r *storepb.SeriesRequest, s storepb.Store_SeriesServer) error {
 	extLset := p.externalLabelsFn()
+
 	match, matchers, err := matchesExternalLabels(r.Matchers, extLset)
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
@@ -297,7 +299,6 @@ func (p *PrometheusStore) queryPrometheus(
 		sort.Slice(seriesLbls, func(i, j int) bool {
 			return seriesLbls.Less(i, j)
 		})
-
 		// Attach external labels for compatibility with remote read.
 		finalLbls := labelpb.ExtendSortedLabels(seriesLbls, externalLbls)
 		finalLbls = append(finalLbls, dedup.PushdownMarker)
@@ -756,6 +757,24 @@ func (p *PrometheusStore) LabelSet() []labelpb.ZLabelSet {
 	}
 
 	return labelset
+}
+
+func (p *PrometheusStore) TSDBInfos() []infopb.TSDBInfo {
+	labels := p.LabelSet()
+	if len(labels) == 0 {
+		return []infopb.TSDBInfo{}
+	}
+
+	mint, maxt := p.Timestamps()
+	return []infopb.TSDBInfo{
+		{
+			Labels: labelpb.ZLabelSet{
+				Labels: labels[0].Labels,
+			},
+			MinTime: mint,
+			MaxTime: maxt,
+		},
+	}
 }
 
 func (p *PrometheusStore) Timestamps() (mint int64, maxt int64) {

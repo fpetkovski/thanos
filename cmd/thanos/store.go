@@ -439,6 +439,7 @@ func runStore(
 					GuaranteedMinTime:            mint,
 					SupportsSharding:             true,
 					SupportsWithoutReplicaLabels: true,
+					TsdbInfos:                    bs.TSDBInfos(),
 				}
 			}
 			return nil
