@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/thanos-io/thanos/pkg/api/query/querypb"
+	"github.com/thanos-io/thanos/pkg/bloom"
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -819,6 +820,17 @@ func (er *endpointRef) timeRange() (int64, int64) {
 
 	// Currently, min/max time of only StoreAPI is being updated by all components.
 	return er.metadata.Store.MinTime, er.metadata.Store.MaxTime
+}
+
+func (er *endpointRef) LabelNamesBloom() bloom.Filter {
+	er.mtx.RLock()
+	defer er.mtx.RUnlock()
+
+	if er.metadata == nil || er.metadata.Store == nil || er.metadata.Store.LabelNamesBloom == nil {
+		return bloom.NewAlwaysTrueFilter()
+	}
+
+	return bloom.NewFromBytes(er.metadata.Store.LabelNamesBloom.BloomFilterData)
 }
 
 func (er *endpointRef) SupportsSharding() bool {

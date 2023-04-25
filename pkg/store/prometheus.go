@@ -33,6 +33,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/thanos-io/thanos/pkg/bloom"
 	"github.com/thanos-io/thanos/pkg/component"
 	"github.com/thanos-io/thanos/pkg/dedup"
 	"github.com/thanos-io/thanos/pkg/httpconfig"
@@ -53,8 +54,10 @@ type PrometheusStore struct {
 	buffers          sync.Pool
 	component        component.StoreAPI
 	externalLabelsFn func() labels.Labels
-	promVersion      func() string
-	timestamps       func() (mint int64, maxt int64)
+	labelNamesBloom  func() bloom.Filter
+
+	promVersion func() string
+	timestamps  func() (mint int64, maxt int64)
 
 	remoteReadAcceptableResponses []prompb.ReadRequest_ResponseType
 
@@ -78,6 +81,7 @@ func NewPrometheusStore(
 	component component.StoreAPI,
 	externalLabelsFn func() labels.Labels,
 	timestamps func() (mint int64, maxt int64),
+	labelNamesBloom func() bloom.Filter,
 	promVersion func() string,
 ) (*PrometheusStore, error) {
 	if logger == nil {
@@ -91,6 +95,7 @@ func NewPrometheusStore(
 		externalLabelsFn:              externalLabelsFn,
 		promVersion:                   promVersion,
 		timestamps:                    timestamps,
+		labelNamesBloom:               labelNamesBloom,
 		remoteReadAcceptableResponses: []prompb.ReadRequest_ResponseType{prompb.ReadRequest_STREAMED_XOR_CHUNKS, prompb.ReadRequest_SAMPLES},
 		buffers: sync.Pool{New: func() interface{} {
 			b := make([]byte, 0, initialBufSize)
@@ -777,4 +782,8 @@ func (p *PrometheusStore) TSDBInfos() []infopb.TSDBInfo {
 
 func (p *PrometheusStore) Timestamps() (mint int64, maxt int64) {
 	return p.timestamps()
+}
+
+func (p *PrometheusStore) LabelNamesBloom() bloom.Filter {
+	return p.labelNamesBloom()
 }

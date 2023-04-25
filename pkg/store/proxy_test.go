@@ -24,12 +24,14 @@ import (
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/efficientgo/core/testutil"
 
+	"github.com/thanos-io/thanos/pkg/bloom"
 	"github.com/thanos-io/thanos/pkg/component"
 	"github.com/thanos-io/thanos/pkg/info/infopb"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
@@ -619,6 +621,40 @@ func TestProxyStore_Series(t *testing.T) {
 				{
 					lset:   labels.FromStrings("a", "b"),
 					chunks: [][]sample{{{0, 0}, {2, 1}, {3, 2}}},
+				},
+			},
+		},
+		{
+			title: "deduplicate by TSDB internal label",
+			storeAPIs: []Client{
+				&storetestutil.TestClient{
+					StoreClient: &mockedStoreAPI{
+						RespSeries: []*storepb.SeriesResponse{
+							storeSeriesResponse(t, labels.FromStrings("env", "1", "id", "centos", "instance", "1"), []sample{{0, 0}}),
+							storeSeriesResponse(t, labels.FromStrings("env", "1", "id", "centos", "instance", "2"), []sample{{0, 0}}),
+							storeSeriesResponse(t, labels.FromStrings("env", "2", "id", "centos", "instance", "1"), []sample{{0, 0}}),
+							storeSeriesResponse(t, labels.FromStrings("env", "2", "id", "centos", "instance", "2"), []sample{{0, 0}}),
+						},
+					},
+					MinTime:               1,
+					MaxTime:               300,
+					LabelNamesBloomFilter: bloom.NewFilterForStrings("env", "id", "instance"),
+				},
+			},
+			req: &storepb.SeriesRequest{
+				MinTime:              1,
+				MaxTime:              300,
+				Matchers:             []storepb.LabelMatcher{{Name: "id", Value: "centos", Type: storepb.LabelMatcher_RE}},
+				WithoutReplicaLabels: []string{"env"},
+			},
+			expectedSeries: []rawSeries{
+				{
+					lset:   labels.FromStrings("id", "centos", "instance", "1"),
+					chunks: [][]sample{{{0, 0}}},
+				},
+				{
+					lset:   labels.FromStrings("id", "centos", "instance", "2"),
+					chunks: [][]sample{{{0, 0}}},
 				},
 			},
 		},
@@ -1591,7 +1627,7 @@ func seriesEquals(t *testing.T, expected []rawSeries, got []storepb.Series) {
 	}
 
 	for i := range ret {
-		testutil.Equals(t, expected[i], ret[i])
+		require.Equal(t, expected[i], ret[i])
 	}
 }
 

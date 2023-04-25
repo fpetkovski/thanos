@@ -64,6 +64,12 @@ message StoreInfo {
 
     // TSDBInfos holds metadata for all TSDBs exposed by the store.
     repeated TSDBInfo tsdb_infos = 6 [(gogoproto.nullable) = false];
+
+    BloomFilter label_names_bloom = 7;
+}
+
+message BloomFilter {
+    bytes bloom_filter_data = 1;
 }
 
 // RulesInfo holds the metadata related to Rules API exposed by the component.

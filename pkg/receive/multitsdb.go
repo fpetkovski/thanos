@@ -31,6 +31,8 @@ import (
 
 	"github.com/thanos-io/objstore"
 
+	"github.com/thanos-io/thanos/pkg/bloom"
+
 	"github.com/thanos-io/thanos/pkg/block/metadata"
 	"github.com/thanos-io/thanos/pkg/component"
 	"github.com/thanos-io/thanos/pkg/errutil"
@@ -97,40 +99,50 @@ func NewMultiTSDB(
 
 type localClient struct {
 	storepb.StoreClient
-	labelSetFunc  func() []labelpb.ZLabelSet
-	timeRangeFunc func() (int64, int64)
-	tsdbOpts      *tsdb.Options
+	store *store.TSDBStore
 }
 
 func NewLocalClient(
 	c storepb.StoreClient,
-	labelSetFunc func() []labelpb.ZLabelSet,
-	timeRangeFunc func() (int64, int64),
-	tsdbOpts *tsdb.Options,
+	store *store.TSDBStore,
 ) store.Client {
 	return &localClient{
-		StoreClient:   c,
-		labelSetFunc:  labelSetFunc,
-		timeRangeFunc: timeRangeFunc,
-		tsdbOpts:      tsdbOpts,
+		StoreClient: c,
+		store:       store,
 	}
 }
 
+func newLocalClient(c storepb.StoreClient, store *store.TSDBStore) *localClient {
+	return &localClient{
+		StoreClient: c,
+		store:       store,
+	}
+}
+
+func (l *localClient) LabelNamesBloom() bloom.Filter {
+	labelNames, err := l.store.LabelNames(context.Background(), &storepb.LabelNamesRequest{})
+	if err != nil {
+		return bloom.NewAlwaysTrueFilter()
+	}
+
+	return bloom.NewFilterForStrings(labelNames.Names...)
+}
+
 func (l *localClient) LabelSets() []labels.Labels {
-	return labelpb.ZLabelSetsToPromLabelSets(l.labelSetFunc()...)
+	return labelpb.ZLabelSetsToPromLabelSets(l.store.LabelSet()...)
 }
 
 func (l *localClient) TimeRange() (mint int64, maxt int64) {
-	return l.timeRangeFunc()
+	return l.store.TimeRange()
 }
 
 func (l *localClient) TSDBInfos() []infopb.TSDBInfo {
-	labelsets := l.labelSetFunc()
+	labelsets := l.store.LabelSet()
 	if len(labelsets) == 0 {
 		return []infopb.TSDBInfo{}
 	}
 
-	mint, maxt := l.timeRangeFunc()
+	mint, maxt := l.store.TimeRange()
 	return []infopb.TSDBInfo{
 		{
 			Labels:  labelsets[0],
@@ -141,7 +153,7 @@ func (l *localClient) TSDBInfos() []infopb.TSDBInfo {
 }
 
 func (l *localClient) String() string {
-	mint, maxt := l.timeRangeFunc()
+	mint, maxt := l.store.TimeRange()
 	return fmt.Sprintf(
 		"LabelSets: %v MinTime: %d MaxTime: %d",
 		labelpb.PromLabelSetsToString(l.LabelSets()), mint, maxt,
@@ -186,7 +198,7 @@ func (t *tenant) store() *store.TSDBStore {
 	return t.storeTSDB
 }
 
-func (t *tenant) client(logger log.Logger, tsdbOpts *tsdb.Options) store.Client {
+func (t *tenant) client(logger log.Logger) store.Client {
 	t.mtx.RLock()
 	defer t.mtx.RUnlock()
 
@@ -196,7 +208,7 @@ func (t *tenant) client(logger log.Logger, tsdbOpts *tsdb.Options) store.Client 
 	}
 
 	client := storepb.ServerAsClient(store.NewRecoverableStoreServer(logger, tsdbStore), 0)
-	return NewLocalClient(client, tsdbStore.LabelSet, tsdbStore.TimeRange, tsdbOpts)
+	return newLocalClient(client, tsdbStore)
 }
 
 func (t *tenant) exemplars() *exemplars.TSDB {
@@ -495,7 +507,7 @@ func (t *MultiTSDB) TSDBLocalClients() []store.Client {
 
 	res := make([]store.Client, 0, len(t.tenants))
 	for _, tenant := range t.tenants {
-		client := tenant.client(t.logger, t.tsdbOpts)
+		client := tenant.client(t.logger)
 		if client != nil {
 			res = append(res, client)
 		}

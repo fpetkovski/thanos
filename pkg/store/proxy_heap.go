@@ -574,8 +574,9 @@ func newAsyncRespSet(
 		return nil, err
 	}
 
-	var labelsToRemove map[string]struct{}
-	if !st.SupportsWithoutReplicaLabels() && len(req.WithoutReplicaLabels) > 0 {
+	labelsToRemove := make(map[string]struct{})
+	dedupByInternalLabel := hasInternalReplicaLabels(st, req)
+	if dedupByInternalLabel || !st.SupportsWithoutReplicaLabels() && len(req.WithoutReplicaLabels) > 0 {
 		level.Warn(logger).Log("msg", "detecting store that does not support without replica label setting. "+
 			"Falling back to eager retrieval with additional sort. Make sure your storeAPI supports it to speed up your queries", "store", st.String())
 		retrievalStrategy = EagerRetrieval
@@ -892,4 +893,17 @@ type respSet interface {
 	Labelset() string
 	StoreLabels() map[string]struct{}
 	Empty() bool
+}
+
+// hasInternalReplicaLabels returns true if any replica label in the series request is not an
+// external label for the given Client.
+func hasInternalReplicaLabels(st Client, req *storepb.SeriesRequest) bool {
+	bloom := st.LabelNamesBloom()
+	for _, labelName := range req.WithoutReplicaLabels {
+		if bloom.Test(labelName) {
+			return true
+		}
+	}
+
+	return false
 }

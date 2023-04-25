@@ -23,6 +23,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/thanos-io/thanos/pkg/bloom"
 	"github.com/thanos-io/thanos/pkg/component"
 	"github.com/thanos-io/thanos/pkg/info/infopb"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
@@ -50,6 +51,9 @@ type Client interface {
 
 	// LabelSets that each apply to some data exposed by the backing store.
 	LabelSets() []labels.Labels
+
+	// LabelNamesBloom returns a bloom filter for all label names.
+	LabelNamesBloom() bloom.Filter
 
 	// TimeRange returns minimum and maximum time range of data in the store.
 	TimeRange() (mint int64, maxt int64)
