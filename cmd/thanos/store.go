@@ -364,7 +364,7 @@ func runStore(
 		options = append(options, store.WithDebugLogging())
 	}
 
-	matchersCache := makeMatcherCache(g)
+	matchersCache := makeMatcherCache(g, reg)
 	bs, err := store.NewBucketStore(
 		bkt,
 		metaFetcher,

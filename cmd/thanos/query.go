@@ -504,7 +504,7 @@ func runQuery(
 	if debugLogging {
 		options = append(options, store.WithProxyStoreDebugLogging())
 	}
-	matchersCache := makeMatcherCache(g)
+	matchersCache := makeMatcherCache(g, reg)
 	var (
 		endpoints = query.NewEndpointSet(
 			time.Now,
