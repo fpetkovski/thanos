@@ -51,6 +51,7 @@ type PrometheusStore struct {
 	client           *promclient.Client
 	buffers          sync.Pool
 	component        component.StoreAPI
+	matchersCache    *storepb.MatchersCache
 	externalLabelsFn func() labels.Labels
 	promVersion      func() string
 	timestamps       func() (mint int64, maxt int64)
@@ -78,6 +79,7 @@ func NewPrometheusStore(
 	externalLabelsFn func() labels.Labels,
 	timestamps func() (mint int64, maxt int64),
 	promVersion func() string,
+	matchersCache *storepb.MatchersCache,
 ) (*PrometheusStore, error) {
 	if logger == nil {
 		logger = log.NewNopLogger()
@@ -95,6 +97,7 @@ func NewPrometheusStore(
 			b := make([]byte, 0, initialBufSize)
 			return &b
 		}},
+		matchersCache: matchersCache,
 		framesRead: promauto.With(reg).NewHistogram(
 			prometheus.HistogramOpts{
 				Name:                           "prometheus_store_received_frames",
@@ -146,7 +149,7 @@ func (p *PrometheusStore) putBuffer(b *[]byte) {
 // Series returns all series for a requested time range and label matcher.
 func (p *PrometheusStore) Series(r *storepb.SeriesRequest, s storepb.Store_SeriesServer) error {
 	extLset := p.externalLabelsFn()
-	match, matchers, err := matchesExternalLabels(r.Matchers, extLset)
+	match, matchers, err := matchesExternalLabels(p.matchersCache, r.Matchers, extLset)
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -595,8 +598,8 @@ func (p *PrometheusStore) startPromRemoteRead(ctx context.Context, q *prompb.Que
 
 // matchesExternalLabels returns false if given matchers are not matching external labels.
 // If true, matchesExternalLabels also returns Prometheus matchers without those matching external labels.
-func matchesExternalLabels(ms []storepb.LabelMatcher, externalLabels labels.Labels) (bool, []*labels.Matcher, error) {
-	tms, err := storepb.MatchersToPromMatchers(ms...)
+func matchesExternalLabels(matchersCache *storepb.MatchersCache, ms []storepb.LabelMatcher, externalLabels labels.Labels) (bool, []*labels.Matcher, error) {
+	tms, err := storepb.MatchersToPromMatchers(matchersCache, ms...)
 	if err != nil {
 		return false, nil, err
 	}
@@ -644,7 +647,7 @@ func (p *PrometheusStore) encodeChunk(ss []prompb.Sample) (storepb.Chunk_Encodin
 func (p *PrometheusStore) LabelNames(ctx context.Context, r *storepb.LabelNamesRequest) (*storepb.LabelNamesResponse, error) {
 	extLset := p.externalLabelsFn()
 
-	match, matchers, err := matchesExternalLabels(r.Matchers, extLset)
+	match, matchers, err := matchesExternalLabels(p.matchersCache, r.Matchers, extLset)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -701,7 +704,7 @@ func (p *PrometheusStore) LabelValues(ctx context.Context, r *storepb.LabelValue
 		return &storepb.LabelValuesResponse{Values: []string{l}}, nil
 	}
 
-	match, matchers, err := matchesExternalLabels(r.Matchers, extLset)
+	match, matchers, err := matchesExternalLabels(p.matchersCache, r.Matchers, extLset)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
