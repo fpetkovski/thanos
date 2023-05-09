@@ -109,9 +109,9 @@ func (f *QueryEngineFactory) GetThanosEngine() v1.QueryEngine {
 	}
 
 	if f.remoteEngineEndpoints == nil {
-		f.thanosEngine = engine.New(engine.Opts{EngineOpts: f.engineOpts, Engine: f.GetPrometheusEngine()})
+		f.thanosEngine = engine.New(engine.Opts{EngineOpts: f.engineOpts, Engine: f.GetPrometheusEngine(), EnableXFunctions: true})
 	} else {
-		f.thanosEngine = engine.NewDistributedEngine(engine.Opts{EngineOpts: f.engineOpts, Engine: f.GetPrometheusEngine()}, f.remoteEngineEndpoints)
+		f.thanosEngine = engine.NewDistributedEngine(engine.Opts{EngineOpts: f.engineOpts, Engine: f.GetPrometheusEngine(), EnableXFunctions: true}, f.remoteEngineEndpoints)
 	}
 
 	return f.thanosEngine
