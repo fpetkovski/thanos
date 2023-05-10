@@ -235,7 +235,7 @@ github.com/coreos/go-systemd/v22 v22.4.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSV
 github.com/coreos/go-systemd/v22 v22.5.0 h1:RrqgGjYQKalulkV8NGVIfkXQf6YYmOyiJKk8iXXhfZs=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/coreos/pkg v0.0.0-20160727233714-3ac0863d7acf/go.mod h1:E3G3o1h8I7cfcXa63jLwjI0eiQQMgzzUDFVpN/nH/eA=
-github.com/cortexproject/promqlsmith v0.0.0-20230313010502-5c380a3b00b0 h1:NxAuzQ8oCBUgmBTmhC4GyKk9kBl4IoDymGib+tVdqiQ=
+github.com/cortexproject/promqlsmith v0.0.0-20230502194647-ed3e43bb7a52 h1:soTzgUC/F+qtsMbh/IWr3uGwPaXXYEUsTT3zYiXP0yM=
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsrgA7czyZG/E6dU=
 github.com/creack/pty v1.1.7/go.mod h1:lj5s0c3V2DBrqTV7llrYr5NG6My20zk30Fl46Y7DoTY=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
@@ -308,8 +308,8 @@ github.com/felixge/httpsnoop v1.0.3/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSw
 github.com/flowstack/go-jsonschema v0.1.1/go.mod h1:yL7fNggx1o8rm9RlgXv7hTBWxdBM0rVwpMwimd3F3N0=
 github.com/fortytw2/leaktest v1.3.0 h1:u8491cBMTQ8ft8aeV+adlcytMZylmA5nnwwkRZjI8vw=
 github.com/fortytw2/leaktest v1.3.0/go.mod h1:jDsjWgpAGjm2CA7WthBh/CdZYEPF31XHquHwclZch5g=
-github.com/fpetkovski/promql-engine v0.0.0-20230502073515-99649320be46 h1:qJDM++fgkJ8L6kFMMTJGPe5Qh1HeKDK5Xvo5iX+H0k8=
-github.com/fpetkovski/promql-engine v0.0.0-20230502073515-99649320be46/go.mod h1:PbimG7ocz5JmFRLlQ7yMcewnkunNBmvMyVgAoNmyvDw=
+github.com/fpetkovski/promql-engine v0.0.0-20230510102941-7fccb60500a0 h1:bx0ydwU8PUjFHCLsK2/WNFwus4wjxAbPA20Tg2qPi7c=
+github.com/fpetkovski/promql-engine v0.0.0-20230510102941-7fccb60500a0/go.mod h1:ifUU+eb28dKRho/a4ipv27T4yEaNYaXkd7bing4ovUg=
 github.com/franela/goblin v0.0.0-20200105215937-c9ffbefa60db/go.mod h1:7dvUGVsVBjqR7JHJk0brhHOZYGmfBYOrK0ZhYMEtBr4=
 github.com/franela/goreq v0.0.0-20171204163338-bcd34c9993f8/go.mod h1:ZhphrRTfi2rbfLwlschooIH4+wKKDR4Pdxhh+TRoA20=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
