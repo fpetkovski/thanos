@@ -308,8 +308,8 @@ github.com/felixge/httpsnoop v1.0.3/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSw
 github.com/flowstack/go-jsonschema v0.1.1/go.mod h1:yL7fNggx1o8rm9RlgXv7hTBWxdBM0rVwpMwimd3F3N0=
 github.com/fortytw2/leaktest v1.3.0 h1:u8491cBMTQ8ft8aeV+adlcytMZylmA5nnwwkRZjI8vw=
 github.com/fortytw2/leaktest v1.3.0/go.mod h1:jDsjWgpAGjm2CA7WthBh/CdZYEPF31XHquHwclZch5g=
-github.com/fpetkovski/promql-engine v0.0.0-20230510102941-7fccb60500a0 h1:bx0ydwU8PUjFHCLsK2/WNFwus4wjxAbPA20Tg2qPi7c=
-github.com/fpetkovski/promql-engine v0.0.0-20230510102941-7fccb60500a0/go.mod h1:ifUU+eb28dKRho/a4ipv27T4yEaNYaXkd7bing4ovUg=
+github.com/fpetkovski/promql-engine v0.0.0-20230511084101-02081f6910cc h1:oYpWAB1Xbl/SjZWoYER9xe27IA0SoNUfKTsW9bviIOw=
+github.com/fpetkovski/promql-engine v0.0.0-20230511084101-02081f6910cc/go.mod h1:ifUU+eb28dKRho/a4ipv27T4yEaNYaXkd7bing4ovUg=
 github.com/franela/goblin v0.0.0-20200105215937-c9ffbefa60db/go.mod h1:7dvUGVsVBjqR7JHJk0brhHOZYGmfBYOrK0ZhYMEtBr4=
 github.com/franela/goreq v0.0.0-20171204163338-bcd34c9993f8/go.mod h1:ZhphrRTfi2rbfLwlschooIH4+wKKDR4Pdxhh+TRoA20=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
