@@ -657,7 +657,6 @@ func TestBucketStore_Info(t *testing.T) {
 		false,
 		false,
 		0,
-		storepb.NewMatchersCache(),
 		WithChunkPool(chunkPool),
 		WithFilterConfig(allowAllFilterConf),
 	)
@@ -900,7 +899,6 @@ func testSharding(t *testing.T, reuseDisk string, bkt objstore.Bucket, all ...ul
 				false,
 				false,
 				0,
-				storepb.NewMatchersCache(),
 				WithLogger(logger),
 				WithFilterConfig(allowAllFilterConf),
 			)
@@ -1347,7 +1345,6 @@ func benchBucketSeries(t testutil.TB, sampleType chunkenc.ValueType, skipChunk b
 		false,
 		false,
 		0,
-		storepb.NewMatchersCache(),
 		WithLogger(logger),
 		WithChunkPool(chunkPool),
 	)
@@ -1560,7 +1557,6 @@ func TestBucketSeries_OneBlock_InMemIndexCacheSegfault(t *testing.T) {
 			b1.meta.ULID: b1,
 			b2.meta.ULID: b2,
 		},
-		matchersCache:        storepb.NewMatchersCache(),
 		queryGate:            gate.NewNoop(),
 		chunksLimiterFactory: NewChunksLimiterFactory(0),
 		seriesLimiterFactory: NewSeriesLimiterFactory(0),
@@ -1720,7 +1716,6 @@ func TestSeries_ErrorUnmarshallingRequestHints(t *testing.T) {
 		true,
 		false,
 		0,
-		storepb.NewMatchersCache(),
 		WithLogger(logger),
 		WithIndexCache(indexCache),
 	)
@@ -1812,7 +1807,6 @@ func TestSeries_BlockWithMultipleChunks(t *testing.T) {
 		true,
 		false,
 		0,
-		storepb.NewMatchersCache(),
 		WithLogger(logger),
 		WithIndexCache(indexCache),
 	)
@@ -1974,7 +1968,6 @@ func TestSeries_SeriesSortedWithoutReplicaLabels(t *testing.T) {
 				true,
 				false,
 				0,
-				storepb.NewMatchersCache(),
 				WithLogger(logger),
 				WithIndexCache(indexCache),
 			)
@@ -2161,7 +2154,6 @@ func setupStoreForHintsTest(t *testing.T) (testutil.TB, *BucketStore, []*storepb
 		true,
 		false,
 		0,
-		storepb.NewMatchersCache(),
 		WithLogger(logger),
 		WithIndexCache(indexCache),
 	)
@@ -2378,7 +2370,6 @@ func TestSeries_ChunksHaveHashRepresentation(t *testing.T) {
 		true,
 		false,
 		0,
-		storepb.NewMatchersCache(),
 		WithLogger(logger),
 		WithIndexCache(indexCache),
 	)
@@ -2592,7 +2583,6 @@ func benchmarkBlockSeriesWithConcurrency(b *testing.B, concurrency int, blockMet
 	wg := sync.WaitGroup{}
 	wg.Add(concurrency)
 
-	matchersCache := storepb.NewMatchersCache()
 	for w := 0; w < concurrency; w++ {
 		go func() {
 			defer wg.Done()
@@ -2613,7 +2603,7 @@ func benchmarkBlockSeriesWithConcurrency(b *testing.B, concurrency int, blockMet
 					Aggregates: aggrs,
 				}
 
-				matchers, err := storepb.MatchersToPromMatchers(matchersCache, req.Matchers...)
+				matchers, err := storepb.MatchersToPromMatchers(req.Matchers...)
 				// TODO FIXME! testutil.Ok calls b.Fatalf under the hood, which
 				// must be called only from the goroutine running the Benchmark function.
 				testutil.Ok(b, err)

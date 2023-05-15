@@ -69,7 +69,6 @@ func TestProxyStore_Info(t *testing.T) {
 		func() []Client { return nil },
 		component.Query,
 		nil, 0*time.Second, EagerRetrieval,
-		storepb.NewMatchersCache(),
 	)
 
 	resp, err := q.Info(ctx, &storepb.InfoRequest{})
@@ -674,7 +673,7 @@ func TestProxyStore_Series(t *testing.T) {
 								},
 							},
 						}
-					}, component.Store, labels.FromStrings("role", "proxy"), 1*time.Minute, EagerRetrieval, storepb.NewMatchersCache()), 1),
+					}, component.Store, labels.FromStrings("role", "proxy"), 1*time.Minute, EagerRetrieval), 1),
 				},
 				&storetestutil.TestClient{
 					MinTime: 1,
@@ -736,7 +735,6 @@ func TestProxyStore_Series(t *testing.T) {
 								component.Query,
 								tc.selectorLabels,
 								5*time.Second, strategy,
-								storepb.NewMatchersCache(),
 								opts...,
 							)
 
@@ -1270,7 +1268,7 @@ func TestProxyStore_SeriesSlowStores(t *testing.T) {
 						func() []Client { return tc.storeAPIs },
 						component.Query,
 						tc.selectorLabels,
-						4*time.Second, strategy, storepb.NewMatchersCache(),
+						4*time.Second, strategy,
 					)
 
 					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -1328,7 +1326,7 @@ func TestProxyStore_Series_RequestParamsProxied(t *testing.T) {
 		func() []Client { return cls },
 		component.Query,
 		nil,
-		1*time.Second, EagerRetrieval, storepb.NewMatchersCache(),
+		1*time.Second, EagerRetrieval,
 	)
 
 	ctx := context.Background()
@@ -1389,7 +1387,7 @@ func TestProxyStore_Series_RegressionFillResponseChannel(t *testing.T) {
 		func() []Client { return cls },
 		component.Query,
 		labels.FromStrings("fed", "a"),
-		5*time.Second, EagerRetrieval, storepb.NewMatchersCache(),
+		5*time.Second, EagerRetrieval,
 	)
 
 	ctx := context.Background()
@@ -1436,7 +1434,7 @@ func TestProxyStore_LabelValues(t *testing.T) {
 		func() []Client { return cls },
 		component.Query,
 		nil,
-		0*time.Second, EagerRetrieval, storepb.NewMatchersCache(),
+		0*time.Second, EagerRetrieval,
 	)
 
 	ctx := context.Background()
@@ -1636,7 +1634,7 @@ func TestProxyStore_LabelNames(t *testing.T) {
 				func() []Client { return tc.storeAPIs },
 				component.Query,
 				nil,
-				5*time.Second, EagerRetrieval, storepb.NewMatchersCache(),
+				5*time.Second, EagerRetrieval,
 			)
 
 			ctx := context.Background()
@@ -1864,7 +1862,7 @@ func TestGuaranteedMinTime(t *testing.T) {
 			}
 			proxy := NewProxyStore(log.NewNopLogger(), prometheus.NewRegistry(), func() []Client {
 				return clients
-			}, component.Store, nil, 1*time.Second, LazyRetrieval, storepb.NewMatchersCache())
+			}, component.Store, nil, 1*time.Second, LazyRetrieval)
 
 			testutil.Equals(t, test.expected, proxy.GuaranteedMinTime())
 		})
@@ -2086,7 +2084,6 @@ func benchProxySeries(t testutil.TB, totalSamples, totalSeries int) {
 		responseTimeout:   5 * time.Second,
 		retrievalStrategy: EagerRetrieval,
 		storeSelector:     newStoreSelector(nil),
-		matchersCache:     storepb.NewMatchersCache(),
 	}
 
 	var allResps []*storepb.SeriesResponse
@@ -2215,7 +2212,6 @@ func TestProxyStore_NotLeakingOnPrematureFinish(t *testing.T) {
 		responseTimeout:   0,
 		retrievalStrategy: EagerRetrieval,
 		storeSelector:     newStoreSelector(nil),
-		matchersCache:     storepb.NewMatchersCache(),
 	}
 
 	t.Run("failling send", func(t *testing.T) {
