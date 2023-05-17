@@ -79,7 +79,6 @@ type ProxyStore struct {
 	component      component.StoreAPI
 	selectorLabels labels.Labels
 	buffers        sync.Pool
-	matchersCache  *storepb.MatchersCache
 
 	responseTimeout   time.Duration
 	metrics           *proxyStoreMetrics
@@ -136,7 +135,6 @@ func NewProxyStore(
 	selectorLabels labels.Labels,
 	responseTimeout time.Duration,
 	retrievalStrategy RetrievalStrategy,
-	matchersCache *storepb.MatchersCache,
 	options ...ProxyStoreOption,
 ) *ProxyStore {
 	if logger == nil {
@@ -153,7 +151,6 @@ func NewProxyStore(
 			b := make([]byte, 0, initialBufSize)
 			return &b
 		}},
-		matchersCache:     matchersCache,
 		responseTimeout:   responseTimeout,
 		metrics:           metrics,
 		retrievalStrategy: retrievalStrategy,
@@ -299,7 +296,7 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 	// tiggered by tracing span to reduce cognitive load.
 	reqLogger := log.With(s.logger, "component", "proxy", "request", originalRequest.String())
 
-	match, matchers, err := matchesExternalLabels(s.matchersCache, originalRequest.Matchers, s.selectorLabels)
+	match, matchers, err := matchesExternalLabels(originalRequest.Matchers, s.selectorLabels)
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}

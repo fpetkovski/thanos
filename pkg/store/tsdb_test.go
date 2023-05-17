@@ -40,7 +40,7 @@ func TestTSDBStore_Info(t *testing.T) {
 	defer func() { testutil.Ok(t, db.Close()) }()
 	testutil.Ok(t, err)
 
-	tsdbStore := NewTSDBStore(nil, db, component.Rule, labels.FromStrings("region", "eu-west"), storepb.NewMatchersCache())
+	tsdbStore := NewTSDBStore(nil, db, component.Rule, labels.FromStrings("region", "eu-west"))
 
 	resp, err := tsdbStore.Info(ctx, &storepb.InfoRequest{})
 	testutil.Ok(t, err)
@@ -74,7 +74,7 @@ func TestTSDBStore_Series_ChunkChecksum(t *testing.T) {
 	defer func() { testutil.Ok(t, db.Close()) }()
 	testutil.Ok(t, err)
 
-	tsdbStore := NewTSDBStore(nil, db, component.Rule, labels.FromStrings("region", "eu-west"), storepb.NewMatchersCache())
+	tsdbStore := NewTSDBStore(nil, db, component.Rule, labels.FromStrings("region", "eu-west"))
 
 	appender := db.Appender(context.Background())
 
@@ -265,7 +265,7 @@ func TestTSDBStore_Series(t *testing.T) {
 			testutil.Ok(t, err)
 
 			extLset := labelpb.ExtendSortedLabels(labels.FromStrings("region", "eu-west"), tc.externalLabels)
-			tsdbStore := NewTSDBStore(nil, db, component.Rule, extLset, storepb.NewMatchersCache())
+			tsdbStore := NewTSDBStore(nil, db, component.Rule, extLset)
 
 			appender := db.Appender(context.Background())
 
@@ -300,7 +300,7 @@ func TestTSDBStore_LabelAPIs(t *testing.T) {
 		testutil.Ok(t, err)
 		t.Cleanup(func() { testutil.Ok(t, db.Close()) })
 
-		tsdbStore := NewTSDBStore(nil, db, component.Rule, extLset, storepb.NewMatchersCache())
+		tsdbStore := NewTSDBStore(nil, db, component.Rule, extLset)
 
 		appendFn(db.Appender(context.Background()))
 		return tsdbStore
@@ -316,7 +316,7 @@ func TestTSDBStore_Series_SplitSamplesIntoChunksWithMaxSizeOf120(t *testing.T) {
 	testutil.Ok(t, err)
 
 	testSeries_SplitSamplesIntoChunksWithMaxSizeOf120(t, db.Appender(context.Background()), func() storepb.StoreServer {
-		return NewTSDBStore(nil, db, component.Rule, labels.FromStrings("region", "eu-west"), storepb.NewMatchersCache())
+		return NewTSDBStore(nil, db, component.Rule, labels.FromStrings("region", "eu-west"))
 
 	})
 }
@@ -378,7 +378,7 @@ func TestTSDBStore_SeriesAccessWithDelegateClosing(t *testing.T) {
 	})
 
 	extLabels := labels.FromStrings("ext", "1")
-	store := NewTSDBStore(logger, &mockedStartTimeDB{DBReadOnly: db, startTime: 0}, component.Receive, extLabels, storepb.NewMatchersCache())
+	store := NewTSDBStore(logger, &mockedStartTimeDB{DBReadOnly: db, startTime: 0}, component.Receive, extLabels)
 
 	srv := storetestutil.NewSeriesServer(context.Background())
 	csrv := &delegatorServer{SeriesServer: srv}
@@ -541,7 +541,7 @@ func TestTSDBStore_SeriesAccessWithoutDelegateClosing(t *testing.T) {
 	})
 
 	extLabels := labels.FromStrings("ext", "1")
-	store := NewTSDBStore(logger, &mockedStartTimeDB{DBReadOnly: db, startTime: 0}, component.Receive, extLabels, storepb.NewMatchersCache())
+	store := NewTSDBStore(logger, &mockedStartTimeDB{DBReadOnly: db, startTime: 0}, component.Receive, extLabels)
 
 	srv := storetestutil.NewSeriesServer(context.Background())
 	t.Run("call series and access results", func(t *testing.T) {
@@ -687,7 +687,7 @@ func benchTSDBStoreSeries(t testutil.TB, totalSamples, totalSeries int) {
 	defer func() { testutil.Ok(t, db.Close()) }()
 
 	extLabels := labels.FromStrings("ext", "1")
-	store := NewTSDBStore(logger, &mockedStartTimeDB{DBReadOnly: db, startTime: 0}, component.Receive, extLabels, storepb.NewMatchersCache())
+	store := NewTSDBStore(logger, &mockedStartTimeDB{DBReadOnly: db, startTime: 0}, component.Receive, extLabels)
 
 	var expected []*storepb.Series
 	for _, resp := range resps {

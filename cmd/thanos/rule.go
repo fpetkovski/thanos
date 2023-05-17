@@ -618,8 +618,7 @@ func runRule(
 	}
 	infoOptions := []info.ServerOptionFunc{info.WithRulesInfoFunc()}
 	if tsdbDB != nil {
-		matchersCache := makeMatcherCache(g, reg)
-		tsdbStore := store.NewTSDBStore(logger, tsdbDB, component.Rule, conf.lset, matchersCache)
+		tsdbStore := store.NewTSDBStore(logger, tsdbDB, component.Rule, conf.lset)
 		infoOptions = append(
 			infoOptions,
 			info.WithLabelSetFunc(func() []labelpb.ZLabelSet {

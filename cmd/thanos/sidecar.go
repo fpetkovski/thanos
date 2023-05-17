@@ -45,7 +45,6 @@ import (
 	"github.com/thanos-io/thanos/pkg/shipper"
 	"github.com/thanos-io/thanos/pkg/store"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
-	"github.com/thanos-io/thanos/pkg/store/storepb"
 	"github.com/thanos-io/thanos/pkg/targets"
 	"github.com/thanos-io/thanos/pkg/tls"
 )
@@ -248,11 +247,10 @@ func runSidecar(
 			cancel()
 		})
 	}
-	matchersCache := makeMatcherCache(g, reg)
 	{
 		c := promclient.NewWithTracingClient(logger, httpClient, httpconfig.ThanosUserAgent)
 
-		promStore, err := store.NewPrometheusStore(logger, reg, c, conf.prometheus.url, component.Sidecar, m.Labels, m.Timestamps, m.Version, matchersCache)
+		promStore, err := store.NewPrometheusStore(logger, reg, c, conf.prometheus.url, component.Sidecar, m.Labels, m.Timestamps, m.Version)
 		if err != nil {
 			return errors.Wrap(err, "create Prometheus store")
 		}
@@ -372,22 +370,6 @@ func runSidecar(
 
 	level.Info(logger).Log("msg", "starting sidecar")
 	return nil
-}
-
-func makeMatcherCache(g *run.Group, reg *prometheus.Registry) *storepb.MatchersCache {
-	matchersCache := storepb.NewMatchersCache(storepb.WithPromRegistry(reg))
-	{
-		ctx, cancel := context.WithCancel(context.Background())
-		g.Add(func() error {
-			return runutil.Repeat(1*time.Minute, ctx.Done(), func() error {
-				matchersCache.RemoveExpired()
-				return nil
-			})
-		}, func(err error) {
-			cancel()
-		})
-	}
-	return matchersCache
 }
 
 func validatePrometheus(ctx context.Context, client *promclient.Client, logger log.Logger, ignoreBlockSize bool, m *promMetadata) (*promclient.Flags, error) {
