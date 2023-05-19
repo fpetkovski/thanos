@@ -892,6 +892,7 @@ func TestQueryStoreDedup(t *testing.T) {
 		desc             string
 		blockFinderLabel string
 		series           []seriesWithLabels
+		expectedSeries   int
 	}{
 		{
 			desc:            "Deduplication works with external label",
@@ -907,6 +908,7 @@ func TestQueryStoreDedup(t *testing.T) {
 				},
 			},
 			blockFinderLabel: "dedupext",
+			expectedSeries:   1,
 		},
 		{
 			desc:            "Deduplication works with internal label",
@@ -920,6 +922,27 @@ func TestQueryStoreDedup(t *testing.T) {
 				},
 			},
 			blockFinderLabel: "dedupint",
+			expectedSeries:   1,
+		},
+		{
+			desc:            "Deduplication works with extra internal label",
+			intReplicaLabel: "replica",
+			series: []seriesWithLabels{
+				{
+					intLabels: labels.FromStrings("__name__", "simple_series", "replica", "a", "my_label", "1"),
+				},
+				{
+					intLabels: labels.FromStrings("__name__", "simple_series", "replica", "a", "my_label", "2"),
+				},
+				{
+					intLabels: labels.FromStrings("__name__", "simple_series", "replica", "b", "my_label", "1"),
+				},
+				{
+					intLabels: labels.FromStrings("__name__", "simple_series", "replica", "b", "my_label", "2"),
+				},
+			},
+			blockFinderLabel: "dedupintextra",
+			expectedSeries:   2,
 		},
 		{
 			desc:            "Deduplication works with both internal and external label",
@@ -936,6 +959,7 @@ func TestQueryStoreDedup(t *testing.T) {
 				},
 			},
 			blockFinderLabel: "dedupintext",
+			expectedSeries:   1,
 		},
 	}
 
@@ -968,7 +992,7 @@ func TestQueryStoreDedup(t *testing.T) {
 				return fmt.Sprintf("max_over_time(simple_series{block_finder='%s'}[2h])", tt.blockFinderLabel)
 			}, time.Now, promclient.QueryOptions{
 				Deduplicate: true,
-			}, 1)
+			}, tt.expectedSeries)
 			testutil.Ok(t, err)
 			testutil.Ok(t, querier.Stop())
 		})
