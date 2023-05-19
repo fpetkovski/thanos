@@ -80,11 +80,12 @@ type ProxyStore struct {
 	selectorLabels labels.Labels
 	buffers        sync.Pool
 
-	responseTimeout   time.Duration
-	metrics           *proxyStoreMetrics
-	retrievalStrategy RetrievalStrategy
-	storeSelector     *storeSelector
-	debugLogging      bool
+	responseTimeout           time.Duration
+	metrics                   *proxyStoreMetrics
+	retrievalStrategy         RetrievalStrategy
+	debugLogging              bool
+	propagateSelectorMatchers bool
+	storeSelector             *storeSelector
 }
 
 type proxyStoreMetrics struct {
@@ -118,10 +119,17 @@ func WithProxyStoreDebugLogging() ProxyStoreOption {
 	}
 }
 
-// WithProxyStoreDebugLogging enables debug logging.
+// WithProxyStoreRelabelConfig configures a store relabel config.
 func WithProxyStoreRelabelConfig(relabelConfig []*relabel.Config) ProxyStoreOption {
 	return func(s *ProxyStore) {
 		s.storeSelector = &storeSelector{relabelConfig: relabelConfig}
+	}
+}
+
+// PropagateStoreSelectorMatchers configures .
+func PropagateStoreSelectorMatchers(value bool) ProxyStoreOption {
+	return func(s *ProxyStore) {
+		s.propagateSelectorMatchers = value
 	}
 }
 
@@ -151,10 +159,11 @@ func NewProxyStore(
 			b := make([]byte, 0, initialBufSize)
 			return &b
 		}},
-		responseTimeout:   responseTimeout,
-		metrics:           metrics,
-		retrievalStrategy: retrievalStrategy,
-		storeSelector:     newStoreSelector(nil),
+		responseTimeout:           responseTimeout,
+		metrics:                   metrics,
+		retrievalStrategy:         retrievalStrategy,
+		propagateSelectorMatchers: true,
+		storeSelector:             newStoreSelector(nil),
 	}
 
 	for _, option := range options {
@@ -342,7 +351,9 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 		storeLabelSets = append(storeLabelSets, matchedLabelSets...)
 		stores = append(stores, st)
 	}
-	r.Matchers = append(r.Matchers, s.storeSelector.buildLabelMatchers(storeLabelSets)...)
+	if s.propagateSelectorMatchers {
+		r.Matchers = append(r.Matchers, s.storeSelector.buildLabelMatchers(storeLabelSets)...)
+	}
 
 	if len(stores) == 0 {
 		level.Debug(reqLogger).Log("err", ErrorNoStoresMatched, "stores", strings.Join(storeDebugMsgs, ";"))
