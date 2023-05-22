@@ -332,7 +332,6 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 		WithoutReplicaLabels:    originalRequest.WithoutReplicaLabels,
 	}
 
-	var storeLabelSets []labels.Labels
 	var stores []Client
 	for _, st := range s.stores() {
 		// We might be able to skip the store if its meta information indicates it cannot have series matching our query.
@@ -343,16 +342,12 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 			continue
 		}
 
-		match, matchedLabelSets := s.storeSelector.matchStore(st.LabelSets())
-		if !match {
-			continue
-		}
-
-		storeLabelSets = append(storeLabelSets, matchedLabelSets...)
 		stores = append(stores, st)
 	}
+
+	stores, selectorMatchers := s.storeSelector.matchStores(stores, r.WithoutReplicaLabels)
 	if s.propagateSelectorMatchers {
-		r.Matchers = append(r.Matchers, s.storeSelector.buildLabelMatchers(storeLabelSets)...)
+		r.Matchers = append(r.Matchers, selectorMatchers...)
 	}
 
 	if len(stores) == 0 {
