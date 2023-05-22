@@ -1,3 +1,6 @@
+// Copyright (c) The Thanos Authors.
+// Licensed under the Apache License 2.0.
+
 package store
 
 import (
@@ -169,6 +172,7 @@ func TestStoreSelector(t *testing.T) {
 	}
 }
 
+// nolint:unparam
 func relabelKeep(labelName string, labelValue string) []*relabel.Config {
 	return []*relabel.Config{
 		{
