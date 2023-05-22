@@ -30,27 +30,21 @@ func TestStoreSelector(t *testing.T) {
 			name:          "no relabel config",
 			relabelConfig: nil,
 			stores: []Client{
-				storetestutil.TestClient{
-					Name: "store-1",
-					ExtLset: []labels.Labels{
-						labels.FromStrings("cluster", "a"),
-						labels.FromStrings("cluster", "b"),
-					},
-				},
+				storeClient(
+					"store-1",
+					labels.FromStrings("cluster", "a"),
+					labels.FromStrings("cluster", "b")),
 			},
 			expectedMatchers: nil,
 			expectedStores:   []string{"store-1"},
 		},
 		{
-			name: "1 matching TSDB out of 1 store with 2 TSDBs",
+			name: "1 matching TSDB against 1 store with 2 TSDBs",
 			stores: []Client{
-				storetestutil.TestClient{
-					Name: "store-1",
-					ExtLset: []labels.Labels{
-						labels.FromStrings("cluster", "a"),
-						labels.FromStrings("cluster", "b"),
-					},
-				},
+				storeClient(
+					"store-1",
+					labels.FromStrings("cluster", "a"),
+					labels.FromStrings("cluster", "b")),
 			},
 			relabelConfig: relabelKeep("cluster", "a"),
 			expectedMatchers: []storepb.LabelMatcher{
@@ -59,20 +53,10 @@ func TestStoreSelector(t *testing.T) {
 			expectedStores: []string{"store-1"},
 		},
 		{
-			name: "1 matching TSDB out of 2 stores with 1 TSDBs",
+			name: "1 matching TSDB against 2 stores with 1 TSDB",
 			stores: []Client{
-				storetestutil.TestClient{
-					Name: "store-1",
-					ExtLset: []labels.Labels{
-						labels.FromStrings("ext", "1", "cluster", "a"),
-					},
-				},
-				storetestutil.TestClient{
-					Name: "store-2",
-					ExtLset: []labels.Labels{
-						labels.FromStrings("cluster", "b"),
-					},
-				},
+				storeClient("store-1", labels.FromStrings("ext", "1", "cluster", "a")),
+				storeClient("store-2", labels.FromStrings("cluster", "b")),
 			},
 			relabelConfig: relabelKeep("cluster", "a"),
 			expectedMatchers: []storepb.LabelMatcher{
@@ -82,20 +66,10 @@ func TestStoreSelector(t *testing.T) {
 			expectedStores: []string{"store-1"},
 		},
 		{
-			name: "1 matching TSDB out of 2 stores with 1 TSDBs with common external labels",
+			name: "1 matching TSDB against 1 stores with 1 TSDBs with common external labels",
 			stores: []Client{
-				storetestutil.TestClient{
-					Name: "store-1",
-					ExtLset: []labels.Labels{
-						labels.FromStrings("ext", "1", "cluster", "a"),
-					},
-				},
-				storetestutil.TestClient{
-					Name: "store-1",
-					ExtLset: []labels.Labels{
-						labels.FromStrings("ext", "1", "cluster", "b"),
-					},
-				},
+				storeClient("store-1", labels.FromStrings("ext", "1", "cluster", "a")),
+				storeClient("store-2", labels.FromStrings("ext", "1", "cluster", "b")),
 			},
 			relabelConfig: relabelKeep("cluster", "a"),
 			expectedMatchers: []storepb.LabelMatcher{
@@ -105,20 +79,10 @@ func TestStoreSelector(t *testing.T) {
 			expectedStores: []string{"store-1"},
 		},
 		{
-			name: "2 matching TSDB out of 2 stores with 1 TSDBs",
+			name: "2 matching TSDB against 2 stores with 1 TSDBs",
 			stores: []Client{
-				storetestutil.TestClient{
-					Name: "store-1",
-					ExtLset: []labels.Labels{
-						labels.FromStrings("ext", "1", "cluster", "a"),
-					},
-				},
-				storetestutil.TestClient{
-					Name: "store-2",
-					ExtLset: []labels.Labels{
-						labels.FromStrings("ext", "2", "cluster", "a"),
-					},
-				},
+				storeClient("store-1", labels.FromStrings("ext", "1", "cluster", "a")),
+				storeClient("store-2", labels.FromStrings("ext", "2", "cluster", "a")),
 			},
 			relabelConfig: relabelKeep("cluster", "a"),
 			expectedMatchers: []storepb.LabelMatcher{
@@ -128,26 +92,11 @@ func TestStoreSelector(t *testing.T) {
 			expectedStores: []string{"store-1", "store-2"},
 		},
 		{
-			name: "2 matching TSDB out of 2 stores with 1 TSDBs and different number of external labels",
+			name: "2 matching TSDB against 2 stores with 1 TSDBs and different number of external labels",
 			stores: []Client{
-				storetestutil.TestClient{
-					Name: "store-1",
-					ExtLset: []labels.Labels{
-						labels.FromStrings("ext", "1", "cluster", "a"),
-					},
-				},
-				storetestutil.TestClient{
-					Name: "store-2",
-					ExtLset: []labels.Labels{
-						labels.FromStrings("cluster", "a"),
-					},
-				},
-				storetestutil.TestClient{
-					Name: "store-2",
-					ExtLset: []labels.Labels{
-						labels.FromStrings("cluster", "b"),
-					},
-				},
+				storeClient("store-1", labels.FromStrings("ext", "1", "cluster", "a")),
+				storeClient("store-2", labels.FromStrings("cluster", "a")),
+				storeClient("store-3", labels.FromStrings("cluster", "b")),
 			},
 			relabelConfig: relabelKeep("cluster", "a"),
 			expectedMatchers: []storepb.LabelMatcher{
@@ -180,5 +129,12 @@ func relabelKeep(labelName string, labelValue string) []*relabel.Config {
 			Regex:        relabel.MustNewRegexp(labelValue),
 			Action:       relabel.Keep,
 		},
+	}
+}
+
+func storeClient(storeName string, storeLabelSets ...labels.Labels) Client {
+	return storetestutil.TestClient{
+		Name:    storeName,
+		ExtLset: storeLabelSets,
 	}
 }

@@ -348,6 +348,8 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 	stores, selectorMatchers := s.storeSelector.matchStores(stores, r.WithoutReplicaLabels)
 	if s.propagateSelectorMatchers {
 		r.Matchers = append(r.Matchers, selectorMatchers...)
+	} else {
+		r.Matchers = removeExternalLabelMatchers(stores, r.Matchers)
 	}
 
 	if len(stores) == 0 {
@@ -396,6 +398,26 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 	}
 
 	return nil
+}
+
+func removeExternalLabelMatchers(stores []Client, matchers []storepb.LabelMatcher) []storepb.LabelMatcher {
+	var (
+		newMatchers []storepb.LabelMatcher
+		extLset     = make(map[string]struct{})
+	)
+	for _, store := range stores {
+		for _, labelSets := range store.LabelSets() {
+			for _, lbl := range labelSets {
+				extLset[lbl.Name] = struct{}{}
+			}
+		}
+	}
+	for _, m := range matchers {
+		if _, ok := extLset[m.Name]; !ok {
+			newMatchers = append(newMatchers, m)
+		}
+	}
+	return newMatchers
 }
 
 // storeMatches returns boolean if the given store may hold data for the given label matchers, time ranges and debug store matches gathered from context.
