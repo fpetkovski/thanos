@@ -1321,21 +1321,14 @@ func TestProxyStore_Series_RequestParamsProxied(t *testing.T) {
 			MaxTime:     300,
 		},
 	}
-	q := NewProxyStore(nil,
-		nil,
-		func() []Client { return cls },
-		component.Query,
-		nil,
-		1*time.Second, EagerRetrieval,
-	)
-
-	ctx := context.Background()
-	s := newStoreSeriesServer(ctx)
 
 	req := &storepb.SeriesRequest{
-		MinTime:                 1,
-		MaxTime:                 300,
-		Matchers:                []storepb.LabelMatcher{{Name: "ext", Value: "1", Type: storepb.LabelMatcher_EQ}},
+		MinTime: 1,
+		MaxTime: 300,
+		Matchers: []storepb.LabelMatcher{
+			{Name: "ext", Value: "1", Type: storepb.LabelMatcher_EQ},
+			{Name: "int", Value: "1", Type: storepb.LabelMatcher_EQ},
+		},
 		PartialResponseDisabled: false,
 		Aggregates: []storepb.Aggr{
 			storepb.Aggr_COUNTER,
@@ -1344,9 +1337,50 @@ func TestProxyStore_Series_RequestParamsProxied(t *testing.T) {
 		PartialResponseStrategy: storepb.PartialResponseStrategy_WARN,
 		MaxResolutionWindow:     1234,
 	}
-	testutil.Ok(t, q.Series(req, s))
 
-	testutil.Assert(t, proto.Equal(req, m.LastSeriesReq), "request was not proxied properly to underlying storeAPI: %s vs %s", req, m.LastSeriesReq)
+	testCases := []struct {
+		name              string
+		propagateMatchers bool
+		expectedMatchers  []storepb.LabelMatcher
+	}{
+		{
+			name:              "propagate external label matchers",
+			propagateMatchers: true,
+			expectedMatchers: []storepb.LabelMatcher{
+				{Name: "ext", Value: "1", Type: storepb.LabelMatcher_EQ},
+				{Name: "int", Value: "1", Type: storepb.LabelMatcher_EQ},
+			},
+		},
+		{
+			name:              "strip external label matchers",
+			propagateMatchers: false,
+			expectedMatchers: []storepb.LabelMatcher{
+				{Name: "int", Value: "1", Type: storepb.LabelMatcher_EQ},
+			},
+		},
+	}
+
+	for _, tcase := range testCases {
+		t.Run(tcase.name, func(t *testing.T) {
+			q := NewProxyStore(nil,
+				nil,
+				func() []Client { return cls },
+				component.Query,
+				nil,
+				1*time.Second, EagerRetrieval,
+				PropagateStoreSelectorMatchers(tcase.propagateMatchers),
+			)
+
+			ctx := context.Background()
+			s := newStoreSeriesServer(ctx)
+
+			testutil.Ok(t, q.Series(req, s))
+
+			expectedRequest := req
+			expectedRequest.Matchers = tcase.expectedMatchers
+			testutil.Assert(t, proto.Equal(expectedRequest, m.LastSeriesReq), "request was not proxied properly to underlying storeAPI: %s vs %s", req, m.LastSeriesReq)
+		})
+	}
 }
 
 func TestProxyStore_Series_RegressionFillResponseChannel(t *testing.T) {

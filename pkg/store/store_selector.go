@@ -18,7 +18,13 @@ const (
 )
 
 var (
-	SupportedRelabelActions = map[relabel.Action]struct{}{relabel.Keep: {}, relabel.Drop: {}, relabel.HashMod: {}, relabel.LabelDrop: {}, relabel.LabelKeep: {}}
+	SupportedRelabelActions = map[relabel.Action]struct{}{
+		relabel.Keep:      {},
+		relabel.Drop:      {},
+		relabel.HashMod:   {},
+		relabel.LabelDrop: {},
+		relabel.LabelKeep: {},
+	}
 )
 
 type storeSelector struct {
