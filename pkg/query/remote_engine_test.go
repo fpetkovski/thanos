@@ -50,7 +50,7 @@ func TestRemoteEngine_LabelSets(t *testing.T) {
 
 	for _, test := range tests {
 		client := Client{labelSets: test.labelSets}
-		engine := newRemoteEngine(log.NewNopLogger(), client, Opts{
+		engine := NewRemoteEngine(log.NewNopLogger(), client, Opts{
 			ReplicaLabels: test.replicaLabels,
 		})
 

@@ -71,7 +71,7 @@ func (r remoteEndpoints) Engines() []api.RemoteEngine {
 	clients := r.getClients()
 	engines := make([]api.RemoteEngine, len(clients))
 	for i := range clients {
-		engines[i] = newRemoteEngine(r.logger, clients[i], r.opts)
+		engines[i] = NewRemoteEngine(r.logger, clients[i], r.opts)
 	}
 	return engines
 }
@@ -82,7 +82,7 @@ type remoteEngine struct {
 	logger log.Logger
 }
 
-func newRemoteEngine(logger log.Logger, queryClient Client, opts Opts) api.RemoteEngine {
+func NewRemoteEngine(logger log.Logger, queryClient Client, opts Opts) *remoteEngine {
 	return &remoteEngine{
 		logger: logger,
 		Client: queryClient,
@@ -128,6 +128,21 @@ func (r remoteEngine) NewRangeQuery(_ context.Context, opts *promql.QueryOpts, q
 	return newRetriableQuery(qry), nil
 }
 
+func (r remoteEngine) NewInstantQuery(_ context.Context, _ *promql.QueryOpts, qs string, ts time.Time) (promql.Query, error) {
+	qry := &remoteQuery{
+		logger: r.logger,
+		client: r.Client,
+		opts:   r.opts,
+
+		qs:       qs,
+		start:    ts,
+		end:      ts,
+		interval: 0,
+	}
+
+	return newRetriableQuery(qry), nil
+}
+
 type remoteQuery struct {
 	logger log.Logger
 	client Client
@@ -151,6 +166,54 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 	var maxResolution int64
 	if r.opts.AutoDownsample {
 		maxResolution = int64(r.interval.Seconds() / 5)
+	}
+
+	// Instant query.
+	if r.start == r.end {
+		request := &querypb.QueryRequest{
+			Query:                 r.qs,
+			TimeSeconds:           r.start.Unix(),
+			TimeoutSeconds:        int64(r.opts.Timeout.Seconds()),
+			EnablePartialResponse: r.opts.EnablePartialResponse,
+			// TODO (fpetkovski): Allow specifying these parameters at query time.
+			// This will likely require a change in the remote engine interface.
+			ReplicaLabels:        r.opts.ReplicaLabels,
+			MaxResolutionSeconds: maxResolution,
+			EnableDedup:          true,
+		}
+
+		qry, err := r.client.Query(qctx, request)
+		if err != nil {
+			return &promql.Result{Err: err}
+		}
+		result := make(promql.Vector, 0)
+
+		for {
+			msg, err := qry.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return &promql.Result{Err: err}
+			}
+
+			if warn := msg.GetWarnings(); warn != "" {
+				return &promql.Result{Err: errors.New(warn)}
+			}
+
+			ts := msg.GetTimeseries()
+
+			// Point might have a different timestamp, force it to the evaluation
+			// timestamp as that is when we ran the evaluation.
+			// See https://github.com/prometheus/prometheus/blob/b727e69b7601b069ded5c34348dca41b80988f4b/promql/engine.go#L693-L699
+			if len(ts.Histograms) > 0 {
+				result = append(result, promql.Sample{Metric: labelpb.ZLabelsToPromLabels(ts.Labels), H: fromProtoHistogram(ts.Histograms[0]), T: r.start.UnixMilli()})
+			} else {
+				result = append(result, promql.Sample{Metric: labelpb.ZLabelsToPromLabels(ts.Labels), F: ts.Samples[0].Value, T: r.start.UnixMilli()})
+			}
+		}
+
+		return &promql.Result{Value: result}
 	}
 
 	request := &querypb.QueryRangeRequest{
@@ -201,17 +264,9 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 			})
 		}
 		for _, hp := range ts.Histograms {
-			var fh *histogram.FloatHistogram
-
-			if hp.IsFloatHistogram() {
-				fh = prompb.FloatHistogramProtoToFloatHistogram(hp)
-			} else {
-				fh = prompb.HistogramProtoToFloatHistogram(hp)
-			}
-
 			series.Histograms = append(series.Histograms, promql.HPoint{
 				T: hp.Timestamp,
-				H: fh,
+				H: fromProtoHistogram(hp),
 			})
 		}
 		result = append(result, series)
@@ -260,4 +315,12 @@ func (q *retriableQuery) Exec(ctx context.Context) *promql.Result {
 	}
 
 	return result
+}
+
+func fromProtoHistogram(hp prompb.Histogram) *histogram.FloatHistogram {
+	if hp.IsFloatHistogram() {
+		return prompb.FloatHistogramProtoToFloatHistogram(hp)
+	} else {
+		return prompb.HistogramProtoToFloatHistogram(hp)
+	}
 }

@@ -29,7 +29,6 @@ import (
 	"github.com/thanos-io/thanos/pkg/exemplars"
 	"github.com/thanos-io/thanos/pkg/extkingpin"
 	"github.com/thanos-io/thanos/pkg/extprom"
-	"github.com/thanos-io/thanos/pkg/httpconfig"
 	"github.com/thanos-io/thanos/pkg/info"
 	"github.com/thanos-io/thanos/pkg/info/infopb"
 	"github.com/thanos-io/thanos/pkg/logging"
@@ -37,6 +36,7 @@ import (
 	thanosmodel "github.com/thanos-io/thanos/pkg/model"
 	"github.com/thanos-io/thanos/pkg/prober"
 	"github.com/thanos-io/thanos/pkg/promclient"
+	"github.com/thanos-io/thanos/pkg/queryconfig"
 	"github.com/thanos-io/thanos/pkg/reloader"
 	"github.com/thanos-io/thanos/pkg/rules"
 	"github.com/thanos-io/thanos/pkg/runutil"
@@ -89,12 +89,12 @@ func runSidecar(
 	if err != nil {
 		return errors.Wrap(err, "getting http client config")
 	}
-	httpClientConfig, err := httpconfig.NewClientConfigFromYAML(httpConfContentYaml)
+	httpClientConfig, err := queryconfig.NewHTTPClientConfigFromYAML(httpConfContentYaml)
 	if err != nil {
 		return errors.Wrap(err, "parsing http config YAML")
 	}
 
-	httpClient, err := httpconfig.NewHTTPClient(*httpClientConfig, "thanos-sidecar")
+	httpClient, err := queryconfig.NewHTTPClient(*httpClientConfig, "thanos-sidecar")
 	if err != nil {
 		return errors.Wrap(err, "Improper http client config")
 	}
@@ -248,7 +248,7 @@ func runSidecar(
 		})
 	}
 	{
-		c := promclient.NewWithTracingClient(logger, httpClient, httpconfig.ThanosUserAgent)
+		c := promclient.NewWithTracingClient(logger, httpClient, queryconfig.ThanosUserAgent)
 
 		promStore, err := store.NewPrometheusStore(logger, reg, c, conf.prometheus.url, component.Sidecar, m.Labels, m.Timestamps, m.Version)
 		if err != nil {
