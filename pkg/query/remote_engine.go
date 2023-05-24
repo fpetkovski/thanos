@@ -99,7 +99,7 @@ func NewRemoteEngine(logger log.Logger, queryClient Client, opts Opts) *remoteEn
 // the lowest of those values.
 // Calculating the MinT this way makes remote queries resilient to cases where one tsdb replica would delete
 // a block due to retention before other replicas did the same.
-// See https://github.com/thanos-community/promql-engine/issues/187.
+// See https://github.com/thanos-io/promql-engine/issues/187.
 func (r remoteEngine) MinT() int64 {
 	var (
 		hashBuf               = make([]byte, 0, 128)
