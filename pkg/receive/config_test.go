@@ -4,7 +4,6 @@
 package receive
 
 import (
-	"encoding/json"
 	"os"
 	"testing"
 
@@ -16,7 +15,7 @@ import (
 func TestValidateConfig(t *testing.T) {
 	for _, tc := range []struct {
 		name string
-		cfg  interface{}
+		cfg  []byte
 		err  error
 	}{
 		{
@@ -26,28 +25,32 @@ func TestValidateConfig(t *testing.T) {
 		},
 		{
 			name: "empty config",
-			cfg:  []HashringConfig{},
+			cfg:  []byte(`[]`),
 			err:  errEmptyConfigurationFile,
 		},
 		{
 			name: "unparsable config",
-			cfg:  struct{}{},
+			cfg:  []byte(`{x}`),
 			err:  errParseConfigurationFile,
 		},
 		{
-			name: "valid config",
-			cfg: []HashringConfig{
-				{
-					Endpoints: []string{"node1"},
-				},
-			},
+			name: "valid config with endpoints as strings",
+			cfg: []byte(`
+[{
+  "endpoints": ["node-1"]
+}]`),
+			err: nil, // means it's valid.
+		},
+		{
+			name: "valid config with endpoints as objects",
+			cfg: []byte(`
+[{
+  "endpoints": [{"address": "node-1", "az": "eu-central-1a"}]
+}]`),
 			err: nil, // means it's valid.
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			content, err := json.Marshal(tc.cfg)
-			testutil.Ok(t, err)
-
 			tmpfile, err := os.CreateTemp("", "configwatcher_test.*.json")
 			testutil.Ok(t, err)
 
@@ -55,7 +58,7 @@ func TestValidateConfig(t *testing.T) {
 				testutil.Ok(t, os.Remove(tmpfile.Name()))
 			}()
 
-			_, err = tmpfile.Write(content)
+			_, err = tmpfile.Write(tc.cfg)
 			testutil.Ok(t, err)
 
 			err = tmpfile.Close()

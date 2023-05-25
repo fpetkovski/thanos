@@ -75,7 +75,7 @@ func (s SingleNodeHashring) GetN(_ string, _ *prompb.TimeSeries, n uint64) (stri
 }
 
 // simpleHashring represents a group of nodes handling write requests by hashmoding individual series.
-type simpleHashring []string
+type simpleHashring []Endpoint
 
 // Get returns a target to handle the given tenant and time series.
 func (s simpleHashring) Get(tenant string, ts *prompb.TimeSeries) (string, error) {
@@ -88,7 +88,7 @@ func (s simpleHashring) GetN(tenant string, ts *prompb.TimeSeries, n uint64) (st
 		return "", &insufficientNodesError{have: uint64(len(s)), want: n + 1}
 	}
 
-	return s[(labelpb.HashWithPrefix(tenant, ts.Labels)+n)%uint64(len(s))], nil
+	return s[(labelpb.HashWithPrefix(tenant, ts.Labels)+n)%uint64(len(s))].Address, nil
 }
 
 type section struct {
@@ -107,20 +107,20 @@ func (p sections) Sort()              { sort.Sort(p) }
 
 // ketamaHashring represents a group of nodes handling write requests with consistent hashing.
 type ketamaHashring struct {
-	endpoints    []AZAwareEndpoint
+	endpoints    []Endpoint
 	sections     sections
 	numEndpoints uint64
 }
 
 func newKetamaHashring(endpoints interface{}, sectionsPerNode int, replicationFactor uint64) (*ketamaHashring, error) {
-	azEndpoints := []AZAwareEndpoint{}
+	azEndpoints := []Endpoint{}
 
 	switch v := endpoints.(type) {
 	case []string:
 		for _, endpoint := range v {
-			azEndpoints = append(azEndpoints, AZAwareEndpoint{Address: endpoint, AZ: ""})
+			azEndpoints = append(azEndpoints, Endpoint{Address: endpoint, AZ: ""})
 		}
-	case []AZAwareEndpoint:
+	case []Endpoint:
 		azEndpoints = v
 	}
 	numSections := len(azEndpoints) * sectionsPerNode
@@ -271,10 +271,13 @@ func (m *multiHashring) GetN(tenant string, ts *prompb.TimeSeries, n uint64) (st
 	return "", errors.New("no matching hashring to handle tenant")
 }
 
-func validateAZHashring(endpoints interface{}, algorithm HashringAlgorithm) error {
-	switch endpoints.(type) {
-	case []string:
-		if algorithm == AlgorithmHashmod {
+func validateAZHashring(endpoints []Endpoint, algorithm HashringAlgorithm) error {
+	if algorithm == AlgorithmKetama {
+		return nil
+	}
+
+	for _, e := range endpoints {
+		if e.AZ != "" {
 			return errors.New("Hashmod algorithm does not support AZ aware hashring configuration. Either use Ketama or remove AZ configuration.")
 		}
 	}
@@ -361,10 +364,10 @@ func HashringFromConfig(algorithm HashringAlgorithm, replicationFactor uint64, c
 	return newMultiHashring(algorithm, replicationFactor, config)
 }
 
-func newHashring(algorithm HashringAlgorithm, endpoints interface{}, replicationFactor uint64, hashring string, tenants []string) (Hashring, error) {
+func newHashring(algorithm HashringAlgorithm, endpoints []Endpoint, replicationFactor uint64, hashring string, tenants []string) (Hashring, error) {
 	switch algorithm {
 	case AlgorithmHashmod:
-		return simpleHashring(endpoints.([]string)), nil
+		return simpleHashring(endpoints), nil
 	case AlgorithmKetama:
 		return newKetamaHashring(endpoints, SectionsPerNode, replicationFactor)
 	default:
@@ -372,6 +375,6 @@ func newHashring(algorithm HashringAlgorithm, endpoints interface{}, replication
 		level.Warn(l).Log("msg", "Unrecognizable hashring algorithm. Fall back to hashmod algorithm.",
 			"hashring", hashring,
 			"tenants", tenants)
-		return simpleHashring(endpoints.([]string)), nil
+		return simpleHashring(endpoints), nil
 	}
 }

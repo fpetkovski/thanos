@@ -47,7 +47,7 @@ func TestHashringGet(t *testing.T) {
 			name: "simple",
 			cfg: []HashringConfig{
 				{
-					Endpoints: []string{"node1"},
+					Endpoints: []Endpoint{{Address: "node1"}},
 				},
 			},
 			nodes: map[string]struct{}{"node1": {}},
@@ -56,11 +56,11 @@ func TestHashringGet(t *testing.T) {
 			name: "specific",
 			cfg: []HashringConfig{
 				{
-					Endpoints: []string{"node2"},
+					Endpoints: []Endpoint{{Address: "node2"}},
 					Tenants:   []string{"tenant2"},
 				},
 				{
-					Endpoints: []string{"node1"},
+					Endpoints: []Endpoint{{Address: "node1"}},
 				},
 			},
 			nodes:  map[string]struct{}{"node2": {}},
@@ -70,15 +70,15 @@ func TestHashringGet(t *testing.T) {
 			name: "many tenants",
 			cfg: []HashringConfig{
 				{
-					Endpoints: []string{"node1"},
+					Endpoints: []Endpoint{{Address: "node1"}},
 					Tenants:   []string{"tenant1"},
 				},
 				{
-					Endpoints: []string{"node2"},
+					Endpoints: []Endpoint{{Address: "node2"}},
 					Tenants:   []string{"tenant2"},
 				},
 				{
-					Endpoints: []string{"node3"},
+					Endpoints: []Endpoint{{Address: "node3"}},
 					Tenants:   []string{"tenant3"},
 				},
 			},
@@ -89,15 +89,15 @@ func TestHashringGet(t *testing.T) {
 			name: "many tenants error",
 			cfg: []HashringConfig{
 				{
-					Endpoints: []string{"node1"},
+					Endpoints: []Endpoint{{Address: "node1"}},
 					Tenants:   []string{"tenant1"},
 				},
 				{
-					Endpoints: []string{"node2"},
+					Endpoints: []Endpoint{{Address: "node2"}},
 					Tenants:   []string{"tenant2"},
 				},
 				{
-					Endpoints: []string{"node3"},
+					Endpoints: []Endpoint{{Address: "node3"}},
 					Tenants:   []string{"tenant3"},
 				},
 			},
@@ -107,11 +107,11 @@ func TestHashringGet(t *testing.T) {
 			name: "many nodes",
 			cfg: []HashringConfig{
 				{
-					Endpoints: []string{"node1", "node2", "node3"},
+					Endpoints: []Endpoint{{Address: "node1"}, {Address: "node3"}, {Address: "node3"}},
 					Tenants:   []string{"tenant1"},
 				},
 				{
-					Endpoints: []string{"node4", "node5", "node6"},
+					Endpoints: []Endpoint{{Address: "node4"}, {Address: "node5"}, {Address: "node6"}},
 				},
 			},
 			nodes: map[string]struct{}{
@@ -125,11 +125,11 @@ func TestHashringGet(t *testing.T) {
 			name: "many nodes default",
 			cfg: []HashringConfig{
 				{
-					Endpoints: []string{"node1", "node2", "node3"},
+					Endpoints: []Endpoint{{Address: "node1"}, {Address: "node3"}, {Address: "node3"}},
 					Tenants:   []string{"tenant1"},
 				},
 				{
-					Endpoints: []string{"node4", "node5", "node6"},
+					Endpoints: []Endpoint{{Address: "node4"}, {Address: "node5"}, {Address: "node6"}},
 				},
 			},
 			nodes: map[string]struct{}{
@@ -338,7 +338,7 @@ func TestKetamaHashringEvenAZSpread(t *testing.T) {
 		replicas uint64
 	}{
 		{
-			nodes: []AZAwareEndpoint{
+			nodes: []Endpoint{
 				{Address: "a", AZ: "1"},
 				{Address: "b", AZ: "2"},
 				{Address: "c", AZ: "1"},
@@ -351,7 +351,7 @@ func TestKetamaHashringEvenAZSpread(t *testing.T) {
 			replicas: 1,
 		},
 		{
-			nodes: []AZAwareEndpoint{
+			nodes: []Endpoint{
 				{Address: "a", AZ: "1"},
 				{Address: "b", AZ: "2"},
 				{Address: "c", AZ: "1"},
@@ -360,7 +360,7 @@ func TestKetamaHashringEvenAZSpread(t *testing.T) {
 			replicas: 2,
 		},
 		{
-			nodes: []AZAwareEndpoint{
+			nodes: []Endpoint{
 				{Address: "a", AZ: "1"},
 				{Address: "b", AZ: "2"},
 				{Address: "c", AZ: "3"},
@@ -375,7 +375,7 @@ func TestKetamaHashringEvenAZSpread(t *testing.T) {
 			replicas: 3,
 		},
 		{
-			nodes: []AZAwareEndpoint{
+			nodes: []Endpoint{
 				{Address: "a", AZ: "1"},
 				{Address: "b", AZ: "2"},
 				{Address: "c", AZ: "3"},
@@ -400,7 +400,7 @@ func TestKetamaHashringEvenAZSpread(t *testing.T) {
 			switch v := tt.nodes.(type) {
 			case []string:
 				availableAzs[""] = 0
-			case []AZAwareEndpoint:
+			case []Endpoint:
 				for _, endpoint := range v {
 					availableAzs[endpoint.AZ] = 0
 				}
@@ -420,7 +420,7 @@ func TestKetamaHashringEvenAZSpread(t *testing.T) {
 						}
 						azSpread[az]++
 					}
-				case []AZAwareEndpoint:
+				case []Endpoint:
 					for _, n := range v {
 						if !strings.HasPrefix(n.Address, r) {
 							continue
@@ -454,7 +454,7 @@ func TestKetamaHashringEvenNodeSpread(t *testing.T) {
 		numSeries uint64
 	}{
 		{
-			nodes: []AZAwareEndpoint{
+			nodes: []Endpoint{
 				{Address: "a", AZ: "1"},
 				{Address: "b", AZ: "2"},
 				{Address: "c", AZ: "1"},
@@ -469,7 +469,7 @@ func TestKetamaHashringEvenNodeSpread(t *testing.T) {
 			numSeries: 1000,
 		},
 		{
-			nodes: []AZAwareEndpoint{
+			nodes: []Endpoint{
 				{Address: "a", AZ: "1"},
 				{Address: "b", AZ: "2"},
 				{Address: "c", AZ: "3"},
@@ -481,7 +481,7 @@ func TestKetamaHashringEvenNodeSpread(t *testing.T) {
 			numSeries: 10000,
 		},
 		{
-			nodes: []AZAwareEndpoint{
+			nodes: []Endpoint{
 				{Address: "a", AZ: "1"},
 				{Address: "b", AZ: "2"},
 				{Address: "c", AZ: "3"},
@@ -496,7 +496,7 @@ func TestKetamaHashringEvenNodeSpread(t *testing.T) {
 			numSeries: 10000,
 		},
 		{
-			nodes: []AZAwareEndpoint{
+			nodes: []Endpoint{
 				{Address: "a", AZ: "1"},
 				{Address: "b", AZ: "2"},
 				{Address: "c", AZ: "3"},
@@ -518,7 +518,7 @@ func TestKetamaHashringEvenNodeSpread(t *testing.T) {
 			switch v := tt.nodes.(type) {
 			case []string:
 				optimalSpread = int(tt.numSeries*tt.replicas) / len(v)
-			case []AZAwareEndpoint:
+			case []Endpoint:
 				optimalSpread = int(tt.numSeries*tt.replicas) / len(v)
 			}
 			nodeSpread := make(map[string]int)
@@ -550,7 +550,12 @@ func TestInvalidAZHashringCfg(t *testing.T) {
 		expectedError string
 	}{
 		{
-			cfg:           []HashringConfig{{Endpoints: []string{"a,1", "b,2", "c,1", "d,2"}}},
+			cfg: []HashringConfig{{Endpoints: []Endpoint{
+				{Address: "a", AZ: "1"},
+				{Address: "b", AZ: "2"},
+				{Address: "c", AZ: "1"},
+				{Address: "d", AZ: "2"},
+			}}},
 			replicas:      2,
 			algorithm:     AlgorithmHashmod,
 			expectedError: "Hashmod algorithm does not support AZ aware hashring configuration. Either use Ketama or remove AZ configuration.",
