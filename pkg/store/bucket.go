@@ -1260,6 +1260,8 @@ func (s *BucketStore) Series(req *storepb.SeriesRequest, srv storepb.Store_Serie
 		reqBlockMatchers []*labels.Matcher
 		chunksLimiter    = s.chunksLimiterFactory(s.metrics.queriesDropped.WithLabelValues("chunks"))
 		seriesLimiter    = s.seriesLimiterFactory(s.metrics.queriesDropped.WithLabelValues("series"))
+
+		queryStatsEnabled = false
 	)
 
 	if req.Hints != nil {
@@ -1267,6 +1269,7 @@ func (s *BucketStore) Series(req *storepb.SeriesRequest, srv storepb.Store_Serie
 		if err := types.UnmarshalAny(req.Hints, reqHints); err != nil {
 			return status.Error(codes.InvalidArgument, errors.Wrap(err, "unmarshal series request hints").Error())
 		}
+		queryStatsEnabled = reqHints.EnableQueryStats
 
 		reqBlockMatchers, err = storepb.MatchersToPromMatchers(reqHints.BlockMatchers...)
 		if err != nil {
@@ -1458,6 +1461,9 @@ func (s *BucketStore) Series(req *storepb.SeriesRequest, srv storepb.Store_Serie
 	if s.enableSeriesResponseHints {
 		var anyHints *types.Any
 
+		if queryStatsEnabled {
+			resHints.QueryStats = stats.toHints()
+		}
 		if anyHints, err = types.MarshalAny(resHints); err != nil {
 			err = status.Error(codes.Unknown, errors.Wrap(err, "marshal series response hints").Error())
 			return
@@ -3204,6 +3210,30 @@ func (s queryStats) merge(o *queryStats) *queryStats {
 	s.MergeDuration += o.MergeDuration
 
 	return &s
+}
+
+func (s queryStats) toHints() *hintspb.QueryStats {
+	return &hintspb.QueryStats{
+		BlocksQueried:          int64(s.blocksQueried),
+		PostingsTouched:        int64(s.postingsTouched),
+		PostingsTouchedSizeSum: int64(s.PostingsTouchedSizeSum),
+		PostingsToFetch:        int64(s.postingsToFetch),
+		PostingsFetched:        int64(s.postingsFetched),
+		PostingsFetchedSizeSum: int64(s.PostingsFetchedSizeSum),
+		PostingsFetchCount:     int64(s.postingsFetchCount),
+		SeriesTouched:          int64(s.seriesTouched),
+		SeriesTouchedSizeSum:   int64(s.SeriesTouchedSizeSum),
+		SeriesFetched:          int64(s.seriesFetched),
+		SeriesFetchedSizeSum:   int64(s.SeriesFetchedSizeSum),
+		SeriesFetchCount:       int64(s.seriesFetchCount),
+		ChunksTouched:          int64(s.chunksTouched),
+		ChunksTouchedSizeSum:   int64(s.ChunksTouchedSizeSum),
+		ChunksFetched:          int64(s.chunksFetched),
+		ChunksFetchedSizeSum:   int64(s.ChunksFetchedSizeSum),
+		ChunksFetchCount:       int64(s.chunksFetchCount),
+		MergedSeriesCount:      int64(s.mergedSeriesCount),
+		MergedChunksCount:      int64(s.mergedChunksCount),
+	}
 }
 
 // NewDefaultChunkBytesPool returns a chunk bytes pool with default settings.
