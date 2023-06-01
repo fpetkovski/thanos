@@ -187,14 +187,18 @@ func newBucketStoreMetrics(reg prometheus.Registerer) *bucketStoreMetrics {
 	}, []string{"data_type"})
 
 	m.seriesDataSizeTouched = promauto.With(reg).NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "thanos_bucket_store_series_data_size_touched_bytes",
-		Help:    "Total size of items of a data type touched to fulfill a single Store API series request in Bytes.",
-		Buckets: prometheus.ExponentialBuckets(1024, 2, 15),
+		Name:                           "thanos_bucket_store_series_data_size_touched_bytes",
+		Help:                           "Total size of items of a data type touched to fulfill a single Store API series request in Bytes.",
+		Buckets:                        prometheus.ExponentialBuckets(1024, 2, 15),
+		NativeHistogramBucketFactor:    1.1,
+		NativeHistogramMaxBucketNumber: 100,
 	}, []string{"data_type"})
 	m.seriesDataSizeFetched = promauto.With(reg).NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "thanos_bucket_store_series_data_size_fetched_bytes",
-		Help:    "Total size of items of a data type fetched to fulfill a single Store API series request in Bytes.",
-		Buckets: prometheus.ExponentialBuckets(1024, 2, 15),
+		Name:                           "thanos_bucket_store_series_data_size_fetched_bytes",
+		Help:                           "Total size of items of a data type fetched to fulfill a single Store API series request in Bytes.",
+		Buckets:                        prometheus.ExponentialBuckets(1024, 2, 15),
+		NativeHistogramBucketFactor:    1.1,
+		NativeHistogramMaxBucketNumber: 100,
 	}, []string{"data_type"})
 
 	m.seriesBlocksQueried = promauto.With(reg).NewHistogram(prometheus.HistogramOpts{
