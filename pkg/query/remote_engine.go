@@ -7,6 +7,7 @@ import (
 	"context"
 	"io"
 	"math"
+	"sync"
 	"time"
 
 	"github.com/efficientgo/core/backoff"
@@ -84,6 +85,11 @@ type remoteEngine struct {
 	logger log.Logger
 
 	client Client
+
+	mintOnce sync.Once
+	mint     int64
+	maxtOnce sync.Once
+	maxt     int64
 }
 
 func NewRemoteEngine(logger log.Logger, queryClient Client, opts Opts) *remoteEngine {
@@ -100,43 +106,49 @@ func NewRemoteEngine(logger log.Logger, queryClient Client, opts Opts) *remoteEn
 // Calculating the MinT this way makes remote queries resilient to cases where one tsdb replica would delete
 // a block due to retention before other replicas did the same.
 // See https://github.com/thanos-io/promql-engine/issues/187.
-func (r remoteEngine) MinT() int64 {
-	var (
-		hashBuf               = make([]byte, 0, 128)
-		highestMintByLabelSet = make(map[uint64]int64)
-	)
-	for _, lset := range r.infosWithoutReplicaLabels() {
-		key, _ := labelpb.ZLabelsToPromLabels(lset.Labels.Labels).HashWithoutLabels(hashBuf)
-		lsetMinT, ok := highestMintByLabelSet[key]
-		if !ok {
-			highestMintByLabelSet[key] = lset.MinTime
-			continue
+func (r *remoteEngine) MinT() int64 {
+	r.mintOnce.Do(func() {
+		var (
+			hashBuf               = make([]byte, 0, 128)
+			highestMintByLabelSet = make(map[uint64]int64)
+		)
+		for _, lset := range r.infosWithoutReplicaLabels() {
+			key, _ := labelpb.ZLabelsToPromLabels(lset.Labels.Labels).HashWithoutLabels(hashBuf)
+			lsetMinT, ok := highestMintByLabelSet[key]
+			if !ok {
+				highestMintByLabelSet[key] = lset.MinTime
+				continue
+			}
+
+			if lset.MinTime > lsetMinT {
+				highestMintByLabelSet[key] = lset.MinTime
+			}
 		}
 
-		if lset.MinTime > lsetMinT {
-			highestMintByLabelSet[key] = lset.MinTime
+		var mint int64 = math.MaxInt64
+		for _, m := range highestMintByLabelSet {
+			if m < mint {
+				mint = m
+			}
 		}
-	}
+		r.mint = mint
+	})
 
-	var mint int64 = math.MaxInt64
-	for _, m := range highestMintByLabelSet {
-		if m < mint {
-			mint = m
-		}
-	}
-
-	return mint
+	return r.mint
 }
 
-func (r remoteEngine) MaxT() int64 {
-	return r.client.tsdbInfos.MaxT()
+func (r *remoteEngine) MaxT() int64 {
+	r.maxtOnce.Do(func() {
+		r.maxt = r.client.tsdbInfos.MaxT()
+	})
+	return r.maxt
 }
 
-func (r remoteEngine) LabelSets() []labels.Labels {
+func (r *remoteEngine) LabelSets() []labels.Labels {
 	return r.infosWithoutReplicaLabels().LabelSets()
 }
 
-func (r remoteEngine) infosWithoutReplicaLabels() infopb.TSDBInfos {
+func (r *remoteEngine) infosWithoutReplicaLabels() infopb.TSDBInfos {
 	replicaLabelSet := make(map[string]struct{})
 	for _, lbl := range r.opts.ReplicaLabels {
 		replicaLabelSet[lbl] = struct{}{}
@@ -163,7 +175,7 @@ func (r remoteEngine) infosWithoutReplicaLabels() infopb.TSDBInfos {
 	return infos
 }
 
-func (r remoteEngine) NewRangeQuery(_ context.Context, opts *promql.QueryOpts, qs string, start, end time.Time, interval time.Duration) (promql.Query, error) {
+func (r *remoteEngine) NewRangeQuery(_ context.Context, opts *promql.QueryOpts, qs string, start, end time.Time, interval time.Duration) (promql.Query, error) {
 	qry := &remoteQuery{
 		logger: r.logger,
 		client: r.client,
@@ -178,7 +190,7 @@ func (r remoteEngine) NewRangeQuery(_ context.Context, opts *promql.QueryOpts, q
 	return newRetriableQuery(qry), nil
 }
 
-func (r remoteEngine) NewInstantQuery(_ context.Context, _ *promql.QueryOpts, qs string, ts time.Time) (promql.Query, error) {
+func (r *remoteEngine) NewInstantQuery(_ context.Context, _ *promql.QueryOpts, qs string, ts time.Time) (promql.Query, error) {
 	qry := &remoteQuery{
 		logger: r.logger,
 		client: r.client,
