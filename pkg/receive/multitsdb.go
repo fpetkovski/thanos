@@ -561,7 +561,7 @@ func (t *MultiTSDB) TenantStats(statsByLabelName string, tenantIDs ...string) []
 			if db == nil {
 				return
 			}
-			stats := db.Head().Stats(statsByLabelName)
+			stats := db.Head().Stats(statsByLabelName, 10)
 
 			mu.Lock()
 			defer mu.Unlock()
