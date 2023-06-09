@@ -2476,7 +2476,7 @@ func (r *bucketIndexReader) fetchPostings(ctx context.Context, keys []labels.Lab
 				compressions++
 				s := time.Now()
 				bep := newBigEndianPostings(pBytes[4:])
-				data, err := diffVarintSnappyStreamedEncode(bep, bep.length())
+				data, err := diffVarintSnappyEncode(bep, bep.length())
 				compressionTime = time.Since(s)
 				if err == nil {
 					dataToCache = data
