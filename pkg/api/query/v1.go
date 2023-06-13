@@ -236,6 +236,7 @@ func NewQueryAPI(
 			NativeHistogramMaxBucketNumber: 100,
 		}),
 
+		//nolint:promlinter
 		conventionalHistogramQueries: promauto.With(reg).NewCounter(prometheus.CounterOpts{
 			Name: "thanos_query_conventional_histogram_queries_total",
 			Help: "Total number of conventional histogram queries.",
