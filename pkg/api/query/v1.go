@@ -158,7 +158,8 @@ type QueryAPI struct {
 	defaultInstantQueryMaxSourceResolution time.Duration
 	defaultMetadataTimeRange               time.Duration
 
-	queryRangeHist prometheus.Histogram
+	queryRangeHist               prometheus.Histogram
+	conventionalHistogramQueries prometheus.Counter
 
 	seriesStatsAggregator seriesQueryPerformanceMetricsAggregator
 }
@@ -234,6 +235,12 @@ func NewQueryAPI(
 			NativeHistogramBucketFactor:    1.1,
 			NativeHistogramMaxBucketNumber: 100,
 		}),
+
+		//nolint:promlinter
+		conventionalHistogramQueries: promauto.With(reg).NewCounter(prometheus.CounterOpts{
+			Name: "thanos_query_conventional_histogram_queries_total",
+			Help: "Total number of conventional histogram queries.",
+		}),
 	}
 }
 
@@ -242,9 +249,10 @@ func (qapi *QueryAPI) Register(r *route.Router, tracer opentracing.Tracer, logge
 	qapi.baseAPI.Register(r, tracer, logger, ins, logMiddleware)
 
 	instr := api.GetInstr(tracer, logger, ins, logMiddleware, qapi.disableCORS)
+	inspectHistograms := api.LogOGHistograms(qapi.logger, qapi.conventionalHistogramQueries)
 
-	r.Get("/query", instr("query", qapi.query))
-	r.Post("/query", instr("query", qapi.query))
+	r.Get("/query", instr("query", inspectHistograms(qapi.query)))
+	r.Post("/query", instr("query", inspectHistograms(qapi.query)))
 
 	r.Get("/query_range", instr("query_range", qapi.queryRange))
 	r.Post("/query_range", instr("query_range", qapi.queryRange))
