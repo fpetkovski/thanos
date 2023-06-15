@@ -6,6 +6,7 @@ package e2ethanos
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/thanos-io/thanos/pkg/queryconfig"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -30,7 +31,6 @@ import (
 	"github.com/thanos-io/objstore/exthttp"
 
 	"github.com/thanos-io/thanos/pkg/alert"
-	"github.com/thanos-io/thanos/pkg/queryconfig"
 	"github.com/thanos-io/thanos/pkg/queryfrontend"
 	"github.com/thanos-io/thanos/pkg/receive"
 )
@@ -64,7 +64,7 @@ const (
 
 // DefaultPrometheusImage sets default Prometheus image used in e2e service.
 func DefaultPrometheusImage() string {
-	return "quay.io/prometheus/prometheus:v2.42.0"
+	return "quay.io/prometheus/prometheus:v2.41.0"
 }
 
 // DefaultAlertmanagerImage sets default Alertmanager image used in e2e service.
