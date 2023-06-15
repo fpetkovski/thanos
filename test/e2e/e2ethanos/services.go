@@ -6,7 +6,6 @@ package e2ethanos
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/thanos-io/thanos/pkg/queryconfig"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -26,11 +25,11 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/thanos-io/objstore/client"
+	"github.com/thanos-io/objstore/exthttp"
 	"github.com/thanos-io/objstore/providers/s3"
 
-	"github.com/thanos-io/objstore/exthttp"
-
 	"github.com/thanos-io/thanos/pkg/alert"
+	"github.com/thanos-io/thanos/pkg/queryconfig"
 	"github.com/thanos-io/thanos/pkg/queryfrontend"
 	"github.com/thanos-io/thanos/pkg/receive"
 )
