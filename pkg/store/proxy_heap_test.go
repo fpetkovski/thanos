@@ -342,6 +342,9 @@ func BenchmarkSortWithoutLabels(b *testing.B) {
 	labelsToRemove := map[string]struct{}{
 		"a": {}, "b": {},
 	}
+	storeLabels := map[string]struct{}{
+		"d": {},
+	}
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -351,6 +354,6 @@ func BenchmarkSortWithoutLabels(b *testing.B) {
 			resps[i] = storeSeriesResponse(b, labels.FromStrings("a", "1", "b", "replica-1", "c", "replica-1", "d", "1"))
 		}
 		b.StartTimer()
-		sortWithoutLabels(resps, nil, labelsToRemove)
+		sortWithoutLabels(resps, storeLabels, labelsToRemove)
 	}
 }
