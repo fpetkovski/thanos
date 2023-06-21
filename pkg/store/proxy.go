@@ -58,9 +58,6 @@ type Client interface {
 	// TSDBInfos returns metadata about each TSDB backed by the client.
 	TSDBInfos() []infopb.TSDBInfo
 
-	// GuaranteedMinTime returns the minimum time that a store always guarantees to have.
-	GuaranteedMinTime() int64
-
 	// SupportsSharding returns true if sharding is supported by the underlying store.
 	SupportsSharding() bool
 
@@ -290,26 +287,6 @@ func (s *ProxyStore) TSDBInfos() []infopb.TSDBInfo {
 		infos = append(infos, store.TSDBInfos()...)
 	}
 	return infos
-}
-
-func (s *ProxyStore) GuaranteedMinTime() int64 {
-	stores := s.stores()
-	if len(stores) == 0 {
-		return UninitializedTSDBTime
-	}
-
-	var mint int64 = math.MinInt64
-	for _, s := range stores {
-		storeMint := s.GuaranteedMinTime()
-		if storeMint == UninitializedTSDBTime {
-			continue
-		}
-		if storeMint > mint {
-			mint = storeMint
-		}
-	}
-
-	return mint
 }
 
 func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.Store_SeriesServer) error {
