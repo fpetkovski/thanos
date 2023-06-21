@@ -284,6 +284,26 @@ func (s *ProxyStore) TimeRange() (int64, int64) {
 	return minTime, maxTime
 }
 
+func (s *ProxyStore) GuaranteedMinTime() int64 {
+	stores := s.stores()
+	if len(stores) == 0 {
+		return UninitializedTSDBTime
+	}
+
+	var mint int64 = math.MinInt64
+	for _, s := range stores {
+		storeMint := s.GuaranteedMinTime()
+		if storeMint == UninitializedTSDBTime {
+			continue
+		}
+		if storeMint > mint {
+			mint = storeMint
+		}
+	}
+
+	return mint
+}
+
 func (s *ProxyStore) TSDBInfos() []infopb.TSDBInfo {
 	infos := make([]infopb.TSDBInfo, 0)
 	for _, store := range s.stores() {
@@ -390,26 +410,6 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 	}
 
 	return nil
-}
-
-func (s *ProxyStore) GuaranteedMinTime() int64 {
-	stores := s.stores()
-	if len(stores) == 0 {
-		return UninitializedTSDBTime
-	}
-
-	var mint int64 = math.MinInt64
-	for _, s := range stores {
-		storeMint := s.GuaranteedMinTime()
-		if storeMint == UninitializedTSDBTime {
-			continue
-		}
-		if storeMint > mint {
-			mint = storeMint
-		}
-	}
-
-	return mint
 }
 
 func removeExternalLabelMatchers(stores []Client, matchers []storepb.LabelMatcher) []storepb.LabelMatcher {
