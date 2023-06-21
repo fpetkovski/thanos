@@ -6,6 +6,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"github.com/thanos-io/thanos/pkg/block"
 	"io"
 	"math"
 	"math/rand"
