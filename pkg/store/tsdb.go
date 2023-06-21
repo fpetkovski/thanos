@@ -5,14 +5,6 @@ package store
 
 import (
 	"context"
-	"hash"
-	"io"
-	"math"
-	"sort"
-	"strings"
-	"sync"
-	"time"
-
 	"github.com/go-kit/log"
 	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/model/labels"
@@ -20,6 +12,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"hash"
+	"io"
+	"math"
+	"sort"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/thanos-io/thanos/pkg/component"
 	"github.com/thanos-io/thanos/pkg/info/infopb"
@@ -284,6 +283,23 @@ func (s *TSDBStore) Series(r *storepb.SeriesRequest, srv storepb.Store_SeriesSer
 	return nil
 }
 
+// GuaranteedMinTime returns the minimum timestamp in milliseconds that will always be present in a TSDB.
+func GuaranteedMinTime(now, mint, retentionDuration, minBlockDuration int64) int64 {
+	if mint == UninitializedTSDBTime {
+		return UninitializedTSDBTime
+	}
+
+	estimatedRetentionTime := time.UnixMilli(now - retentionDuration)
+	blockAlignedRetention := estimatedRetentionTime.
+		Truncate(time.Duration(minBlockDuration) * time.Millisecond).
+		UnixMilli()
+
+	// The first few samples in a block are sometimes not wall-clock aligned.
+	// We add a small offset proportional to the block size to make sure we skip
+	// the first few minutes in a TSDB.
+	return blockAlignedRetention + minBlockDuration/8
+}
+
 // LabelNames returns all known label names constrained with the given matchers.
 func (s *TSDBStore) LabelNames(ctx context.Context, r *storepb.LabelNamesRequest) (
 	*storepb.LabelNamesResponse, error,
@@ -377,21 +393,4 @@ func labelsToMap(lset labels.Labels) map[string]struct{} {
 		r[l.Name] = struct{}{}
 	}
 	return r
-}
-
-// GuaranteedMinTime returns the minimum timestamp in milliseconds that will always be present in a TSDB.
-func GuaranteedMinTime(now, mint, retentionDuration, minBlockDuration int64) int64 {
-	if mint == UninitializedTSDBTime {
-		return UninitializedTSDBTime
-	}
-
-	estimatedRetentionTime := time.UnixMilli(now - retentionDuration)
-	blockAlignedRetention := estimatedRetentionTime.
-		Truncate(time.Duration(minBlockDuration) * time.Millisecond).
-		UnixMilli()
-
-	// The first few samples in a block are sometimes not wall-clock aligned.
-	// We add a small offset proportional to the block size to make sure we skip
-	// the first few minutes in a TSDB.
-	return blockAlignedRetention + minBlockDuration/8
 }

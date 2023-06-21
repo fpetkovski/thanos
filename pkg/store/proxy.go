@@ -55,6 +55,9 @@ type Client interface {
 	// TimeRange returns minimum and maximum time range of data in the store.
 	TimeRange() (mint int64, maxt int64)
 
+	// GuaranteedMinTime returns the minimum time that a store always guarantees to have.
+	GuaranteedMinTime() int64
+
 	// TSDBInfos returns metadata about each TSDB backed by the client.
 	TSDBInfos() []infopb.TSDBInfo
 
