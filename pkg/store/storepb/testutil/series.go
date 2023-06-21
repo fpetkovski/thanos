@@ -15,12 +15,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-kit/log"
-	"github.com/oklog/ulid"
-
 	"github.com/cespare/xxhash"
 	"github.com/efficientgo/core/testutil"
+	"github.com/go-kit/log"
 	"github.com/gogo/protobuf/types"
+	"github.com/oklog/ulid"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb"
