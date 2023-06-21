@@ -181,7 +181,7 @@ func CreateBlockFromHead(t testing.TB, dir string, head *tsdb.Head) ulid.ULID {
 }
 
 func appendFloatSamples(t testing.TB, app storage.Appender, tsLabel int, opts HeadGenOptions) {
-	lblSet := labels.FromStrings("foo", "bar", "i", fmt.Sprintf("%07d%s", tsLabel, LabelLongSuffix))
+	lblSet := labels.FromStrings("foo", "bar", "i", fmt.Sprintf("%07d%s", tsLabel, LabelLongSuffix), "j", fmt.Sprintf("%v", tsLabel))
 	if opts.IncludeName {
 		lblSet = append(lblSet, labels.Label{Name: "__name__", Value: "test_float_metric"})
 	}
@@ -197,7 +197,7 @@ func appendFloatSamples(t testing.TB, app storage.Appender, tsLabel int, opts He
 func appendHistogramSamples(t testing.TB, app storage.Appender, tsLabel int, opts HeadGenOptions) {
 	histograms := tsdbutil.GenerateTestHistograms(opts.SamplesPerSeries)
 
-	lblSet := labels.FromStrings("foo", "bar", "i", fmt.Sprintf("%07d%s", tsLabel, LabelLongSuffix))
+	lblSet := labels.FromStrings("foo", "bar", "i", fmt.Sprintf("%07d%s", tsLabel, LabelLongSuffix), "j", fmt.Sprintf("%v", tsLabel))
 	if opts.IncludeName {
 		lblSet = append(lblSet, labels.Label{Name: "__name__", Value: "test_metric"})
 	}
