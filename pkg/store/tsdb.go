@@ -47,7 +47,7 @@ type TSDBStore struct {
 	buffers          sync.Pool
 	maxBytesPerFrame int
 
-	mtx     sync.RWMutex
+	mtx sync.RWMutex
 }
 
 func RegisterWritableStoreServer(storeSrv storepb.WriteableStoreServer) func(*grpc.Server) {
