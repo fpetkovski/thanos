@@ -67,7 +67,7 @@ require (
 	github.com/sony/gobreaker v0.5.0
 	github.com/stretchr/testify v1.8.2
 	github.com/thanos-io/objstore v0.0.0-20230201072718-11ffbc490204
-	github.com/thanos-io/promql-engine v0.0.0-20230524050847-9a1a33217cf2
+	github.com/thanos-io/promql-engine v0.0.0-20230612203010-0bdf2ad20a9d
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/vimeo/galaxycache v0.0.0-20210323154928-b7e5d71c067a
@@ -318,9 +318,6 @@ replace (
 	// Using a 3rd-party branch for custom dialer - see https://github.com/bradfitz/gomemcache/pull/86.
 	// Required by Cortex https://github.com/cortexproject/cortex/pull/3051.
 	github.com/bradfitz/gomemcache => github.com/themihai/gomemcache v0.0.0-20180902122335-24332e2d58ab
-
-	// PR https://github.com/thanos-io/promql-engine/pull/288.
-	github.com/thanos-io/promql-engine => github.com/fpetkovski/promql-engine v0.0.0-20230607065857-8ab424ac9726
 
 	github.com/vimeo/galaxycache => github.com/thanos-community/galaxycache v0.0.0-20211122094458-3a32041a1f1e
 
