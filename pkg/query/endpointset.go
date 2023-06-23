@@ -528,9 +528,13 @@ func (e *EndpointSet) GetQueryAPIClients() []Client {
 	queryClients := make([]Client, 0, len(endpoints))
 	for _, er := range endpoints {
 		if er.HasQueryAPI() {
-			//_, _ := er.timeRange()
+			_, maxt := er.timeRange()
 			client := querypb.NewQueryClient(er.cc)
-			queryClients = append(queryClients, NewClient(client, er.addr, er.TSDBInfos()))
+			infos := make([]infopb.TSDBInfo, 0, len(er.LabelSets()))
+			for _, ls := range er.LabelSets() {
+				infos = append(infos, infopb.NewTSDBInfo(er.GuaranteedMinTime(), maxt, labelpb.ZLabelsFromPromLabels(ls)))
+			}
+			queryClients = append(queryClients, NewClient(client, er.addr, infos))
 		}
 	}
 	return queryClients
