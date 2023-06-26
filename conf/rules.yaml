@@ -1,0 +1,5 @@
+"groups":
+- "name": "native-histogram-test.rules"
+  "rules":
+  - "expr": sum(thanos_query_concurrent_gate_queries_duration_seconds)
+    "record": "thanos_query_concurrent_gate_queries_duration_seconds:sum"

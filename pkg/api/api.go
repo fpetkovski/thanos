@@ -28,9 +28,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NYTimes/gziphandler"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
+	"github.com/klauspost/compress/gzhttp"
 	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/route"
@@ -226,7 +226,7 @@ func GetInstr(
 
 		return tracing.HTTPMiddleware(tracer, name, logger,
 			ins.NewHandler(name,
-				gziphandler.GzipHandler(
+				gzhttp.GzipHandler(
 					middleware.RequestID(
 						logMiddleware.HTTPMiddleware(name, hf),
 					),
