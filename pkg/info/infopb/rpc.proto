@@ -58,15 +58,12 @@ message StoreInfo {
   bool supports_sharding = 3;
   bool sends_sorted_series = 4; // Deprecated send_sorted, replaced by supports_without_replica_labels now.
 
-    // replica_aware means this store supports without_replica_labels of StoreAPI.Series.
-    bool supports_without_replica_labels = 5;
-
-    // TSDBInfos holds metadata for all TSDBs exposed by the store.
-    repeated TSDBInfo tsdb_infos = 6 [(gogoproto.nullable) = false];
+  // replica_aware means this store supports without_replica_labels of StoreAPI.Series.
+  bool supports_without_replica_labels = 5;
 
   // guaranteed_mint_time is the TSDB min time that a store guarantees to always have.
   // It is calculated by taking into account the retention period configured in the store.
-  int64 guaranteed_min_time = 7;
+  int64 guaranteed_min_time = 6;
 }
 
 // RulesInfo holds the metadata related to Rules API exposed by the component.
@@ -89,11 +86,4 @@ message ExemplarsInfo {
 
 // QueryInfo holds the metadata related to Query API exposed by the component.
 message QueryAPIInfo {
-}
-
-message TSDBInfo {
-    ZLabelSet labels = 1 [(gogoproto.nullable) = false];
-
-    int64 min_time = 2;
-    int64 max_time = 3;
 }

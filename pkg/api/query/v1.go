@@ -77,7 +77,6 @@ const (
 	ShardInfoParam           = "shard_info"
 	LookbackDeltaParam       = "lookback_delta"
 	EngineParam              = "engine"
-	QueryExplainParam        = "explain"
 )
 
 type PromqlEngineType string
@@ -284,8 +283,7 @@ type queryData struct {
 	Result     parser.Value     `json:"result"`
 	Stats      stats.QueryStats `json:"stats,omitempty"`
 	// Additional Thanos Response field.
-	QueryExplanation *engine.ExplainOutputNode `json:"explanation,omitempty"`
-	Warnings         []error                   `json:"warnings,omitempty"`
+	Warnings []error `json:"warnings,omitempty"`
 }
 
 func (qapi *QueryAPI) parseEnableDedupParam(r *http.Request) (enableDeduplication bool, _ *api.ApiError) {
@@ -432,27 +430,6 @@ func (qapi *QueryAPI) parseShardInfo(r *http.Request) (*storepb.ShardInfo, *api.
 	return &info, nil
 }
 
-func (qapi *QueryAPI) parseQueryExplainParam(r *http.Request, query promql.Query) (*engine.ExplainOutputNode, *api.ApiError) {
-	var explanation *engine.ExplainOutputNode
-
-	if val := r.FormValue(QueryExplainParam); val != "" {
-		var err error
-		enableExplanation, err := strconv.ParseBool(val)
-		if err != nil {
-			return explanation, &api.ApiError{Typ: api.ErrorBadData, Err: errors.Wrapf(err, "'%s' parameter", QueryExplainParam)}
-		}
-		if enableExplanation {
-			if eq, ok := query.(engine.ExplainableQuery); ok {
-				explanation = eq.Explain()
-			} else {
-				return explanation, &api.ApiError{Typ: api.ErrorBadData, Err: errors.Errorf("Query not explainable")}
-			}
-		}
-	}
-
-	return explanation, nil
-}
-
 func (qapi *QueryAPI) query(r *http.Request) (interface{}, []error, *api.ApiError, func()) {
 	ts, err := parseTimeParam(r, "time", qapi.baseAPI.Now())
 	if err != nil {
@@ -543,11 +520,6 @@ func (qapi *QueryAPI) query(r *http.Request) (interface{}, []error, *api.ApiErro
 		return nil, nil, &api.ApiError{Typ: api.ErrorBadData, Err: err}, func() {}
 	}
 
-	explanation, apiErr := qapi.parseQueryExplainParam(r, qry)
-	if apiErr != nil {
-		return nil, nil, apiErr, func() {}
-	}
-
 	tracing.DoInSpan(ctx, "query_gate_ismyturn", func(ctx context.Context) {
 		err = qapi.gate.Start(ctx)
 	})
@@ -580,10 +552,9 @@ func (qapi *QueryAPI) query(r *http.Request) (interface{}, []error, *api.ApiErro
 		qs = stats.NewQueryStats(qry.Stats())
 	}
 	return &queryData{
-		ResultType:       res.Value.Type(),
-		Result:           res.Value,
-		Stats:            qs,
-		QueryExplanation: explanation,
+		ResultType: res.Value.Type(),
+		Result:     res.Value,
+		Stats:      qs,
 	}, res.Warnings, nil, qry.Close
 }
 
@@ -707,11 +678,6 @@ func (qapi *QueryAPI) queryRange(r *http.Request) (interface{}, []error, *api.Ap
 		return nil, nil, &api.ApiError{Typ: api.ErrorBadData, Err: err}, func() {}
 	}
 
-	explanation, apiErr := qapi.parseQueryExplainParam(r, qry)
-	if apiErr != nil {
-		return nil, nil, apiErr, func() {}
-	}
-
 	tracing.DoInSpan(ctx, "query_gate_ismyturn", func(ctx context.Context) {
 		err = qapi.gate.Start(ctx)
 	})
@@ -742,10 +708,9 @@ func (qapi *QueryAPI) queryRange(r *http.Request) (interface{}, []error, *api.Ap
 		qs = stats.NewQueryStats(qry.Stats())
 	}
 	return &queryData{
-		ResultType:       res.Value.Type(),
-		Result:           res.Value,
-		Stats:            qs,
-		QueryExplanation: explanation,
+		ResultType: res.Value.Type(),
+		Result:     res.Value,
+		Stats:      qs,
 	}, res.Warnings, nil, qry.Close
 }
 

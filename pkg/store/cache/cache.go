@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/base64"
 	"strconv"
-	"strings"
 
 	"github.com/oklog/ulid"
 	"github.com/prometheus/prometheus/model/labels"
@@ -16,9 +15,8 @@ import (
 )
 
 const (
-	cacheTypePostings         string = "Postings"
-	cacheTypeExpandedPostings string = "ExpandedPostings"
-	cacheTypeSeries           string = "Series"
+	cacheTypePostings string = "Postings"
+	cacheTypeSeries   string = "Series"
 
 	sliceHeaderSize = 16
 )
@@ -40,12 +38,6 @@ type IndexCache interface {
 	// and returns a map containing cache hits, along with a list of missing keys.
 	FetchMultiPostings(ctx context.Context, blockID ulid.ULID, keys []labels.Label) (hits map[labels.Label][]byte, misses []labels.Label)
 
-	// StoreExpandedPostings stores expanded postings for a set of label matchers.
-	StoreExpandedPostings(blockID ulid.ULID, matchers []*labels.Matcher, v []byte)
-
-	// FetchExpandedPostings fetches expanded postings and returns cached data and a boolean value representing whether it is a cache hit or not.
-	FetchExpandedPostings(ctx context.Context, blockID ulid.ULID, matchers []*labels.Matcher) ([]byte, bool)
-
 	// StoreSeries stores a single series.
 	StoreSeries(blockID ulid.ULID, id storage.SeriesRef, v []byte)
 
@@ -55,10 +47,8 @@ type IndexCache interface {
 }
 
 type cacheKey struct {
-	block string
+	block ulid.ULID
 	key   interface{}
-
-	compression string
 }
 
 func (c cacheKey) keyType() string {
@@ -67,8 +57,6 @@ func (c cacheKey) keyType() string {
 		return cacheTypePostings
 	case cacheKeySeries:
 		return cacheTypeSeries
-	case cacheKeyExpandedPostings:
-		return cacheTypeExpandedPostings
 	}
 	return "<unknown>"
 }
@@ -78,8 +66,6 @@ func (c cacheKey) size() uint64 {
 	case cacheKeyPostings:
 		// ULID + 2 slice headers + number of chars in value and name.
 		return ulidSize + 2*sliceHeaderSize + uint64(len(k.Value)+len(k.Name))
-	case cacheKeyExpandedPostings:
-		return ulidSize + sliceHeaderSize + uint64(len(k))
 	case cacheKeySeries:
 		return ulidSize + 8 // ULID + uint64.
 	}
@@ -93,39 +79,13 @@ func (c cacheKey) string() string {
 		// which would end up in wrong query results.
 		lbl := c.key.(cacheKeyPostings)
 		lblHash := blake2b.Sum256([]byte(lbl.Name + ":" + lbl.Value))
-		key := "P:" + c.block + ":" + base64.RawURLEncoding.EncodeToString(lblHash[0:])
-		if len(c.compression) > 0 {
-			key += ":" + c.compression
-		}
-		return key
-	case cacheKeyExpandedPostings:
-		// Use cryptographically hash functions to avoid hash collisions
-		// which would end up in wrong query results.
-		matchers := c.key.(cacheKeyExpandedPostings)
-		matchersHash := blake2b.Sum256([]byte(matchers))
-		key := "EP:" + c.block + ":" + base64.RawURLEncoding.EncodeToString(matchersHash[0:])
-		if len(c.compression) > 0 {
-			key += ":" + c.compression
-		}
-		return key
+		return "P:" + c.block.String() + ":" + base64.RawURLEncoding.EncodeToString(lblHash[0:])
 	case cacheKeySeries:
-		return "S:" + c.block + ":" + strconv.FormatUint(uint64(c.key.(cacheKeySeries)), 10)
+		return "S:" + c.block.String() + ":" + strconv.FormatUint(uint64(c.key.(cacheKeySeries)), 10)
 	default:
 		return ""
 	}
 }
 
-func labelMatchersToString(matchers []*labels.Matcher) string {
-	sb := strings.Builder{}
-	for i, lbl := range matchers {
-		sb.WriteString(lbl.String())
-		if i < len(matchers)-1 {
-			sb.WriteRune(';')
-		}
-	}
-	return sb.String()
-}
-
 type cacheKeyPostings labels.Label
-type cacheKeyExpandedPostings string // We don't use []*labels.Matcher because it is not a hashable type so fail at inmemory cache.
 type cacheKeySeries uint64

@@ -16,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/redis/rueidis"
+	"github.com/rueian/rueidis"
 	"gopkg.in/yaml.v3"
 
 	"github.com/thanos-io/thanos/pkg/extprom"

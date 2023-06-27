@@ -6,8 +6,6 @@ package query
 import (
 	"context"
 	"io"
-	"math"
-	"sync"
 	"time"
 
 	"github.com/efficientgo/core/backoff"
@@ -22,7 +20,6 @@ import (
 	"github.com/thanos-io/promql-engine/api"
 
 	"github.com/thanos-io/thanos/pkg/api/query/querypb"
-	"github.com/thanos-io/thanos/pkg/info/infopb"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
 	"github.com/thanos-io/thanos/pkg/store/storepb/prompb"
 )
@@ -39,23 +36,22 @@ type Opts struct {
 type Client struct {
 	querypb.QueryClient
 	address   string
-	tsdbInfos infopb.TSDBInfos
+	mint      int64
+	maxt      int64
+	labelSets []labels.Labels
 }
 
 // NewClient creates a new Client.
-func NewClient(queryClient querypb.QueryClient, address string, tsdbInfos infopb.TSDBInfos) Client {
-	return Client{
-		QueryClient: queryClient,
-		address:     address,
-		tsdbInfos:   tsdbInfos,
-	}
+func NewClient(queryClient querypb.QueryClient, address string, mint int64, maxt int64, labelSets []labels.Labels) Client {
+	return Client{QueryClient: queryClient, address: address, mint: mint, maxt: maxt, labelSets: labelSets}
 }
 
-func (c Client) GetAddress() string { return c.address }
+func (q Client) MinT() int64 { return q.mint }
+func (q Client) MaxT() int64 { return q.maxt }
 
-func (c Client) LabelSets() []labels.Labels {
-	return c.tsdbInfos.LabelSets()
-}
+func (q Client) LabelSets() []labels.Labels { return q.labelSets }
+
+func (q Client) GetAddress() string { return q.address }
 
 type remoteEndpoints struct {
 	logger     log.Logger
@@ -81,104 +77,46 @@ func (r remoteEndpoints) Engines() []api.RemoteEngine {
 }
 
 type remoteEngine struct {
+	Client
 	opts   Opts
 	logger log.Logger
-
-	client Client
-
-	mintOnce sync.Once
-	mint     int64
-	maxtOnce sync.Once
-	maxt     int64
 }
 
 func NewRemoteEngine(logger log.Logger, queryClient Client, opts Opts) *remoteEngine {
 	return &remoteEngine{
 		logger: logger,
-		client: queryClient,
+		Client: queryClient,
 		opts:   opts,
 	}
 }
 
-// MinT returns the minimum timestamp that is safe to query in the remote engine.
-// In order to calculate it, we find the highest min time for each label set, and we return
-// the lowest of those values.
-// Calculating the MinT this way makes remote queries resilient to cases where one tsdb replica would delete
-// a block due to retention before other replicas did the same.
-// See https://github.com/thanos-io/promql-engine/issues/187.
-func (r *remoteEngine) MinT() int64 {
-	r.mintOnce.Do(func() {
-		var (
-			hashBuf               = make([]byte, 0, 128)
-			highestMintByLabelSet = make(map[uint64]int64)
-		)
-		for _, lset := range r.infosWithoutReplicaLabels() {
-			key, _ := labelpb.ZLabelsToPromLabels(lset.Labels.Labels).HashWithoutLabels(hashBuf)
-			lsetMinT, ok := highestMintByLabelSet[key]
-			if !ok {
-				highestMintByLabelSet[key] = lset.MinTime
-				continue
-			}
-
-			if lset.MinTime > lsetMinT {
-				highestMintByLabelSet[key] = lset.MinTime
-			}
-		}
-
-		var mint int64 = math.MaxInt64
-		for _, m := range highestMintByLabelSet {
-			if m < mint {
-				mint = m
-			}
-		}
-		r.mint = mint
-	})
-
-	return r.mint
-}
-
-func (r *remoteEngine) MaxT() int64 {
-	r.maxtOnce.Do(func() {
-		r.maxt = r.client.tsdbInfos.MaxT()
-	})
-	return r.maxt
-}
-
-func (r *remoteEngine) LabelSets() []labels.Labels {
-	return r.infosWithoutReplicaLabels().LabelSets()
-}
-
-func (r *remoteEngine) infosWithoutReplicaLabels() infopb.TSDBInfos {
+func (r remoteEngine) LabelSets() []labels.Labels {
 	replicaLabelSet := make(map[string]struct{})
 	for _, lbl := range r.opts.ReplicaLabels {
 		replicaLabelSet[lbl] = struct{}{}
 	}
 
 	// Strip replica labels from the result.
-	infos := make(infopb.TSDBInfos, 0, len(r.client.tsdbInfos))
-	var builder labels.ScratchBuilder
-	for _, info := range r.client.tsdbInfos {
-		builder.Reset()
-		for _, lbl := range info.Labels.Labels {
+	labelSets := r.Client.LabelSets()
+	result := make([]labels.Labels, 0, len(labelSets))
+	for _, labelSet := range labelSets {
+		var builder labels.ScratchBuilder
+		for _, lbl := range labelSet {
 			if _, ok := replicaLabelSet[lbl.Name]; ok {
 				continue
 			}
 			builder.Add(lbl.Name, lbl.Value)
 		}
-		infos = append(infos, infopb.NewTSDBInfo(
-			info.MinTime,
-			info.MaxTime,
-			labelpb.ZLabelsFromPromLabels(builder.Labels())),
-		)
+		result = append(result, builder.Labels())
 	}
 
-	return infos
+	return result
 }
 
-func (r *remoteEngine) NewRangeQuery(_ context.Context, opts *promql.QueryOpts, qs string, start, end time.Time, interval time.Duration) (promql.Query, error) {
+func (r remoteEngine) NewRangeQuery(_ context.Context, opts *promql.QueryOpts, qs string, start, end time.Time, interval time.Duration) (promql.Query, error) {
 	qry := &remoteQuery{
 		logger: r.logger,
-		client: r.client,
+		client: r.Client,
 		opts:   r.opts,
 
 		qs:       qs,
@@ -190,10 +128,10 @@ func (r *remoteEngine) NewRangeQuery(_ context.Context, opts *promql.QueryOpts, 
 	return newRetriableQuery(qry), nil
 }
 
-func (r *remoteEngine) NewInstantQuery(_ context.Context, _ *promql.QueryOpts, qs string, ts time.Time) (promql.Query, error) {
+func (r remoteEngine) NewInstantQuery(_ context.Context, _ *promql.QueryOpts, qs string, ts time.Time) (promql.Query, error) {
 	qry := &remoteQuery{
 		logger: r.logger,
-		client: r.client,
+		client: r.Client,
 		opts:   r.opts,
 
 		qs:       qs,

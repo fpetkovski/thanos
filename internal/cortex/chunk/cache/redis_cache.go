@@ -13,6 +13,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	instr "github.com/weaveworks/common/instrument"
 
+	util_log "github.com/thanos-io/thanos/internal/cortex/util/log"
 	"github.com/thanos-io/thanos/internal/cortex/util/spanlogger"
 )
 
@@ -26,6 +27,7 @@ type RedisCache struct {
 
 // NewRedisCache creates a new RedisCache
 func NewRedisCache(name string, redisClient *RedisClient, reg prometheus.Registerer, logger log.Logger) *RedisCache {
+	util_log.WarnExperimentalUse("Redis cache")
 	cache := &RedisCache{
 		name:   name,
 		redis:  redisClient,
