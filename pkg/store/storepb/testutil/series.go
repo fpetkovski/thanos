@@ -15,11 +15,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-kit/log"
+	"github.com/oklog/ulid"
+
 	"github.com/cespare/xxhash"
 	"github.com/efficientgo/core/testutil"
-	"github.com/go-kit/log"
 	"github.com/gogo/protobuf/types"
-	"github.com/oklog/ulid"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb"
@@ -181,7 +182,7 @@ func CreateBlockFromHead(t testing.TB, dir string, head *tsdb.Head) ulid.ULID {
 }
 
 func appendFloatSamples(t testing.TB, app storage.Appender, tsLabel int, opts HeadGenOptions) {
-	lblSet := labels.FromStrings("foo", "bar", "i", fmt.Sprintf("%07d%s", tsLabel, LabelLongSuffix), "j", fmt.Sprintf("%v", tsLabel))
+	lblSet := labels.FromStrings("foo", "bar", "i", fmt.Sprintf("%07d%s", tsLabel, LabelLongSuffix))
 	if opts.IncludeName {
 		lblSet = append(lblSet, labels.Label{Name: "__name__", Value: "test_float_metric"})
 	}
@@ -197,7 +198,7 @@ func appendFloatSamples(t testing.TB, app storage.Appender, tsLabel int, opts He
 func appendHistogramSamples(t testing.TB, app storage.Appender, tsLabel int, opts HeadGenOptions) {
 	histograms := tsdbutil.GenerateTestHistograms(opts.SamplesPerSeries)
 
-	lblSet := labels.FromStrings("foo", "bar", "i", fmt.Sprintf("%07d%s", tsLabel, LabelLongSuffix), "j", fmt.Sprintf("%v", tsLabel))
+	lblSet := labels.FromStrings("foo", "bar", "i", fmt.Sprintf("%07d%s", tsLabel, LabelLongSuffix))
 	if opts.IncludeName {
 		lblSet = append(lblSet, labels.Label{Name: "__name__", Value: "test_metric"})
 	}
@@ -295,7 +296,6 @@ type SeriesCase struct {
 	ExpectedSeries   []*storepb.Series
 	ExpectedWarnings []string
 	ExpectedHints    []hintspb.SeriesResponseHints
-	HintsCompareFunc func(t testutil.TB, expected, actual hintspb.SeriesResponseHints)
 }
 
 // TestServerSeries runs tests against given cases.
@@ -343,14 +343,7 @@ func TestServerSeries(t testutil.TB, store storepb.StoreServer, cases ...*Series
 						testutil.Ok(t, types.UnmarshalAny(anyHints, &hints))
 						actualHints = append(actualHints, hints)
 					}
-					testutil.Equals(t, len(c.ExpectedHints), len(actualHints))
-					for i, hint := range actualHints {
-						if c.HintsCompareFunc == nil {
-							testutil.Equals(t, c.ExpectedHints[i], hint)
-						} else {
-							c.HintsCompareFunc(t, c.ExpectedHints[i], hint)
-						}
-					}
+					testutil.Equals(t, c.ExpectedHints, actualHints)
 				}
 			}
 		})

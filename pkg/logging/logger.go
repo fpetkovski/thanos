@@ -46,14 +46,11 @@ func NewLogger(logLevel, logFormat, debugName string) log.Logger {
 		logger = log.NewJSONLogger(log.NewSyncWriter(os.Stderr))
 	}
 
-	// Sort the logger chain to avoid expensive log.Valuer evaluation for disallowed level.
-	// Ref: https://github.com/go-kit/log/issues/14#issuecomment-945038252
-	logger = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.Caller(5))
 	logger = level.NewFilter(logger, lvl)
 
 	if debugName != "" {
 		logger = log.With(logger, "name", debugName)
 	}
 
-	return logger
+	return log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 }

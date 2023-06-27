@@ -25,7 +25,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/thanos-io/thanos/pkg/component"
-	"github.com/thanos-io/thanos/pkg/info/infopb"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
 	"github.com/thanos-io/thanos/pkg/store/storepb"
 	"github.com/thanos-io/thanos/pkg/strutil"
@@ -57,9 +56,6 @@ type Client interface {
 
 	// GuaranteedMinTime returns the minimum time that a store always guarantees to have.
 	GuaranteedMinTime() int64
-
-	// TSDBInfos returns metadata about each TSDB backed by the client.
-	TSDBInfos() []infopb.TSDBInfo
 
 	// SupportsSharding returns true if sharding is supported by the underlying store.
 	SupportsSharding() bool
@@ -302,14 +298,6 @@ func (s *ProxyStore) GuaranteedMinTime() int64 {
 	}
 
 	return mint
-}
-
-func (s *ProxyStore) TSDBInfos() []infopb.TSDBInfo {
-	infos := make([]infopb.TSDBInfo, 0)
-	for _, store := range s.stores() {
-		infos = append(infos, store.TSDBInfos()...)
-	}
-	return infos
 }
 
 func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.Store_SeriesServer) error {

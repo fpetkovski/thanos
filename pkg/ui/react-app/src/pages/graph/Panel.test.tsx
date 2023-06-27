@@ -22,8 +22,6 @@ const defaultProps: PanelProps = {
     usePartialResponse: false,
     storeMatches: [],
     engine: 'prometheus',
-    explain: false,
-    disableExplainCheckbox: false,
   },
   onOptionsChanged: (): void => {
     // Do nothing.
@@ -57,9 +55,6 @@ describe('Panel', () => {
       results.push(opts);
     };
     const panel = shallow(<Panel {...defaultProps} onOptionsChanged={onOptionsChanged} />);
-    // Panel construction updates Explain checkbox prop to disbale.
-    // Hence, a result is added and dropping it.
-    results.length = 0;
     const links = panel.find(NavLink);
     [
       { panelType: 'Table', active: true },
@@ -97,8 +92,6 @@ describe('Panel', () => {
       usePartialResponse: false,
       storeMatches: [],
       engine: 'prometheus',
-      explain: false,
-      disableExplainCheckbox: false,
     };
     const graphPanel = mount(<Panel {...defaultProps} options={options} />);
     const controls = graphPanel.find(GraphControls);

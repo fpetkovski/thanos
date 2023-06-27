@@ -13,13 +13,13 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/common/model"
+	"gopkg.in/fsnotify.v1"
 )
 
 var (
@@ -37,37 +37,13 @@ const (
 	RouterIngestor ReceiverMode = "RouterIngestor"
 )
 
-type Endpoint struct {
-	Address string `json:"address"`
-	AZ      string `json:"az"`
-}
-
-func (e *Endpoint) UnmarshalJSON(data []byte) error {
-	// First try to unmarshal as a string.
-	err := json.Unmarshal(data, &e.Address)
-	if err == nil {
-		return nil
-	}
-
-	// If that fails, try to unmarshal as an endpoint object.
-	type endpointAlias Endpoint
-	var configEndpoint endpointAlias
-	err = json.Unmarshal(data, &configEndpoint)
-	if err == nil {
-		e.Address = configEndpoint.Address
-		e.AZ = configEndpoint.AZ
-	}
-	return err
-}
-
 // HashringConfig represents the configuration for a hashring
 // a receive node knows about.
 type HashringConfig struct {
-	Hashring       string            `json:"hashring,omitempty"`
-	Tenants        []string          `json:"tenants,omitempty"`
-	Endpoints      []Endpoint        `json:"endpoints"`
-	Algorithm      HashringAlgorithm `json:"algorithm,omitempty"`
-	ExternalLabels map[string]string `json:"external_labels,omitempty"`
+	Hashring  string            `json:"hashring,omitempty"`
+	Tenants   []string          `json:"tenants,omitempty"`
+	Endpoints []string          `json:"endpoints"`
+	Algorithm HashringAlgorithm `json:"algorithm,omitempty"`
 }
 
 // ConfigWatcher is able to watch a file containing a hashring configuration
@@ -279,30 +255,6 @@ func (cw *ConfigWatcher) refresh(ctx context.Context) {
 	}
 }
 
-func ConfigFromWatcher(ctx context.Context, updates chan<- []HashringConfig, cw *ConfigWatcher) error {
-	defer close(updates)
-	go cw.Run(ctx)
-
-	for {
-		select {
-		case cfg, ok := <-cw.C():
-			if !ok {
-				return errors.New("hashring config watcher stopped unexpectedly")
-			}
-			updates <- cfg
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
-}
-
-// ParseConfig parses the raw configuration content and returns a HashringConfig.
-func ParseConfig(content []byte) ([]HashringConfig, error) {
-	var config []HashringConfig
-	err := json.Unmarshal(content, &config)
-	return config, err
-}
-
 // loadConfig loads raw configuration content and returns a configuration.
 func loadConfig(logger log.Logger, path string) ([]HashringConfig, float64, error) {
 	cfgContent, err := readFile(logger, path)
@@ -310,7 +262,7 @@ func loadConfig(logger log.Logger, path string) ([]HashringConfig, float64, erro
 		return nil, 0, errors.Wrap(err, "failed to read configuration file")
 	}
 
-	config, err := ParseConfig(cfgContent)
+	config, err := parseConfig(cfgContent)
 	if err != nil {
 		return nil, 0, errors.Wrapf(errParseConfigurationFile, "failed to parse configuration file: %v", err)
 	}
@@ -336,6 +288,13 @@ func readFile(logger log.Logger, path string) ([]byte, error) {
 	}()
 
 	return io.ReadAll(fd)
+}
+
+// parseConfig parses the raw configuration content and returns a HashringConfig.
+func parseConfig(content []byte) ([]HashringConfig, error) {
+	var config []HashringConfig
+	err := json.Unmarshal(content, &config)
+	return config, err
 }
 
 // hashAsMetricValue generates metric value from hash of data.

@@ -22,7 +22,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/thanos-io/thanos/pkg/component"
-	"github.com/thanos-io/thanos/pkg/info/infopb"
 	"github.com/thanos-io/thanos/pkg/runutil"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
 	"github.com/thanos-io/thanos/pkg/store/storepb"
@@ -46,8 +45,6 @@ type TSDBStore struct {
 	extLabelsMap     map[string]struct{}
 	buffers          sync.Pool
 	maxBytesPerFrame int
-
-	mtx sync.RWMutex
 }
 
 func RegisterWritableStoreServer(storeSrv storepb.WriteableStoreServer) func(*grpc.Server) {
@@ -82,20 +79,6 @@ func NewTSDBStore(logger log.Logger, db TSDBReader, component component.StoreAPI
 	}
 }
 
-func (s *TSDBStore) SetExtLset(extLset labels.Labels) {
-	s.mtx.Lock()
-	defer s.mtx.Unlock()
-
-	s.extLset = extLset
-}
-
-func (s *TSDBStore) getExtLset() labels.Labels {
-	s.mtx.RLock()
-	defer s.mtx.RUnlock()
-
-	return s.extLset
-}
-
 // Info returns store information about the Prometheus instance.
 func (s *TSDBStore) Info(_ context.Context, _ *storepb.InfoRequest) (*storepb.InfoResponse, error) {
 	minTime, err := s.db.StartTime()
@@ -104,7 +87,7 @@ func (s *TSDBStore) Info(_ context.Context, _ *storepb.InfoRequest) (*storepb.In
 	}
 
 	res := &storepb.InfoResponse{
-		Labels:    labelpb.ZLabelsFromPromLabels(s.getExtLset()),
+		Labels:    labelpb.ZLabelsFromPromLabels(s.extLset),
 		StoreType: s.component.ToProto(),
 		MinTime:   minTime,
 		MaxTime:   math.MaxInt64,
@@ -122,7 +105,7 @@ func (s *TSDBStore) Info(_ context.Context, _ *storepb.InfoRequest) (*storepb.In
 }
 
 func (s *TSDBStore) LabelSet() []labelpb.ZLabelSet {
-	labels := labelpb.ZLabelsFromPromLabels(s.getExtLset())
+	labels := labelpb.ZLabelsFromPromLabels(s.extLset)
 	labelSets := []labelpb.ZLabelSet{}
 	if len(labels) > 0 {
 		labelSets = append(labelSets, labelpb.ZLabelSet{
@@ -131,24 +114,6 @@ func (s *TSDBStore) LabelSet() []labelpb.ZLabelSet {
 	}
 
 	return labelSets
-}
-
-func (p *TSDBStore) TSDBInfos() []infopb.TSDBInfo {
-	labels := p.LabelSet()
-	if len(labels) == 0 {
-		return []infopb.TSDBInfo{}
-	}
-
-	mint, maxt := p.TimeRange()
-	return []infopb.TSDBInfo{
-		{
-			Labels: labelpb.ZLabelSet{
-				Labels: labels[0].Labels,
-			},
-			MinTime: mint,
-			MaxTime: maxt,
-		},
-	}
 }
 
 func (s *TSDBStore) TimeRange() (int64, int64) {
@@ -172,7 +137,7 @@ type CloseDelegator interface {
 // Series returns all series for a requested time range and label matcher. The returned data may
 // exceed the requested time bounds.
 func (s *TSDBStore) Series(r *storepb.SeriesRequest, srv storepb.Store_SeriesServer) error {
-	match, matchers, err := matchesExternalLabels(r.Matchers, s.getExtLset())
+	match, matchers, err := matchesExternalLabels(r.Matchers, s.extLset)
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -284,28 +249,11 @@ func (s *TSDBStore) Series(r *storepb.SeriesRequest, srv storepb.Store_SeriesSer
 	return nil
 }
 
-// GuaranteedMinTime returns the minimum timestamp in milliseconds that will always be present in a TSDB.
-func GuaranteedMinTime(now, mint, retentionDuration, minBlockDuration int64) int64 {
-	if mint == UninitializedTSDBTime {
-		return UninitializedTSDBTime
-	}
-
-	estimatedRetentionTime := time.UnixMilli(now - retentionDuration)
-	blockAlignedRetention := estimatedRetentionTime.
-		Truncate(time.Duration(minBlockDuration) * time.Millisecond).
-		UnixMilli()
-
-	// The first few samples in a block are sometimes not wall-clock aligned.
-	// We add a small offset proportional to the block size to make sure we skip
-	// the first few minutes in a TSDB.
-	return blockAlignedRetention + minBlockDuration/8
-}
-
 // LabelNames returns all known label names constrained with the given matchers.
 func (s *TSDBStore) LabelNames(ctx context.Context, r *storepb.LabelNamesRequest) (
 	*storepb.LabelNamesResponse, error,
 ) {
-	match, matchers, err := matchesExternalLabels(r.Matchers, s.getExtLset())
+	match, matchers, err := matchesExternalLabels(r.Matchers, s.extLset)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -326,7 +274,7 @@ func (s *TSDBStore) LabelNames(ctx context.Context, r *storepb.LabelNamesRequest
 	}
 
 	if len(res) > 0 {
-		for _, lbl := range s.getExtLset() {
+		for _, lbl := range s.extLset {
 			res = append(res, lbl.Name)
 		}
 		sort.Strings(res)
@@ -352,7 +300,7 @@ func (s *TSDBStore) LabelValues(ctx context.Context, r *storepb.LabelValuesReque
 		return nil, status.Error(codes.InvalidArgument, "label name parameter cannot be empty")
 	}
 
-	match, matchers, err := matchesExternalLabels(r.Matchers, s.getExtLset())
+	match, matchers, err := matchesExternalLabels(r.Matchers, s.extLset)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -361,7 +309,7 @@ func (s *TSDBStore) LabelValues(ctx context.Context, r *storepb.LabelValuesReque
 		return &storepb.LabelValuesResponse{Values: nil}, nil
 	}
 
-	if v := s.getExtLset().Get(r.Label); v != "" {
+	if v := s.extLset.Get(r.Label); v != "" {
 		return &storepb.LabelValuesResponse{Values: []string{v}}, nil
 	}
 
@@ -394,4 +342,21 @@ func labelsToMap(lset labels.Labels) map[string]struct{} {
 		r[l.Name] = struct{}{}
 	}
 	return r
+}
+
+// GuaranteedMinTime returns the minimum timestamp in milliseconds that will always be present in a TSDB.
+func GuaranteedMinTime(now, mint, retentionDuration, minBlockDuration int64) int64 {
+	if mint == UninitializedTSDBTime {
+		return UninitializedTSDBTime
+	}
+
+	estimatedRetentionTime := time.UnixMilli(now - retentionDuration)
+	blockAlignedRetention := estimatedRetentionTime.
+		Truncate(time.Duration(minBlockDuration) * time.Millisecond).
+		UnixMilli()
+
+	// The first few samples in a block are sometimes not wall-clock aligned.
+	// We add a small offset proportional to the block size to make sure we skip
+	// the first few minutes in a TSDB.
+	return blockAlignedRetention + minBlockDuration/8
 }

@@ -13,7 +13,6 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
-	"sync"
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -78,14 +77,12 @@ type Shipper struct {
 	dir     string
 	metrics *metrics
 	bucket  objstore.Bucket
+	labels  func() labels.Labels
 	source  metadata.SourceType
 
 	uploadCompacted        bool
 	allowOutOfOrderUploads bool
 	hashFunc               metadata.HashFunc
-
-	labels func() labels.Labels
-	mtx    sync.RWMutex
 }
 
 // New creates a new shipper that detects new TSDB blocks in dir and uploads them to
@@ -120,20 +117,6 @@ func New(
 		uploadCompacted:        uploadCompacted,
 		hashFunc:               hashFunc,
 	}
-}
-
-func (s *Shipper) SetLabels(lbls labels.Labels) {
-	s.mtx.Lock()
-	defer s.mtx.Unlock()
-
-	s.labels = func() labels.Labels { return lbls }
-}
-
-func (s *Shipper) getLabels() labels.Labels {
-	s.mtx.RLock()
-	defer s.mtx.RUnlock()
-
-	return s.labels()
 }
 
 // Timestamps returns the minimum timestamp for which data is available and the highest timestamp
@@ -268,7 +251,7 @@ func (s *Shipper) Sync(ctx context.Context) (uploaded int, err error) {
 	meta.Uploaded = nil
 
 	var (
-		checker    = newLazyOverlapChecker(s.logger, s.bucket, s.getLabels)
+		checker    = newLazyOverlapChecker(s.logger, s.bucket, s.labels)
 		uploadErrs int
 	)
 
@@ -372,7 +355,7 @@ func (s *Shipper) upload(ctx context.Context, meta *metadata.Meta) error {
 		return errors.Wrap(err, "hard link block")
 	}
 	// Attach current labels and write a new meta file with Thanos extensions.
-	if lset := s.getLabels(); lset != nil {
+	if lset := s.labels(); lset != nil {
 		meta.Thanos.Labels = lset.Map()
 	}
 	meta.Thanos.Source = s.source

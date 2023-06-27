@@ -54,15 +54,6 @@ func (c queryInstantCodec) MergeResponse(req queryrange.Request, responses ...qu
 	for _, resp := range responses {
 		promResponses = append(promResponses, resp.(*queryrange.PrometheusInstantQueryResponse))
 	}
-
-	var explanation *queryrange.Explanation
-	for i := range promResponses {
-		if promResponses[i].Data.GetExplanation() != nil {
-			explanation = promResponses[i].Data.GetExplanation()
-			break
-		}
-	}
-
 	var res queryrange.Response
 	switch promResponses[0].Data.ResultType {
 	case model.ValMatrix.String():
@@ -75,8 +66,7 @@ func (c queryInstantCodec) MergeResponse(req queryrange.Request, responses ...qu
 						Matrix: matrixMerge(promResponses),
 					},
 				},
-				Stats:       queryrange.StatsMerge(responses),
-				Explanation: explanation,
+				Stats: queryrange.StatsMerge(responses),
 			},
 		}
 	default:
@@ -93,8 +83,7 @@ func (c queryInstantCodec) MergeResponse(req queryrange.Request, responses ...qu
 						Vector: v,
 					},
 				},
-				Stats:       queryrange.StatsMerge(responses),
-				Explanation: explanation,
+				Stats: queryrange.StatsMerge(responses),
 			},
 		}
 	}
@@ -154,8 +143,6 @@ func (c queryInstantCodec) DecodeRequest(_ context.Context, r *http.Request, for
 
 	result.Query = r.FormValue("query")
 	result.Path = r.URL.Path
-	result.Explain = r.FormValue("explain")
-	result.Engine = r.FormValue("engine")
 
 	for _, header := range forwardHeaders {
 		for h, hv := range r.Header {
@@ -177,8 +164,6 @@ func (c queryInstantCodec) EncodeRequest(ctx context.Context, r queryrange.Reque
 		"query":                      []string{thanosReq.Query},
 		queryv1.DedupParam:           []string{strconv.FormatBool(thanosReq.Dedup)},
 		queryv1.PartialResponseParam: []string{strconv.FormatBool(thanosReq.PartialResponse)},
-		queryv1.QueryExplainParam:    []string{thanosReq.Explain},
-		queryv1.EngineParam:          []string{thanosReq.Engine},
 		queryv1.ReplicaLabelsParam:   thanosReq.ReplicaLabels,
 	}
 

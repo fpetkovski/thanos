@@ -676,7 +676,6 @@ func runRule(
 						GuaranteedMinTime:            guaranteedMinTime,
 						SupportsSharding:             true,
 						SupportsWithoutReplicaLabels: true,
-						TsdbInfos:                    tsdbStore.TSDBInfos(),
 					}
 				}
 				return nil

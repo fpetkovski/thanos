@@ -61,7 +61,7 @@ type QueryableCreator func(
 func NewQueryableCreator(
 	logger log.Logger,
 	reg prometheus.Registerer,
-	proxy storepb.StoreServer,
+	proxy *store.ProxyStore,
 	maxConcurrentSelects int,
 	selectTimeout time.Duration,
 ) QueryableCreator {
@@ -103,7 +103,7 @@ type queryable struct {
 	logger               log.Logger
 	replicaLabels        []string
 	storeDebugMatchers   [][]*labels.Matcher
-	proxy                storepb.StoreServer
+	proxy                *store.ProxyStore
 	deduplicate          bool
 	maxResolutionMillis  int64
 	partialResponse      bool
@@ -128,7 +128,7 @@ type querier struct {
 	mint, maxt              int64
 	replicaLabels           []string
 	storeDebugMatchers      [][]*labels.Matcher
-	proxy                   storepb.StoreServer
+	proxy                   *store.ProxyStore
 	deduplicate             bool
 	maxResolutionMillis     int64
 	partialResponseStrategy storepb.PartialResponseStrategy
@@ -149,7 +149,7 @@ func newQuerier(
 	maxt int64,
 	replicaLabels []string,
 	storeDebugMatchers [][]*labels.Matcher,
-	proxy storepb.StoreServer,
+	proxy *store.ProxyStore,
 	deduplicate bool,
 	maxResolutionMillis int64,
 	partialResponse,
