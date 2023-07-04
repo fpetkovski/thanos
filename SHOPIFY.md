@@ -14,4 +14,6 @@ x functions were [implemented as part of the Thanos promql engine](https://githu
 ### Query Store Selector
 In [#67](https://github.com/Shopify/thanos/pull/67) we added a store selector for queriers, which allows us to select a subset of stores to query from. This is useful for sharding.
 
-
+### Excluded Upstream PRs
+- https://github.com/thanos-io/thanos/pull/6299 (breaking changes to series sorting in stores)
+- https://github.com/thanos-io/thanos/pull/6420 (see https://github.com/thanos-io/thanos/issues/6495)
