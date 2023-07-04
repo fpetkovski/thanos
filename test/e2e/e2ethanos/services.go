@@ -25,9 +25,8 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/thanos-io/objstore/client"
-	"github.com/thanos-io/objstore/providers/s3"
-
 	"github.com/thanos-io/objstore/exthttp"
+	"github.com/thanos-io/objstore/providers/s3"
 
 	"github.com/thanos-io/thanos/pkg/alert"
 	"github.com/thanos-io/thanos/pkg/queryconfig"
@@ -64,7 +63,7 @@ const (
 
 // DefaultPrometheusImage sets default Prometheus image used in e2e service.
 func DefaultPrometheusImage() string {
-	return "quay.io/prometheus/prometheus:v2.42.0"
+	return "quay.io/prometheus/prometheus:v2.41.0"
 }
 
 // DefaultAlertmanagerImage sets default Alertmanager image used in e2e service.
@@ -260,6 +259,10 @@ type QuerierBuilder struct {
 	tracingConfig string
 	relabelConfig string
 
+	telemetryDurationQuantiles []float64
+	telemetrySamplesQuantiles  []float64
+	telemetrySeriesQuantiles   []float64
+
 	e2e.Linkable
 	f e2e.FutureRunnable
 }
@@ -374,6 +377,13 @@ func (q *QuerierBuilder) WithQueryMode(mode string) *QuerierBuilder {
 	return q
 }
 
+func (q *QuerierBuilder) WithTelemetryQuantiles(duration []float64, samples []float64, series []float64) *QuerierBuilder {
+	q.telemetryDurationQuantiles = duration
+	q.telemetrySamplesQuantiles = samples
+	q.telemetrySeriesQuantiles = series
+	return q
+}
+
 func (q *QuerierBuilder) Init() *e2emon.InstrumentedRunnable {
 	args, err := q.collectArgs()
 	if err != nil {
@@ -467,10 +477,27 @@ func (q *QuerierBuilder) collectArgs() ([]string, error) {
 	if q.relabelConfig != "" {
 		args = append(args, "--selector.relabel-config="+q.relabelConfig)
 	}
+	for _, bucket := range q.telemetryDurationQuantiles {
+		args = append(args, "--query.telemetry.request-duration-seconds-quantiles="+strconv.FormatFloat(bucket, 'f', -1, 64))
+	}
+	for _, bucket := range q.telemetrySamplesQuantiles {
+		args = append(args, "--query.telemetry.request-samples-quantiles="+strconv.FormatFloat(bucket, 'f', -1, 64))
+	}
+	for _, bucket := range q.telemetrySeriesQuantiles {
+		args = append(args, "--query.telemetry.request-series-seconds-quantiles="+strconv.FormatFloat(bucket, 'f', -1, 64))
+	}
 	return args, nil
 }
 
 func RemoteWriteEndpoint(addr string) string { return fmt.Sprintf("http://%s/api/v1/receive", addr) }
+
+func RemoteWriteEndpoints(addrs ...string) string {
+	var endpoints []string
+	for _, addr := range addrs {
+		endpoints = append(endpoints, RemoteWriteEndpoint(addr))
+	}
+	return strings.Join(endpoints, ",")
+}
 
 type ReceiveBuilder struct {
 	e2e.Linkable
@@ -480,6 +507,7 @@ type ReceiveBuilder struct {
 	maxExemplars        int
 	ingestion           bool
 	limit               int
+	tenantsLimits       receive.TenantsWriteLimitsConfig
 	metaMonitoring      string
 	metaMonitoringQuery string
 	hashringConfigs     []receive.HashringConfig
@@ -487,6 +515,7 @@ type ReceiveBuilder struct {
 	replication         int
 	image               string
 	nativeHistograms    bool
+	labels              []string
 }
 
 func NewReceiveBuilder(e e2e.Environment, name string) *ReceiveBuilder {
@@ -517,6 +546,11 @@ func (r *ReceiveBuilder) WithIngestionEnabled() *ReceiveBuilder {
 	return r
 }
 
+func (r *ReceiveBuilder) WithLabel(name, value string) *ReceiveBuilder {
+	r.labels = append(r.labels, fmt.Sprintf(`%s="%s"`, name, value))
+	return r
+}
+
 func (r *ReceiveBuilder) WithRouting(replication int, hashringConfigs ...receive.HashringConfig) *ReceiveBuilder {
 	r.hashringConfigs = hashringConfigs
 	r.replication = replication
@@ -528,9 +562,10 @@ func (r *ReceiveBuilder) WithRelabelConfigs(relabelConfigs []*relabel.Config) *R
 	return r
 }
 
-func (r *ReceiveBuilder) WithValidationEnabled(limit int, metaMonitoring string, query ...string) *ReceiveBuilder {
+func (r *ReceiveBuilder) WithValidationEnabled(limit int, metaMonitoring string, tenantsLimits receive.TenantsWriteLimitsConfig, query ...string) *ReceiveBuilder {
 	r.limit = limit
 	r.metaMonitoring = metaMonitoring
+	r.tenantsLimits = tenantsLimits
 	if len(query) > 0 {
 		r.metaMonitoringQuery = query[0]
 	}
@@ -563,6 +598,10 @@ func (r *ReceiveBuilder) Init() *e2emon.InstrumentedRunnable {
 		"--tsdb.max-exemplars":   fmt.Sprintf("%v", r.maxExemplars),
 	}
 
+	if len(r.labels) > 0 {
+		args["--label"] = fmt.Sprintf("%s,%s", args["--label"], strings.Join(r.labels, ","))
+	}
+
 	hashring := r.hashringConfigs
 	if len(hashring) > 0 && r.ingestion {
 		args["--receive.local-endpoint"] = r.InternalEndpoint("grpc")
@@ -579,6 +618,10 @@ func (r *ReceiveBuilder) Init() *e2emon.InstrumentedRunnable {
 					HeadSeriesLimit: uint64(r.limit),
 				},
 			},
+		}
+
+		if r.tenantsLimits != nil {
+			cfg.WriteLimits.TenantsLimits = r.tenantsLimits
 		}
 
 		b, err := yaml.Marshal(cfg)
@@ -626,7 +669,7 @@ func (r *ReceiveBuilder) Init() *e2emon.InstrumentedRunnable {
 
 	return e2emon.AsInstrumented(r.f.Init(wrapWithDefaults(e2e.StartOptions{
 		Image:     r.image,
-		Command:   e2e.NewCommand("receive", e2e.BuildArgs(args)...),
+		Command:   e2e.NewCommand("receive", e2e.BuildKingpinArgs(args)...),
 		Readiness: e2e.NewHTTPReadinessProbe("http", "/-/ready", 200, 200),
 	})), "http")
 }
@@ -1074,7 +1117,7 @@ const LocalPrometheusTarget = "localhost:9090"
 
 // DefaultPromConfig returns Prometheus config that sets Prometheus to:
 // * expose 2 external labels, source and replica.
-// * optionallly scrape self. This will produce up == 0 metric which we can assert on.
+// * optionally scrape self. This will produce up == 0 metric which we can assert on.
 // * optionally remote write endpoint to write into.
 func DefaultPromConfig(name string, replica int, remoteWriteEndpoint, ruleFile string, scrapeTargets ...string) string {
 	var targets string
@@ -1101,7 +1144,7 @@ scrape_configs:
   - targets: [%s]
   relabel_configs:
   - source_labels: ['__address__']
-    regex: '^.+:80$'
+    regex: '^localhost:80$'
     action: drop
 `, config, targets)
 	}
@@ -1109,13 +1152,16 @@ scrape_configs:
 	if remoteWriteEndpoint != "" {
 		config = fmt.Sprintf(`
 %s
-remote_write:
+remote_write:`, config)
+		for _, url := range strings.Split(remoteWriteEndpoint, ",") {
+			config = fmt.Sprintf(`
+%s
 - url: "%s"
   # Don't spam receiver on mistake.
   queue_config:
     min_backoff: 2s
-    max_backoff: 10s
-`, config, remoteWriteEndpoint)
+    max_backoff: 10s`, config, url)
+		}
 	}
 
 	if ruleFile != "" {

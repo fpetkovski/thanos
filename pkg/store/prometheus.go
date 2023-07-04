@@ -16,9 +16,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/model/timestamp"
-
 	"github.com/blang/semver/v4"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -27,7 +24,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
 	"google.golang.org/grpc/codes"
@@ -35,6 +34,7 @@ import (
 
 	"github.com/thanos-io/thanos/pkg/component"
 	"github.com/thanos-io/thanos/pkg/dedup"
+	"github.com/thanos-io/thanos/pkg/info/infopb"
 	"github.com/thanos-io/thanos/pkg/promclient"
 	"github.com/thanos-io/thanos/pkg/queryconfig"
 	"github.com/thanos-io/thanos/pkg/runutil"
@@ -146,6 +146,7 @@ func (p *PrometheusStore) putBuffer(b *[]byte) {
 // Series returns all series for a requested time range and label matcher.
 func (p *PrometheusStore) Series(r *storepb.SeriesRequest, s storepb.Store_SeriesServer) error {
 	extLset := p.externalLabelsFn()
+
 	match, matchers, err := matchesExternalLabels(r.Matchers, extLset)
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
@@ -261,13 +262,13 @@ func (p *PrometheusStore) queryPrometheus(
 	opts := promclient.QueryOptions{}
 	step := r.QueryHints.StepMillis / 1000
 	if step != 0 {
-		result, _, err := p.client.QueryRange(s.Context(), p.base, r.ToPromQL(), r.MinTime, r.MaxTime, step, opts)
+		result, _, _, err := p.client.QueryRange(s.Context(), p.base, r.ToPromQL(), r.MinTime, r.MaxTime, step, opts)
 		if err != nil {
 			return err
 		}
 		matrix = result
 	} else {
-		vector, _, err := p.client.QueryInstant(s.Context(), p.base, r.ToPromQL(), timestamp.Time(r.MaxTime), opts)
+		vector, _, _, err := p.client.QueryInstant(s.Context(), p.base, r.ToPromQL(), timestamp.Time(r.MaxTime), opts)
 		if err != nil {
 			return err
 		}
@@ -297,7 +298,6 @@ func (p *PrometheusStore) queryPrometheus(
 		sort.Slice(seriesLbls, func(i, j int) bool {
 			return seriesLbls.Less(i, j)
 		})
-
 		// Attach external labels for compatibility with remote read.
 		finalLbls := labelpb.ExtendSortedLabels(seriesLbls, externalLbls)
 		finalLbls = append(finalLbls, dedup.PushdownMarker)
@@ -756,6 +756,24 @@ func (p *PrometheusStore) LabelSet() []labelpb.ZLabelSet {
 	}
 
 	return labelset
+}
+
+func (p *PrometheusStore) TSDBInfos() []infopb.TSDBInfo {
+	labels := p.LabelSet()
+	if len(labels) == 0 {
+		return []infopb.TSDBInfo{}
+	}
+
+	mint, maxt := p.Timestamps()
+	return []infopb.TSDBInfo{
+		{
+			Labels: labelpb.ZLabelSet{
+				Labels: labels[0].Labels,
+			},
+			MinTime: mint,
+			MaxTime: maxt,
+		},
+	}
 }
 
 func (p *PrometheusStore) Timestamps() (mint int64, maxt int64) {
