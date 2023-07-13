@@ -18,7 +18,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/prometheus/model/labels"
-	"golang.org/x/exp/maps"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -316,7 +315,7 @@ func (s *ProxyStore) UpdateLabelNamesBloom(ctx context.Context) error {
 	}
 
 	s.mtx.Lock()
-	s.labelNamesBloom = bloom.NewFilterForStrings(maps.Keys(names)...)
+	s.labelNamesBloom = bloom.NewFilterForMapKeys(names)
 	s.mtx.Unlock()
 
 	return nil

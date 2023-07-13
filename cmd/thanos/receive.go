@@ -371,7 +371,9 @@ func runReceive(
 			return runutil.Repeat(10*time.Second, ctx.Done(), func() error {
 				level.Debug(logger).Log("msg", "Starting label names bloom filter update")
 
-				proxy.UpdateLabelNamesBloom(ctx)
+				if err := proxy.UpdateLabelNamesBloom(ctx); err != nil {
+					return err
+				}
 
 				level.Debug(logger).Log("msg", "Finished label names bloom filter update")
 				return nil

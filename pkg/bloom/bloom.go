@@ -17,7 +17,7 @@ type filter struct {
 	bloom *bloom.BloomFilter
 }
 
-func NewFromBytes(bloomBytes []byte) Filter {
+func NewFilterFromBytes(bloomBytes []byte) Filter {
 	if bloomBytes == nil {
 		return NewAlwaysTrueFilter()
 	}
@@ -34,6 +34,15 @@ func NewFromBytes(bloomBytes []byte) Filter {
 func NewFilterForStrings(items ...string) Filter {
 	bloomFilter := bloom.NewWithEstimates(uint(len(items)), FilterErrorRate)
 	for _, label := range items {
+		bloomFilter.AddString(label)
+	}
+
+	return &filter{bloom: bloomFilter}
+}
+
+func NewFilterForMapKeys(items map[string]struct{}) Filter {
+	bloomFilter := bloom.NewWithEstimates(uint(len(items)), FilterErrorRate)
+	for label := range items {
 		bloomFilter.AddString(label)
 	}
 
