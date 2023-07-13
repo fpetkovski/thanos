@@ -209,15 +209,7 @@ func (s *storeRef) TimeRange() (int64, int64) {
 }
 
 func (s *storeRef) LabelNamesBloom() bloom.Filter {
-	s.mtx.RLock()
-	defer s.mtx.RUnlock()
-
-	labelNames, err := s.LabelNames(context.Background(), &storepb.LabelNamesRequest{})
-	if err != nil {
-		return bloom.NewAlwaysTrueFilter()
-	}
-
-	return bloom.NewFilterForStrings(labelNames.Names...)
+	return bloom.NewAlwaysTrueFilter()
 }
 
 func (s *storeRef) SupportsSharding() bool {

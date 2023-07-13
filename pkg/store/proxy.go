@@ -18,6 +18,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/prometheus/model/labels"
+	"golang.org/x/exp/maps"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -286,18 +287,13 @@ func (s *ProxyStore) LabelNamesBloom() bloom.Filter {
 
 func (s *ProxyStore) UpdateLabelNamesBloom(ctx context.Context) error {
 	var (
-		names          []string
-		mtx            sync.Mutex
-		g, gctx        = errgroup.WithContext(ctx)
-		storeDebugMsgs []string
+		names   map[string]struct{}
+		mtx     sync.Mutex
+		g, gctx = errgroup.WithContext(ctx)
 	)
 
 	for _, st := range s.stores() {
 		st := st
-
-		if s.debugLogging {
-			storeDebugMsgs = append(storeDebugMsgs, fmt.Sprintf("Store %s queried", st))
-		}
 
 		g.Go(func() error {
 			resp, err := st.LabelNames(gctx, &storepb.LabelNamesRequest{})
@@ -306,10 +302,8 @@ func (s *ProxyStore) UpdateLabelNamesBloom(ctx context.Context) error {
 			}
 
 			mtx.Lock()
-			if len(names) != 0 {
-				names = union(names, resp.Names)
-			} else {
-				names = resp.Names
+			for _, name := range resp.Names {
+				names[name] = struct{}{}
 			}
 			mtx.Unlock()
 
@@ -321,34 +315,11 @@ func (s *ProxyStore) UpdateLabelNamesBloom(ctx context.Context) error {
 		return err
 	}
 
-	level.Debug(s.logger).Log("msg", strings.Join(storeDebugMsgs, ";"))
-
 	s.mtx.Lock()
-	s.labelNamesBloom = bloom.NewFilterForStrings(names...)
+	s.labelNamesBloom = bloom.NewFilterForStrings(maps.Keys(names)...)
 	s.mtx.Unlock()
 
 	return nil
-}
-
-func union(sliceA, sliceB []string) []string {
-	if len(sliceA) == 0 || len(sliceB) == 0 {
-		return []string{}
-	}
-
-	keyMap := make(map[string]struct{}, len(sliceA))
-	for _, s := range sliceA {
-		keyMap[s] = struct{}{}
-	}
-	for _, s := range sliceB {
-		keyMap[s] = struct{}{}
-	}
-
-	result := make([]string, 0, len(keyMap))
-	for k := range keyMap {
-		result = append(result, k)
-	}
-
-	return result
 }
 
 func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.Store_SeriesServer) error {
