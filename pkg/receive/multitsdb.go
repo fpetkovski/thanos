@@ -102,16 +102,6 @@ type localClient struct {
 	store *store.TSDBStore
 }
 
-func NewLocalClient(
-	c storepb.StoreClient,
-	store *store.TSDBStore,
-) store.Client {
-	return &localClient{
-		StoreClient: c,
-		store:       store,
-	}
-}
-
 func newLocalClient(c storepb.StoreClient, store *store.TSDBStore) *localClient {
 	return &localClient{
 		StoreClient: c,

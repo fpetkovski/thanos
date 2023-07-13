@@ -88,6 +88,9 @@ type ProxyStore struct {
 	metrics           *proxyStoreMetrics
 	retrievalStrategy RetrievalStrategy
 	debugLogging      bool
+
+	mtx             sync.Mutex
+	labelNamesBloom bloom.Filter
 }
 
 type proxyStoreMetrics struct {
@@ -275,12 +278,77 @@ func (s *ProxyStore) TSDBInfos() []infopb.TSDBInfo {
 }
 
 func (s *ProxyStore) LabelNamesBloom() bloom.Filter {
-	labelNames, err := s.LabelNames(context.Background(), &storepb.LabelNamesRequest{})
-	if err != nil {
-		return bloom.NewAlwaysTrueFilter()
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+
+	return s.labelNamesBloom
+}
+
+func (s *ProxyStore) UpdateLabelNamesBloom(ctx context.Context) error {
+	var (
+		names          []string
+		mtx            sync.Mutex
+		g, gctx        = errgroup.WithContext(ctx)
+		storeDebugMsgs []string
+	)
+
+	for _, st := range s.stores() {
+		st := st
+
+		if s.debugLogging {
+			storeDebugMsgs = append(storeDebugMsgs, fmt.Sprintf("Store %s queried", st))
+		}
+
+		g.Go(func() error {
+			resp, err := st.LabelNames(gctx, &storepb.LabelNamesRequest{})
+			if err != nil {
+				return errors.Wrapf(err, "fetch label names from store for updating bloom filter %s", st)
+			}
+
+			mtx.Lock()
+			if len(names) != 0 {
+				names = union(names, resp.Names)
+			} else {
+				names = resp.Names
+			}
+			mtx.Unlock()
+
+			return nil
+		})
 	}
 
-	return bloom.NewFilterForStrings(labelNames.Names...)
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	level.Debug(s.logger).Log("msg", strings.Join(storeDebugMsgs, ";"))
+
+	s.mtx.Lock()
+	s.labelNamesBloom = bloom.NewFilterForStrings(names...)
+	s.mtx.Unlock()
+
+	return nil
+}
+
+func union(sliceA, sliceB []string) []string {
+	if len(sliceA) == 0 || len(sliceB) == 0 {
+		return []string{}
+	}
+
+	keyMap := make(map[string]struct{}, len(sliceA))
+	for _, s := range sliceA {
+		keyMap[s] = struct{}{}
+	}
+	for _, s := range sliceB {
+		keyMap[s] = struct{}{}
+	}
+
+	result := make([]string, 0, len(keyMap))
+	for k := range keyMap {
+		result = append(result, k)
+	}
+
+	return result
 }
 
 func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.Store_SeriesServer) error {

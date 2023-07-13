@@ -365,6 +365,21 @@ func runReceive(
 			grpcserver.WithTLSConfig(tlsCfg),
 		)
 
+		ctx, cancel := context.WithCancel(context.Background())
+		level.Debug(logger).Log("msg", "setting up periodic label names bloom filter update")
+		g.Add(func() error {
+			return runutil.Repeat(10*time.Second, ctx.Done(), func() error {
+				level.Debug(logger).Log("msg", "Starting label names bloom filter update")
+
+				proxy.UpdateLabelNamesBloom(context.Background())
+
+				level.Debug(logger).Log("msg", "Finished label names bloom filter update")
+				return nil
+			})
+		}, func(err error) {
+			cancel()
+		})
+
 		g.Add(
 			func() error {
 				level.Info(logger).Log("msg", "listening for StoreAPI and WritableStoreAPI gRPC", "address", conf.grpcConfig.bindAddress)
