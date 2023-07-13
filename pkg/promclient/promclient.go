@@ -688,8 +688,6 @@ func (c *Client) get2xxResultWithGRPCErrors(ctx context.Context, spanName string
 		Error  string      `json:"error"`
 	}
 
-	fmt.Println(string(body))
-
 	if err = json.Unmarshal(body, &m); err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
@@ -741,8 +739,6 @@ func (c *Client) LabelNamesInGRPC(ctx context.Context, base *url.URL, matchers [
 	q.Add("start", formatTime(timestamp.Time(startTime)))
 	q.Add("end", formatTime(timestamp.Time(endTime)))
 	u.RawQuery = q.Encode()
-
-	fmt.Println(u.String())
 
 	var m struct {
 		Data []string `json:"data"`
