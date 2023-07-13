@@ -988,27 +988,6 @@ func TestQueryStoreDedup(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	t.Cleanup(cancel)
 
-	bucket := "store-gw-dedup-test"
-	minio := e2edb.NewMinio(e, "thanos-minio", bucket, e2edb.WithMinioTLS())
-	testutil.Ok(t, e2e.StartAndWaitReady(minio))
-
-	l := log.NewLogfmtLogger(os.Stdout)
-	bkt, err := s3.NewBucketWithConfig(l, e2ethanos.NewS3Config(bucket, minio.Endpoint("http"), minio.Dir()), "test")
-	testutil.Ok(t, err)
-
-	storeGW := e2ethanos.NewStoreGW(
-		e,
-		"s1",
-		client.BucketConfig{
-			Type:   client.S3,
-			Config: e2ethanos.NewS3Config(bucket, minio.InternalEndpoint("http"), minio.InternalDir()),
-		},
-		"",
-		"",
-		nil,
-	)
-	testutil.Ok(t, e2e.StartAndWaitReady(storeGW))
-
 	tests := []struct {
 		extReplicaLabel  string
 		intReplicaLabel  string
@@ -1036,7 +1015,7 @@ func TestQueryStoreDedup(t *testing.T) {
 		},
 		{
 			desc:            "Deduplication works on external label with resorting required",
-			intReplicaLabel: "a",
+			extReplicaLabel: "a",
 			series: []seriesWithLabels{
 				{
 					intLabels: labels.FromStrings("__name__", "simple_series"),
@@ -1071,8 +1050,8 @@ func TestQueryStoreDedup(t *testing.T) {
 			},
 			blockFinderLabel: "dedupint",
 			expectedSeries:   1,
-			// This test is expected to fail until the bug outlined in https://github.com/thanos-io/thanos/issues/6257
-			// is fixed. This means that it will return double the expected series until then.
+			// This is a regression test for the bug outlined in https://github.com/thanos-io/thanos/issues/6257.
+			// Until the bug was fixed, this testcase would return double the expected series.
 			expectedDedupBug: true,
 		},
 		{
@@ -1094,8 +1073,8 @@ func TestQueryStoreDedup(t *testing.T) {
 			},
 			blockFinderLabel: "dedupintresort",
 			expectedSeries:   2,
-			// This test is expected to fail until the bug outlined in https://github.com/thanos-io/thanos/issues/6257
-			// is fixed. This means that it will return double the expected series until then.
+			// This is a regression test for the bug outlined in https://github.com/thanos-io/thanos/issues/6257.
+			// Until the bug was fixed, this testcase would return double the expected series.
 			expectedDedupBug: true,
 		},
 		{
@@ -1117,8 +1096,8 @@ func TestQueryStoreDedup(t *testing.T) {
 			},
 			blockFinderLabel: "dedupintextra",
 			expectedSeries:   2,
-			// This test is expected to fail until the bug outlined in https://github.com/thanos-io/thanos/issues/6257
-			// is fixed. This means that it will return double the expected series until then.
+			// This is a regression test for the bug outlined in https://github.com/thanos-io/thanos/issues/6257.
+			// Until the bug was fixed, this testcase would return double the expected series.
 			expectedDedupBug: true,
 		},
 		{
@@ -1137,22 +1116,39 @@ func TestQueryStoreDedup(t *testing.T) {
 			},
 			blockFinderLabel: "dedupintext",
 			expectedSeries:   1,
-			// This test is expected to fail until the bug outlined in https://github.com/thanos-io/thanos/issues/6257
-			// is fixed. This means that it will return double the expected series until then.
+			// This is a regression test for the bug outlined in https://github.com/thanos-io/thanos/issues/6257.
+			// Until the bug was fixed, this testcase would return double the expected series.
 			expectedDedupBug: true,
 		},
 	}
 
-	// Prepare and upload all the blocks that will be used to S3.
-	var totalBlocks int
-	for _, tt := range tests {
-		createSimpleReplicatedBlocksInS3(ctx, t, e, l, bkt, tt.series, tt.blockFinderLabel)
-		totalBlocks += len(tt.series)
-	}
-	testutil.Ok(t, storeGW.WaitSumMetrics(e2emon.Equals(float64(totalBlocks)), "thanos_blocks_meta_synced"))
-
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
+			bucket := "store-gw-" + tt.blockFinderLabel
+			minio := e2edb.NewMinio(e, "thanos-minio"+tt.blockFinderLabel, bucket, e2edb.WithMinioTLS())
+			testutil.Ok(t, e2e.StartAndWaitReady(minio))
+
+			l := log.NewLogfmtLogger(os.Stdout)
+			bkt, err := s3.NewBucketWithConfig(l, e2ethanos.NewS3Config(bucket, minio.Endpoint("http"), minio.Dir()), "test")
+			testutil.Ok(t, err)
+
+			storeGW := e2ethanos.NewStoreGW(
+				e,
+				"s1"+tt.blockFinderLabel,
+				client.BucketConfig{
+					Type:   client.S3,
+					Config: e2ethanos.NewS3Config(bucket, minio.InternalEndpoint("http"), minio.InternalDir()),
+				},
+				"",
+				"",
+				nil,
+			)
+			testutil.Ok(t, e2e.StartAndWaitReady(storeGW))
+
+			// Prepare and upload all the blocks that will be used to S3.
+			createSimpleReplicatedBlocksInS3(ctx, t, e, l, bkt, tt.series, tt.blockFinderLabel)
+			testutil.Ok(t, storeGW.WaitSumMetrics(e2emon.Equals(float64(len(tt.series))), "thanos_blocks_meta_synced"))
+
 			querierBuilder := e2ethanos.NewQuerierBuilder(e, tt.blockFinderLabel, storeGW.InternalEndpoint("grpc")).WithProxyStrategy("lazy")
 			var replicaLabels []string
 			if tt.intReplicaLabel != "" {
@@ -1169,9 +1165,10 @@ func TestQueryStoreDedup(t *testing.T) {
 			testutil.Ok(t, e2e.StartAndWaitReady(querier))
 
 			expectedSeries := tt.expectedSeries
-			if tt.expectedDedupBug {
-				expectedSeries *= 2
-			}
+			// The below commented condition checks for the bug outlined in https://github.com/thanos-io/thanos/issues/6257.
+			// if tt.expectedDedupBug {
+			// 	expectedSeries *= 2
+			// }
 			instantQuery(t, ctx, querier.Endpoint("http"), func() string {
 				return fmt.Sprintf("max_over_time(simple_series{block_finder='%s'}[2h])", tt.blockFinderLabel)
 			}, time.Now, promclient.QueryOptions{
@@ -1302,13 +1299,13 @@ func TestSidecarQueryDedup(t *testing.T) {
 
 	t.Run("deduplication on internal label with reorder", func(t *testing.T) {
 		// Uses "a" as replica label, which is an internal label from the samples used.
-		// Should return 4 samples as long as the bug described by https://github.com/thanos-io/thanos/issues/6257#issuecomment-1544023978
-		// is not fixed. When it is fixed, it should return 2 samples.
+		// This is a regression test for the bug outlined in https://github.com/thanos-io/thanos/issues/6257.
+		// Until the bug was fixed, this testcase would return 4 samples instead of 2.
 		instantQuery(t, ctx, query4.Endpoint("http"), func() string {
 			return "my_fake_metric"
 		}, time.Now, promclient.QueryOptions{
 			Deduplicate: true,
-		}, 4)
+		}, 2)
 	})
 }
 
