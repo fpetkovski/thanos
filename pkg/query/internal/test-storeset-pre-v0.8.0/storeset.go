@@ -23,6 +23,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"google.golang.org/grpc"
 
+	"github.com/thanos-io/thanos/pkg/bloom"
 	"github.com/thanos-io/thanos/pkg/component"
 	"github.com/thanos-io/thanos/pkg/info/infopb"
 	"github.com/thanos-io/thanos/pkg/runutil"
@@ -205,6 +206,18 @@ func (s *storeRef) TimeRange() (int64, int64) {
 	defer s.mtx.RUnlock()
 
 	return s.minTime, s.maxTime
+}
+
+func (s *storeRef) LabelNamesBloom() bloom.Filter {
+	s.mtx.RLock()
+	defer s.mtx.RUnlock()
+
+	labelNames, err := s.LabelNames(context.Background(), &storepb.LabelNamesRequest{})
+	if err != nil {
+		return bloom.NewAlwaysTrueFilter()
+	}
+
+	return bloom.NewFilterForStrings(labelNames.Names...)
 }
 
 func (s *storeRef) SupportsSharding() bool {

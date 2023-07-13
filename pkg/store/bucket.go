@@ -45,6 +45,7 @@ import (
 	"github.com/thanos-io/thanos/pkg/block"
 	"github.com/thanos-io/thanos/pkg/block/indexheader"
 	"github.com/thanos-io/thanos/pkg/block/metadata"
+	"github.com/thanos-io/thanos/pkg/bloom"
 	"github.com/thanos-io/thanos/pkg/compact/downsample"
 	"github.com/thanos-io/thanos/pkg/component"
 	"github.com/thanos-io/thanos/pkg/extprom"
@@ -1639,6 +1640,15 @@ func (s *BucketStore) LabelNames(ctx context.Context, req *storepb.LabelNamesReq
 		Names: strutil.MergeSlices(sets...),
 		Hints: anyHints,
 	}, nil
+}
+
+func (b *BucketStore) LabelNamesBloom() bloom.Filter {
+	labelNames, err := b.LabelNames(context.Background(), &storepb.LabelNamesRequest{})
+	if err != nil {
+		return bloom.NewAlwaysTrueFilter()
+	}
+
+	return bloom.NewFilterForStrings(labelNames.Names...)
 }
 
 func (b *bucketBlock) FilterExtLabelsMatchers(matchers []*labels.Matcher) ([]*labels.Matcher, bool) {

@@ -339,12 +339,14 @@ func runReceive(
 			info.WithStoreInfoFunc(func() *infopb.StoreInfo {
 				if httpProbe.IsReady() {
 					minTime, maxTime := proxy.TimeRange()
+					labelNamesBloom := proxy.LabelNamesBloom()
 					return &infopb.StoreInfo{
 						MinTime:                      minTime,
 						MaxTime:                      maxTime,
 						SupportsSharding:             true,
 						SupportsWithoutReplicaLabels: true,
 						TsdbInfos:                    proxy.TSDBInfos(),
+						LabelNamesBloom:              infopb.NewBloomFilter(labelNamesBloom),
 					}
 				}
 				return nil

@@ -274,6 +274,15 @@ func (s *ProxyStore) TSDBInfos() []infopb.TSDBInfo {
 	return infos
 }
 
+func (s *ProxyStore) LabelNamesBloom() bloom.Filter {
+	labelNames, err := s.LabelNames(context.Background(), &storepb.LabelNamesRequest{})
+	if err != nil {
+		return bloom.NewAlwaysTrueFilter()
+	}
+
+	return bloom.NewFilterForStrings(labelNames.Names...)
+}
+
 func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.Store_SeriesServer) error {
 	// TODO(bwplotka): This should be part of request logger, otherwise it does not make much sense. Also, could be
 	// tiggered by tracing span to reduce cognitive load.
