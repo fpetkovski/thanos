@@ -1604,7 +1604,7 @@ func TestProxyStore_LabelNamesBloom(t *testing.T) {
 		expectedNames []string
 	}{
 		{
-			title: "label_names partial response disabled",
+			title: "some common labels",
 			storeAPIs: []Client{
 				&storetestutil.TestClient{
 					StoreClient: &mockedStoreAPI{
@@ -1622,6 +1622,100 @@ func TestProxyStore_LabelNamesBloom(t *testing.T) {
 				},
 			},
 			expectedNames: []string{"a", "b", "c", "d"},
+		},
+		{
+			title: "fully common labels",
+			storeAPIs: []Client{
+				&storetestutil.TestClient{
+					StoreClient: &mockedStoreAPI{
+						RespLabelNames: &storepb.LabelNamesResponse{
+							Names: []string{"a", "b"},
+						},
+					},
+				},
+				&storetestutil.TestClient{
+					StoreClient: &mockedStoreAPI{
+						RespLabelNames: &storepb.LabelNamesResponse{
+							Names: []string{"a", "b"},
+						},
+					},
+				},
+			},
+			expectedNames: []string{"a", "b"},
+		},
+		{
+			title: "no common labels",
+			storeAPIs: []Client{
+				&storetestutil.TestClient{
+					StoreClient: &mockedStoreAPI{
+						RespLabelNames: &storepb.LabelNamesResponse{
+							Names: []string{"a", "b"},
+						},
+					},
+				},
+				&storetestutil.TestClient{
+					StoreClient: &mockedStoreAPI{
+						RespLabelNames: &storepb.LabelNamesResponse{
+							Names: []string{"c", "d"},
+						},
+					},
+				},
+			},
+			expectedNames: []string{"a", "b", "c", "d"},
+		},
+		{
+			title: "multiple stores",
+			storeAPIs: []Client{
+				&storetestutil.TestClient{
+					StoreClient: &mockedStoreAPI{
+						RespLabelNames: &storepb.LabelNamesResponse{
+							Names: []string{"a", "b"},
+						},
+					},
+				},
+				&storetestutil.TestClient{
+					StoreClient: &mockedStoreAPI{
+						RespLabelNames: &storepb.LabelNamesResponse{
+							Names: []string{"c", "d"},
+						},
+					},
+				},
+				&storetestutil.TestClient{
+					StoreClient: &mockedStoreAPI{
+						RespLabelNames: &storepb.LabelNamesResponse{
+							Names: []string{"e", "f"},
+						},
+					},
+				},
+			},
+			expectedNames: []string{"a", "b", "c", "d", "e", "f"},
+		},
+		{
+			title: "empty store",
+			storeAPIs: []Client{
+				&storetestutil.TestClient{
+					StoreClient: &mockedStoreAPI{
+						RespLabelNames: &storepb.LabelNamesResponse{
+							Names: []string{},
+						},
+					},
+				},
+				&storetestutil.TestClient{
+					StoreClient: &mockedStoreAPI{
+						RespLabelNames: &storepb.LabelNamesResponse{
+							Names: []string{"c", "d"},
+						},
+					},
+				},
+				&storetestutil.TestClient{
+					StoreClient: &mockedStoreAPI{
+						RespLabelNames: &storepb.LabelNamesResponse{
+							Names: []string{"e", "f"},
+						},
+					},
+				},
+			},
+			expectedNames: []string{"c", "d", "e", "f"},
 		},
 	} {
 		if ok := t.Run(tc.title, func(t *testing.T) {

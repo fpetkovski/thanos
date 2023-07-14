@@ -901,7 +901,7 @@ func hasInternalReplicaLabels(st Client, req *storepb.SeriesRequest) bool {
 	bloom := st.LabelNamesBloom()
 	// Empty bloom filter capacity is 1. We fallback to eager retrieval if bloom filter
 	// is yet to be updated, as we cannot yet determine if the store has internal replica labels.
-	if bloom.Cap() <= 1 {
+	if bloom == nil || bloom.Cap() <= 1 {
 		return true
 	}
 

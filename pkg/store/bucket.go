@@ -1647,7 +1647,6 @@ func (s *BucketStore) LabelNames(ctx context.Context, req *storepb.LabelNamesReq
 
 func (s *BucketStore) UpdateLabelNamesBloom(ctx context.Context) error {
 	g, _ := errgroup.WithContext(ctx)
-
 	var mtx sync.Mutex
 	names := make(map[string]struct{})
 
@@ -1658,15 +1657,21 @@ func (s *BucketStore) UpdateLabelNamesBloom(ctx context.Context) error {
 		g.Go(func() error {
 			defer runutil.CloseWithLogOnErr(b.logger, indexr, "label names")
 
-			var result []string
 			res, err := indexr.block.indexHeaderReader.LabelNames()
 			if err != nil {
 				return errors.Wrapf(err, "label names for block %s", b.meta.ULID)
 			}
 
+			extRes := make([]string, 0, len(b.extLset))
+			for _, l := range b.extLset {
+				extRes = append(extRes, l.Name)
+			}
+
+			res = strutil.MergeSlices(res, extRes)
+
 			if len(res) > 0 {
 				mtx.Lock()
-				for _, n := range result {
+				for _, n := range res {
 					names[n] = struct{}{}
 				}
 				mtx.Unlock()
