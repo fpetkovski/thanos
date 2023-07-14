@@ -317,7 +317,7 @@ func (s *ProxyStore) UpdateLabelNamesBloom(ctx context.Context) error {
 	}
 
 	s.mtx.Lock()
-	s.labelNamesBloom = bloom.NewFilterForMapKeys(names)
+	s.labelNamesBloom = bloom.NewFilterFromMapKeys(names)
 	s.mtx.Unlock()
 
 	return nil

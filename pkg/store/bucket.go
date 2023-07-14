@@ -1681,7 +1681,7 @@ func (s *BucketStore) UpdateLabelNamesBloom(ctx context.Context) error {
 	}
 
 	s.bmtx.Lock()
-	s.labelNamesBloom = bloom.NewFilterForMapKeys(names)
+	s.labelNamesBloom = bloom.NewFilterFromMapKeys(names)
 	s.bmtx.Unlock()
 
 	return nil

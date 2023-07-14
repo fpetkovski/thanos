@@ -41,7 +41,7 @@ func NewFilterForStrings(items ...string) Filter {
 	return &filter{bloom: bloomFilter}
 }
 
-func NewFilterForMapKeys(items map[string]struct{}) Filter {
+func NewFilterFromMapKeys(items map[string]struct{}) Filter {
 	bloomFilter := bloom.NewWithEstimates(uint(len(items)), FilterErrorRate)
 	for label := range items {
 		bloomFilter.AddString(label)
