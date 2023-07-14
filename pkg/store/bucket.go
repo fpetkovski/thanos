@@ -45,6 +45,7 @@ import (
 	"github.com/thanos-io/thanos/pkg/block"
 	"github.com/thanos-io/thanos/pkg/block/indexheader"
 	"github.com/thanos-io/thanos/pkg/block/metadata"
+	"github.com/thanos-io/thanos/pkg/bloom"
 	"github.com/thanos-io/thanos/pkg/compact/downsample"
 	"github.com/thanos-io/thanos/pkg/component"
 	"github.com/thanos-io/thanos/pkg/extprom"
@@ -356,6 +357,9 @@ type BucketStore struct {
 	enableSeriesResponseHints bool
 
 	enableChunkHashCalculation bool
+
+	bmtx            sync.Mutex
+	labelNamesBloom bloom.Filter
 
 	blockEstimatedMaxSeriesFunc BlockEstimator
 	blockEstimatedMaxChunkFunc  BlockEstimator
@@ -1639,6 +1643,55 @@ func (s *BucketStore) LabelNames(ctx context.Context, req *storepb.LabelNamesReq
 		Names: strutil.MergeSlices(sets...),
 		Hints: anyHints,
 	}, nil
+}
+
+func (s *BucketStore) UpdateLabelNamesBloom(ctx context.Context) error {
+	g, _ := errgroup.WithContext(ctx)
+
+	var mtx sync.Mutex
+	names := make(map[string]struct{})
+
+	for _, b := range s.blocks {
+		b := b
+		indexr := b.indexReader()
+
+		g.Go(func() error {
+			defer runutil.CloseWithLogOnErr(b.logger, indexr, "label names")
+
+			var result []string
+			res, err := indexr.block.indexHeaderReader.LabelNames()
+			if err != nil {
+				return errors.Wrapf(err, "label names for block %s", b.meta.ULID)
+			}
+
+			if len(res) > 0 {
+				mtx.Lock()
+				for _, n := range result {
+					names[n] = struct{}{}
+				}
+				mtx.Unlock()
+			}
+
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	s.bmtx.Lock()
+	s.labelNamesBloom = bloom.NewFilterFromMapKeys(names)
+	s.bmtx.Unlock()
+
+	return nil
+}
+
+func (b *BucketStore) LabelNamesBloom() bloom.Filter {
+	b.bmtx.Lock()
+	defer b.bmtx.Unlock()
+
+	return b.labelNamesBloom
 }
 
 func (b *bucketBlock) FilterExtLabelsMatchers(matchers []*labels.Matcher) ([]*labels.Matcher, bool) {

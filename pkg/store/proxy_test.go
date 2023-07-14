@@ -1595,6 +1595,67 @@ func TestProxyStore_LabelNames(t *testing.T) {
 	}
 }
 
+func TestProxyStore_LabelNamesBloom(t *testing.T) {
+	defer custom.TolerantVerifyLeak(t)
+
+	for _, tc := range []struct {
+		title         string
+		storeAPIs     []Client
+		expectedNames []string
+	}{
+		{
+			title: "label_names partial response disabled",
+			storeAPIs: []Client{
+				&storetestutil.TestClient{
+					StoreClient: &mockedStoreAPI{
+						RespLabelNames: &storepb.LabelNamesResponse{
+							Names: []string{"a", "b"},
+						},
+					},
+				},
+				&storetestutil.TestClient{
+					StoreClient: &mockedStoreAPI{
+						RespLabelNames: &storepb.LabelNamesResponse{
+							Names: []string{"a", "c", "d"},
+						},
+					},
+				},
+			},
+			expectedNames: []string{"a", "b", "c", "d"},
+		},
+	} {
+		if ok := t.Run(tc.title, func(t *testing.T) {
+			q := NewProxyStore(
+				nil,
+				nil,
+				func() []Client { return tc.storeAPIs },
+				component.Query,
+				nil,
+				5*time.Second, EagerRetrieval,
+			)
+
+			ctx := context.Background()
+			resp, err := q.LabelNames(ctx, &storepb.LabelNamesRequest{
+				Start:                   timestamp.FromTime(minTime),
+				End:                     timestamp.FromTime(maxTime),
+				PartialResponseDisabled: true,
+			})
+			testutil.Ok(t, err)
+			testutil.Equals(t, tc.expectedNames, resp.Names)
+
+			testutil.Ok(t, q.UpdateLabelNamesBloom(ctx))
+			filter := q.LabelNamesBloom()
+
+			for _, n := range tc.expectedNames {
+				testutil.Assert(t, filter.Test(n))
+			}
+
+		}); !ok {
+			return
+		}
+	}
+}
+
 type rawSeries struct {
 	lset   labels.Labels
 	chunks [][]sample

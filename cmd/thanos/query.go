@@ -782,12 +782,14 @@ func runQuery(
 			info.WithStoreInfoFunc(func() *infopb.StoreInfo {
 				if httpProbe.IsReady() {
 					mint, maxt := proxy.TimeRange()
+					labelNamesBloom := proxy.LabelNamesBloom()
 					return &infopb.StoreInfo{
 						MinTime:                      mint,
 						MaxTime:                      maxt,
 						SupportsSharding:             true,
 						SupportsWithoutReplicaLabels: true,
 						TsdbInfos:                    proxy.TSDBInfos(),
+						LabelNamesBloom:              infopb.NewBloomFilter(labelNamesBloom),
 					}
 				}
 				return nil
@@ -822,6 +824,26 @@ func runQuery(
 		}, func(error) {
 			statusProber.NotReady(err)
 			s.Shutdown(err)
+		})
+	}
+
+	// Start bloom name filter updater.
+	{
+		ctx, cancel := context.WithCancel(context.Background())
+		level.Debug(logger).Log("msg", "setting up periodic label names bloom filter update")
+		g.Add(func() error {
+			return runutil.Repeat(10*time.Second, ctx.Done(), func() error {
+				level.Debug(logger).Log("msg", "Starting label names bloom filter update")
+
+				if err := proxy.UpdateLabelNamesBloom(ctx); err != nil {
+					return err
+				}
+
+				level.Debug(logger).Log("msg", "Finished label names bloom filter update")
+				return nil
+			})
+		}, func(err error) {
+			cancel()
 		})
 	}
 

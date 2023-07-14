@@ -455,12 +455,14 @@ func runStore(
 		info.WithStoreInfoFunc(func() *infopb.StoreInfo {
 			if httpProbe.IsReady() {
 				mint, maxt := bs.TimeRange()
+				labelNamesBloom := bs.LabelNamesBloom()
 				return &infopb.StoreInfo{
 					MinTime:                      mint,
 					MaxTime:                      maxt,
 					SupportsSharding:             true,
 					SupportsWithoutReplicaLabels: true,
 					TsdbInfos:                    bs.TSDBInfos(),
+					LabelNamesBloom:              infopb.NewBloomFilter(labelNamesBloom),
 				}
 			}
 			return nil
@@ -492,6 +494,27 @@ func runStore(
 			statusProber.NotReady(err)
 			s.Shutdown(err)
 		})
+	}
+
+	// Start bloom name filter updater.
+	{
+		ctx, cancel := context.WithCancel(context.Background())
+		level.Debug(logger).Log("msg", "setting up periodic label names bloom filter update")
+		g.Add(func() error {
+			return runutil.Repeat(10*time.Second, ctx.Done(), func() error {
+				level.Debug(logger).Log("msg", "Starting label names bloom filter update")
+
+				if err := bs.UpdateLabelNamesBloom(ctx); err != nil {
+					return err
+				}
+
+				level.Debug(logger).Log("msg", "Finished label names bloom filter update")
+				return nil
+			})
+		}, func(err error) {
+			cancel()
+		})
+
 	}
 	// Add bucket UI for loaded blocks.
 	{

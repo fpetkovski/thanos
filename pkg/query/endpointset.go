@@ -830,7 +830,7 @@ func (er *endpointRef) LabelNamesBloom() bloom.Filter {
 		return bloom.NewAlwaysTrueFilter()
 	}
 
-	return bloom.NewFromBytes(er.metadata.Store.LabelNamesBloom.BloomFilterData)
+	return bloom.NewFilterFromBytes(er.metadata.Store.LabelNamesBloom.BloomFilterData)
 }
 
 func (er *endpointRef) SupportsSharding() bool {

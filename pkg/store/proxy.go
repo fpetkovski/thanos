@@ -88,6 +88,9 @@ type ProxyStore struct {
 	metrics           *proxyStoreMetrics
 	retrievalStrategy RetrievalStrategy
 	debugLogging      bool
+
+	mtx             sync.Mutex
+	labelNamesBloom bloom.Filter
 }
 
 type proxyStoreMetrics struct {
@@ -272,6 +275,52 @@ func (s *ProxyStore) TSDBInfos() []infopb.TSDBInfo {
 		infos = append(infos, store.TSDBInfos()...)
 	}
 	return infos
+}
+
+func (s *ProxyStore) LabelNamesBloom() bloom.Filter {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+
+	return s.labelNamesBloom
+}
+
+func (s *ProxyStore) UpdateLabelNamesBloom(ctx context.Context) error {
+	var (
+		names   map[string]struct{}
+		mtx     sync.Mutex
+		g, gctx = errgroup.WithContext(ctx)
+	)
+
+	names = make(map[string]struct{})
+	for _, st := range s.stores() {
+		st := st
+
+		g.Go(func() error {
+			mint, maxt := st.TimeRange()
+			resp, err := st.LabelNames(gctx, &storepb.LabelNamesRequest{Start: mint, End: maxt, PartialResponseDisabled: true})
+			if err != nil {
+				return errors.Wrapf(err, "fetch label names from store for updating bloom filter %s", st)
+			}
+
+			mtx.Lock()
+			for _, name := range resp.Names {
+				names[name] = struct{}{}
+			}
+			mtx.Unlock()
+
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	s.mtx.Lock()
+	s.labelNamesBloom = bloom.NewFilterFromMapKeys(names)
+	s.mtx.Unlock()
+
+	return nil
 }
 
 func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.Store_SeriesServer) error {

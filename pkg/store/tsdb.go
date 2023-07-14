@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/thanos-io/thanos/pkg/bloom"
 	"github.com/thanos-io/thanos/pkg/component"
 	"github.com/thanos-io/thanos/pkg/info/infopb"
 	"github.com/thanos-io/thanos/pkg/runutil"
@@ -367,4 +368,13 @@ func (s *TSDBStore) LabelValues(ctx context.Context, r *storepb.LabelValuesReque
 	}
 
 	return &storepb.LabelValuesResponse{Values: values}, nil
+}
+
+func (s *TSDBStore) LabelNamesBloom() bloom.Filter {
+	labelNames, err := s.LabelNames(context.Background(), &storepb.LabelNamesRequest{})
+	if err != nil {
+		return bloom.NewAlwaysTrueFilter()
+	}
+
+	return bloom.NewFilterForStrings(labelNames.Names...)
 }
