@@ -291,11 +291,13 @@ func (s *ProxyStore) UpdateLabelNamesBloom(ctx context.Context) error {
 		g, gctx = errgroup.WithContext(ctx)
 	)
 
+	names = make(map[string]struct{})
 	for _, st := range s.stores() {
 		st := st
 
 		g.Go(func() error {
-			resp, err := st.LabelNames(gctx, &storepb.LabelNamesRequest{})
+			mint, maxt := st.TimeRange()
+			resp, err := st.LabelNames(gctx, &storepb.LabelNamesRequest{Start: mint, End: maxt, PartialResponseDisabled: true})
 			if err != nil {
 				return errors.Wrapf(err, "fetch label names from store for updating bloom filter %s", st)
 			}

@@ -11,6 +11,7 @@ const FilterErrorRate = 0.01
 type Filter interface {
 	Test(string) bool
 	Bytes() []byte
+	Cap() uint
 }
 
 type filter struct {
@@ -61,6 +62,10 @@ func (f filter) Test(s string) bool {
 	return f.bloom.TestString(s)
 }
 
+func (f filter) Cap() uint {
+	return f.bloom.Cap()
+}
+
 type alwaysTrueFilter struct{}
 
 func NewAlwaysTrueFilter() *alwaysTrueFilter {
@@ -73,4 +78,8 @@ func (e alwaysTrueFilter) Test(s string) bool {
 
 func (e alwaysTrueFilter) Bytes() []byte {
 	return nil
+}
+
+func (e alwaysTrueFilter) Cap() uint {
+	return 1
 }

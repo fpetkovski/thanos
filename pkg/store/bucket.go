@@ -1649,7 +1649,7 @@ func (s *BucketStore) UpdateLabelNamesBloom(ctx context.Context) error {
 	g, _ := errgroup.WithContext(ctx)
 
 	var mtx sync.Mutex
-	var names map[string]struct{}
+	names := make(map[string]struct{})
 
 	for _, b := range s.blocks {
 		b := b
