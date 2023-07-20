@@ -154,6 +154,7 @@ func NewProxyStore(
 		responseTimeout:     responseTimeout,
 		metrics:             metrics,
 		retrievalStrategy:   retrievalStrategy,
+		labelNamesBloom:     bloom.NewAlwaysTrueFilter(),
 		internalLabelResort: true,
 	}
 

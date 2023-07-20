@@ -507,6 +507,7 @@ func NewBucketStore(
 		enableSeriesResponseHints:   enableSeriesResponseHints,
 		enableChunkHashCalculation:  enableChunkHashCalculation,
 		seriesBatchSize:             SeriesBatchSize,
+		labelNamesBloom:             bloom.NewAlwaysTrueFilter(),
 	}
 
 	for _, option := range options {
@@ -1667,11 +1668,13 @@ func (s *BucketStore) UpdateLabelNamesBloom(ctx context.Context) error {
 				extRes = append(extRes, l.Name)
 			}
 
-			res = strutil.MergeSlices(res, extRes)
-
 			if len(res) > 0 {
 				mtx.Lock()
 				for _, n := range res {
+					names[n] = struct{}{}
+				}
+
+				for _, n := range extRes {
 					names[n] = struct{}{}
 				}
 				mtx.Unlock()
