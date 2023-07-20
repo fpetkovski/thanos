@@ -89,8 +89,9 @@ type ProxyStore struct {
 	retrievalStrategy RetrievalStrategy
 	debugLogging      bool
 
-	mtx             sync.Mutex
-	labelNamesBloom bloom.Filter
+	mtx                 sync.Mutex
+	labelNamesBloom     bloom.Filter
+	internalLabelResort bool
 }
 
 type proxyStoreMetrics struct {
@@ -150,9 +151,10 @@ func NewProxyStore(
 			b := make([]byte, 0, initialBufSize)
 			return &b
 		}},
-		responseTimeout:   responseTimeout,
-		metrics:           metrics,
-		retrievalStrategy: retrievalStrategy,
+		responseTimeout:     responseTimeout,
+		metrics:             metrics,
+		retrievalStrategy:   retrievalStrategy,
+		internalLabelResort: true,
 	}
 
 	for _, option := range options {
@@ -381,7 +383,7 @@ func (s *ProxyStore) Series(originalRequest *storepb.SeriesRequest, srv storepb.
 			storeDebugMsgs = append(storeDebugMsgs, fmt.Sprintf("store %s queried", st))
 		}
 
-		respSet, err := newAsyncRespSet(srv.Context(), st, r, s.responseTimeout, s.retrievalStrategy, &s.buffers, r.ShardInfo, reqLogger, s.metrics.emptyStreamResponses)
+		respSet, err := newAsyncRespSet(srv.Context(), st, r, s.responseTimeout, s.retrievalStrategy, &s.buffers, r.ShardInfo, reqLogger, s.metrics.emptyStreamResponses, s.internalLabelResort)
 		if err != nil {
 			level.Error(reqLogger).Log("err", err)
 

@@ -534,6 +534,7 @@ func newAsyncRespSet(
 	shardInfo *storepb.ShardInfo,
 	logger log.Logger,
 	emptyStreamResponses prometheus.Counter,
+	internalLabelResort bool,
 ) (respSet, error) {
 
 	var span opentracing.Span
@@ -575,7 +576,7 @@ func newAsyncRespSet(
 	}
 
 	labelsToRemove := make(map[string]struct{})
-	dedupByInternalLabel := hasInternalReplicaLabels(st, req)
+	dedupByInternalLabel := hasInternalReplicaLabels(st, req, internalLabelResort)
 	if dedupByInternalLabel || !st.SupportsWithoutReplicaLabels() && len(req.WithoutReplicaLabels) > 0 {
 		level.Warn(logger).Log("msg", "detecting store that does not support without replica label setting. "+
 			"Falling back to eager retrieval with additional sort. Make sure your storeAPI supports it to speed up your queries", "store", st.String())
@@ -897,7 +898,11 @@ type respSet interface {
 
 // hasInternalReplicaLabels returns true if any replica label in the series request is not an
 // external label for the given Client.
-func hasInternalReplicaLabels(st Client, req *storepb.SeriesRequest) bool {
+func hasInternalReplicaLabels(st Client, req *storepb.SeriesRequest, internalLabelResort bool) bool {
+	if !internalLabelResort {
+		return true
+	}
+
 	bloom := st.LabelNamesBloom()
 	// Empty bloom filter capacity is 1. We fallback to eager retrieval if bloom filter
 	// is yet to be updated, as we cannot yet determine if the store has internal replica labels.
