@@ -876,7 +876,7 @@ func TestDownSampleNativeHistogram(t *testing.T) {
 	}
 }
 
-func TestDownsampleMixedChunkTypes(t *testing.T) {
+func TestDropMixedChunkTypes(t *testing.T) {
 	var (
 		ts int64
 	)
