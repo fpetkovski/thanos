@@ -465,7 +465,7 @@ func TestDownsample(t *testing.T) {
 			// Ideally we would use tsdb.HeadBlock here for less dependency on our own code. However,
 			// it cannot accept the counter signal sample with the same timestamp as the previous sample.
 			mb := newMemBlock()
-			ser := chunksToSeriesIteratable(t, tcase.inRaw, tcase.inAggr, "a")
+			ser := chunksToSeriesIteratable(t, tcase.inRaw, tcase.inAggr, labels.FromStrings(labels.MetricName, "a"))
 			mb.addSeries(ser)
 
 			fakeMeta := &metadata.Meta{}
@@ -877,9 +877,8 @@ func TestDownSampleNativeHistogram(t *testing.T) {
 }
 
 func TestDropMixedChunkTypes(t *testing.T) {
-	var (
-		ts int64
-	)
+	var ts int64
+
 	dir := t.TempDir()
 	mb := newMemBlock()
 
@@ -902,10 +901,10 @@ func TestDropMixedChunkTypes(t *testing.T) {
 	}
 
 	// Float series.
-	mb.addSeries(chunksToSeriesIteratable(t, [][]sample{fSamples}, nil, "a"))
+	mb.addSeries(chunksToSeriesIteratable(t, [][]sample{fSamples}, nil, labels.FromStrings(labels.MetricName, "a")))
 
 	// Mixed series.
-	mb.addSeries(chunksToSeriesIteratable(t, [][]sample{hSamples, fSamples}, nil, "b"))
+	mb.addSeries(chunksToSeriesIteratable(t, [][]sample{hSamples, fSamples}, nil, labels.FromStrings(labels.MetricName, "b")))
 
 	fakeMeta := &metadata.Meta{
 		BlockMeta: tsdb.BlockMeta{
@@ -921,7 +920,7 @@ func TestDropMixedChunkTypes(t *testing.T) {
 
 	_, lbls, chks := GetMetaLabelsAndChunks(t, dir, idResLevel1)
 
-	testutil.Equals(t, []labels.Labels{labels.FromStrings("__name__", "a")}, lbls)
+	testutil.Equals(t, []labels.Labels{labels.FromStrings(labels.MetricName, "a")}, lbls)
 	assertValidChunkTime(t, chks[0])
 
 	// Expect aggr chunks for the float series only.
@@ -1050,11 +1049,11 @@ func assertValidChunkTime(t *testing.T, chks []chunks.Meta) {
 	}
 }
 
-func chunksToSeriesIteratable(t *testing.T, inRaw [][]sample, inAggr []map[AggrType][]sample, metricsName string) *series {
+func chunksToSeriesIteratable(t *testing.T, inRaw [][]sample, inAggr []map[AggrType][]sample, lset labels.Labels) *series {
 	if len(inRaw) > 0 && len(inAggr) > 0 {
 		t.Fatalf("test must not have raw and aggregate input data at once")
 	}
-	ser := &series{lset: labels.FromStrings("__name__", "a")}
+	ser := &series{lset: lset}
 
 	if len(inRaw) > 0 {
 		for _, samples := range inRaw {
