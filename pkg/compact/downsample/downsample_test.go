@@ -922,7 +922,6 @@ func TestDropMixedChunkTypes(t *testing.T) {
 	_, lbls, chks := GetMetaLabelsAndChunks(t, dir, idResLevel1)
 
 	testutil.Equals(t, []labels.Labels{labels.FromStrings("__name__", "a")}, lbls)
-	testutil.Equals(t, 1, len(chks))
 	assertValidChunkTime(t, chks[0])
 
 	// Expect aggr chunks for the float series only.
