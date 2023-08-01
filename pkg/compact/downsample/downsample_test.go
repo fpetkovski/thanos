@@ -465,7 +465,7 @@ func TestDownsample(t *testing.T) {
 			// Ideally we would use tsdb.HeadBlock here for less dependency on our own code. However,
 			// it cannot accept the counter signal sample with the same timestamp as the previous sample.
 			mb := newMemBlock()
-			ser := chunksToSeriesIteratable(t, tcase.inRaw, tcase.inAggr)
+			ser := chunksToSeriesIteratable(t, tcase.inRaw, tcase.inAggr, "a")
 			mb.addSeries(ser)
 
 			fakeMeta := &metadata.Meta{}
@@ -850,12 +850,13 @@ func TestDownSampleNativeHistogram(t *testing.T) {
 			idResLevel1, err := Downsample(logger, fakeMeta, mb, dir, ResLevel1)
 			testutil.Ok(t, err)
 
-			meta, chks := GetMetaAndChunks(t, dir, idResLevel1)
+			meta, lbls, chks := GetMetaLabelsAndChunks(t, dir, idResLevel1)
 
-			assertValidChunkTime(t, chks)
+			testutil.Equals(t, []labels.Labels{labels.FromStrings("__name__", "a")}, lbls)
+			assertValidChunkTime(t, chks[0])
 
 			if len(tt.expectedReseLevel1) > 0 {
-				compareAggreggates(t, dir, ResLevel1, idResLevel1.String(), tt.expectedReseLevel1, chks)
+				compareAggreggates(t, dir, ResLevel1, idResLevel1.String(), tt.expectedReseLevel1, chks[0])
 			}
 
 			blk, err := tsdb.OpenBlock(logger, filepath.Join(dir, idResLevel1.String()), NewPool())
@@ -863,15 +864,86 @@ func TestDownSampleNativeHistogram(t *testing.T) {
 			idResLevel2, err := Downsample(logger, meta, blk, dir, ResLevel2)
 			testutil.Ok(t, err)
 
-			_, chks = GetMetaAndChunks(t, dir, idResLevel2)
+			_, lbls, chks = GetMetaLabelsAndChunks(t, dir, idResLevel2)
 
-			assertValidChunkTime(t, chks)
+			testutil.Equals(t, []labels.Labels{labels.FromStrings("__name__", "a")}, lbls)
+			assertValidChunkTime(t, chks[0])
 
 			if len(tt.expectedReseLevel2) > 0 {
-				compareAggreggates(t, dir, ResLevel2, idResLevel2.String(), tt.expectedReseLevel2, chks)
+				compareAggreggates(t, dir, ResLevel2, idResLevel2.String(), tt.expectedReseLevel2, chks[0])
 			}
 		})
 	}
+}
+
+func TestDownsampleMixedChunkTypes(t *testing.T) {
+	var (
+		ts int64
+	)
+	dir := t.TempDir()
+	mb := newMemBlock()
+
+	var hSamples []sample
+	for _, fh := range tsdbutil.GenerateTestFloatHistograms(20) {
+		ts += 15_000
+		hSamples = append(hSamples, sample{
+			t:  ts,
+			fh: fh,
+		})
+	}
+
+	var fSamples []sample
+	for i := 0; i < 20; i++ {
+		ts += 15_000
+		fSamples = append(fSamples, sample{
+			t: ts,
+			v: float64(i),
+		})
+	}
+
+	// Float series.
+	mb.addSeries(chunksToSeriesIteratable(t, [][]sample{fSamples}, nil, "a"))
+
+	// Mixed series.
+	mb.addSeries(chunksToSeriesIteratable(t, [][]sample{hSamples, fSamples}, nil, "b"))
+
+	fakeMeta := &metadata.Meta{
+		BlockMeta: tsdb.BlockMeta{
+			MinTime: 15_000,
+			MaxTime: ts,
+		},
+	}
+
+	logger := log.NewLogfmtLogger(os.Stderr)
+
+	idResLevel1, err := Downsample(logger, fakeMeta, mb, dir, ResLevel1)
+	testutil.Ok(t, err)
+
+	_, lbls, chks := GetMetaLabelsAndChunks(t, dir, idResLevel1)
+
+	testutil.Equals(t, []labels.Labels{labels.FromStrings("__name__", "a")}, lbls)
+	testutil.Equals(t, 1, len(chks))
+	assertValidChunkTime(t, chks[0])
+
+	// Expect aggr chunks for the float series only.
+	compareAggreggates(t, dir, ResLevel1, idResLevel1.String(), []expectedHistogramAggregates{
+		{
+			count: []sample{
+				{t: 599_999, v: 19},
+				{t: 600_000, v: 1},
+			},
+			counter: []sample{
+				{t: 315000, v: 0},
+				{t: 599_999, v: 18},
+				{t: 600_000, v: 19},
+				{t: 600_000, v: 19},
+			},
+			sum: []sample{
+				{t: 599_999, v: 171},
+				{t: 600_000, v: 19},
+			},
+		},
+	}, chks[0])
 }
 
 func newChunk(t *testing.T, counterResetHint histogram.CounterResetHint) (*chunkenc.FloatHistogramChunk, chunkenc.Appender) {
@@ -979,7 +1051,7 @@ func assertValidChunkTime(t *testing.T, chks []chunks.Meta) {
 	}
 }
 
-func chunksToSeriesIteratable(t *testing.T, inRaw [][]sample, inAggr []map[AggrType][]sample) *series {
+func chunksToSeriesIteratable(t *testing.T, inRaw [][]sample, inAggr []map[AggrType][]sample, metricsName string) *series {
 	if len(inRaw) > 0 && len(inAggr) > 0 {
 		t.Fatalf("test must not have raw and aggregate input data at once")
 	}
@@ -987,11 +1059,21 @@ func chunksToSeriesIteratable(t *testing.T, inRaw [][]sample, inAggr []map[AggrT
 
 	if len(inRaw) > 0 {
 		for _, samples := range inRaw {
-			chk := chunkenc.NewXORChunk()
+			var chk chunkenc.Chunk
+			if isHistogramSamples(samples) {
+				chk = chunkenc.NewFloatHistogramChunk()
+			} else {
+				chk = chunkenc.NewXORChunk()
+			}
+
 			app, _ := chk.Appender()
 
 			for _, s := range samples {
-				app.Append(s.t, s.v)
+				if isHistogramSamples(samples) {
+					app.AppendFloatHistogram(s.t, s.fh)
+				} else {
+					app.Append(s.t, s.v)
+				}
 			}
 			ser.chunks = append(ser.chunks, chunks.Meta{
 				MinTime: samples[0].t,
@@ -1006,6 +1088,10 @@ func chunksToSeriesIteratable(t *testing.T, inRaw [][]sample, inAggr []map[AggrT
 		ser.chunks = append(ser.chunks, encodeTestAggrSeries(chk))
 	}
 	return ser
+}
+
+func isHistogramSamples(samples []sample) bool {
+	return len(samples) > 0 && samples[0].fh != nil
 }
 
 func encodeTestAggrSeries(v map[AggrType][]sample) chunks.Meta {
