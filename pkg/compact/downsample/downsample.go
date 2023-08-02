@@ -55,6 +55,7 @@ func Downsample(
 	b tsdb.BlockReader,
 	dir string,
 	resolution int64,
+	incDroppedSeriesMetric func(),
 ) (id ulid.ULID, err error) {
 	if origMeta.Thanos.Downsample.Resolution >= resolution {
 		return id, errors.New("target resolution not lower than existing one")
@@ -150,6 +151,9 @@ func Downsample(
 			for i, c := range chks {
 				// Drop series with mixed encodings, since we can't downsample them.
 				if i > 0 && prevEnc != c.Chunk.Encoding() {
+					if incDroppedSeriesMetric != nil {
+						incDroppedSeriesMetric()
+					}
 					level.Warn(logger).Log("msg", fmt.Sprintf("found mixed chunk encodings within series %d, drop series", postings.At()))
 					all = all[:0]
 					break

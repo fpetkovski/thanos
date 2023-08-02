@@ -473,7 +473,7 @@ func TestDownsample(t *testing.T) {
 				fakeMeta.Thanos.Downsample.Resolution = tcase.resolution - 1
 			}
 
-			id, err := Downsample(logger, fakeMeta, mb, dir, tcase.resolution)
+			id, err := Downsample(logger, fakeMeta, mb, dir, tcase.resolution, nil)
 			if tcase.expectedDownsamplingErr != nil {
 				testutil.NotOk(t, err)
 				testutil.Equals(t, tcase.expectedDownsamplingErr(ser.chunks).Error(), err.Error())
@@ -560,7 +560,7 @@ func TestDownsampleAggrAndEmptyXORChunks(t *testing.T) {
 
 	fakeMeta := &metadata.Meta{}
 	fakeMeta.Thanos.Downsample.Resolution = 300_000
-	id, err := Downsample(logger, fakeMeta, mb, dir, 3_600_000)
+	id, err := Downsample(logger, fakeMeta, mb, dir, 3_600_000, nil)
 	_ = id
 	testutil.Ok(t, err)
 }
@@ -594,7 +594,7 @@ func TestDownsampleAggrAndNonEmptyXORChunks(t *testing.T) {
 
 	fakeMeta := &metadata.Meta{}
 	fakeMeta.Thanos.Downsample.Resolution = 300_000
-	id, err := Downsample(logger, fakeMeta, mb, dir, 3_600_000)
+	id, err := Downsample(logger, fakeMeta, mb, dir, 3_600_000, nil)
 	_ = id
 	testutil.Ok(t, err)
 
@@ -847,7 +847,7 @@ func TestDownSampleNativeHistogram(t *testing.T) {
 					MaxTime: maxt,
 				},
 			}
-			idResLevel1, err := Downsample(logger, fakeMeta, mb, dir, ResLevel1)
+			idResLevel1, err := Downsample(logger, fakeMeta, mb, dir, ResLevel1, nil)
 			testutil.Ok(t, err)
 
 			meta, lbls, chks := GetMetaLabelsAndChunks(t, dir, idResLevel1)
@@ -861,7 +861,7 @@ func TestDownSampleNativeHistogram(t *testing.T) {
 
 			blk, err := tsdb.OpenBlock(logger, filepath.Join(dir, idResLevel1.String()), NewPool())
 			testutil.Ok(t, err)
-			idResLevel2, err := Downsample(logger, meta, blk, dir, ResLevel2)
+			idResLevel2, err := Downsample(logger, meta, blk, dir, ResLevel2, nil)
 			testutil.Ok(t, err)
 
 			_, lbls, chks = GetMetaLabelsAndChunks(t, dir, idResLevel2)
@@ -915,8 +915,15 @@ func TestDropMixedChunkTypes(t *testing.T) {
 
 	logger := log.NewLogfmtLogger(os.Stderr)
 
-	idResLevel1, err := Downsample(logger, fakeMeta, mb, dir, ResLevel1)
+	droppedSeriesCount := 0
+
+	incDroppedSeriesCount := func() {
+		droppedSeriesCount++
+	}
+
+	idResLevel1, err := Downsample(logger, fakeMeta, mb, dir, ResLevel1, incDroppedSeriesCount)
 	testutil.Ok(t, err)
+	testutil.Equals(t, 1, droppedSeriesCount)
 
 	_, lbls, chks := GetMetaLabelsAndChunks(t, dir, idResLevel1)
 

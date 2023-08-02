@@ -36,9 +36,10 @@ import (
 )
 
 type DownsampleMetrics struct {
-	downsamples        *prometheus.CounterVec
-	downsampleFailures *prometheus.CounterVec
-	downsampleDuration *prometheus.HistogramVec
+	downsamples                        *prometheus.CounterVec
+	downsampleFailures                 *prometheus.CounterVec
+	downsampleDuration                 *prometheus.HistogramVec
+	downsampleDroppedMixedChunksSeries *prometheus.CounterVec
 }
 
 func newDownsampleMetrics(reg *prometheus.Registry) *DownsampleMetrics {
@@ -59,7 +60,10 @@ func newDownsampleMetrics(reg *prometheus.Registry) *DownsampleMetrics {
 		NativeHistogramBucketFactor:    1.1,
 		NativeHistogramMaxBucketNumber: 100,
 	}, []string{"group"})
-
+	m.downsampleDroppedMixedChunksSeries = promauto.With(reg).NewCounterVec(prometheus.CounterOpts{
+		Name: "thanos_compact_downsample_dropped_mixed_chunks_series_total",
+		Help: "Total number of series that were dropped due to mixed chunks.",
+	}, []string{"group"})
 	return m
 }
 
@@ -376,7 +380,11 @@ func processDownsampling(
 	}
 	defer runutil.CloseWithLogOnErr(log.With(logger, "outcome", "potential left mmap file handlers left"), b, "tsdb reader")
 
-	id, err := downsample.Downsample(logger, m, b, dir, resolution)
+	incDropSeriesMetric := func() {
+		metrics.downsampleDroppedMixedChunksSeries.WithLabelValues(m.Thanos.GroupKey()).Inc()
+	}
+
+	id, err := downsample.Downsample(logger, m, b, dir, resolution, incDropSeriesMetric)
 	if err != nil {
 		return errors.Wrapf(err, "downsample block %s to window %d", m.ULID, resolution)
 	}
