@@ -55,6 +55,7 @@ func Downsample(
 	b tsdb.BlockReader,
 	dir string,
 	resolution int64,
+	incDroppedSeriesMetric func(),
 ) (id ulid.ULID, err error) {
 	if origMeta.Thanos.Downsample.Resolution >= resolution {
 		return id, errors.New("target resolution not lower than existing one")
@@ -146,13 +147,24 @@ func Downsample(
 
 		// Raw and already downsampled data need different processing.
 		if origMeta.Thanos.Downsample.Resolution == 0 {
-			for _, c := range chks {
+			var prevEnc chunkenc.Encoding
+			for i, c := range chks {
+				// Drop series with mixed encodings, since we can't downsample them.
+				if i > 0 && prevEnc != c.Chunk.Encoding() {
+					if incDroppedSeriesMetric != nil {
+						incDroppedSeriesMetric()
+					}
+					level.Warn(logger).Log("msg", fmt.Sprintf("found mixed chunk encodings within series %d, drop series", postings.At()))
+					all = all[:0]
+					break
+				}
 				// TODO(bwplotka): We can optimze this further by using in WriteSeries iterators of each chunk instead of
 				// samples. Also ensure 120 sample limit, otherwise we have gigantic chunks.
 				// https://github.com/thanos-io/thanos/issues/2542.
 				if err := expandChunkIterator(c.Chunk.Iterator(reuseIt), c.Chunk.Encoding(), &all); err != nil {
 					return id, errors.Wrapf(err, "expand chunk %d, series %d", c.Ref, postings.At())
 				}
+				prevEnc = c.Chunk.Encoding()
 			}
 			if err := streamedBlockWriter.WriteSeries(lset, DownsampleRaw(all, resolution)); err != nil {
 				return id, errors.Wrapf(err, "downsample raw data, series: %d", postings.At())
