@@ -154,7 +154,7 @@ func Downsample(
 					if incDroppedSeriesMetric != nil {
 						incDroppedSeriesMetric()
 					}
-					level.Warn(logger).Log("msg", fmt.Sprintf("found mixed chunk encodings within series %d, drop series", postings.At()))
+					level.Warn(logger).Log("msg", "found mixed chunk encodings drop series", "series", lset.String())
 					all = all[:0]
 					break
 				}
