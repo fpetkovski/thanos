@@ -249,7 +249,10 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 		if err != nil {
 			return &promql.Result{Err: err}
 		}
-		result := make(promql.Vector, 0)
+		var (
+			result   = make(promql.Vector, 0)
+			warnings storage.Warnings
+		)
 
 		for {
 			msg, err := qry.Recv()
@@ -261,7 +264,8 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 			}
 
 			if warn := msg.GetWarnings(); warn != "" {
-				return &promql.Result{Err: errors.New(warn)}
+				warnings = append(warnings, errors.New(warn))
+				continue
 			}
 
 			ts := msg.GetTimeseries()
@@ -276,7 +280,7 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 			}
 		}
 
-		return &promql.Result{Value: result}
+		return &promql.Result{Value: result, Warnings: warnings}
 	}
 
 	request := &querypb.QueryRangeRequest{
