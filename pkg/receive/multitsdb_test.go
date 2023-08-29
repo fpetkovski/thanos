@@ -8,6 +8,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"path"
 	"strings"
 	"testing"
 	"time"
@@ -485,13 +486,23 @@ func TestMultiTSDBPrune(t *testing.T) {
 func TestTenantFlush(t *testing.T) {
 	tests := []struct {
 		name            string
+		tsdbStart       int64
 		bucket          objstore.Bucket
 		expectedUploads int
+		expectedMaxTs   []int64
 	}{
 		{
 			name:            "prune tsdbs with object storage",
 			bucket:          objstore.NewInMemBucket(),
 			expectedUploads: 2,
+			expectedMaxTs:   []int64{2 * 60 * 60 * 1000, math.MinInt64},
+		},
+		{
+			name:            "unaligned TSDB start",
+			bucket:          objstore.NewInMemBucket(),
+			tsdbStart:       90 * 60, // 90 minutes
+			expectedUploads: 2,
+			expectedMaxTs:   []int64{2 * 60 * 60 * 1000, math.MinInt64},
 		},
 	}
 
@@ -515,7 +526,7 @@ func TestTenantFlush(t *testing.T) {
 			defer func() { testutil.Ok(t, m.Close()) }()
 
 			for i := 0; i < threeHoursInSeconds; i += 60 {
-				tsMillis := int64(i * 1000)
+				tsMillis := int64(i*1000) + test.tsdbStart
 				testutil.Ok(t, appendSample(m, "test-tenant", time.UnixMilli(tsMillis)))
 			}
 
@@ -527,11 +538,17 @@ func TestTenantFlush(t *testing.T) {
 			testutil.Ok(t, err)
 
 			var shippedBlocks int
+			var maxts []int64
 			testutil.Ok(t, test.bucket.Iter(context.Background(), "", func(s string) error {
+				meta, err := metadata.ReadFromDir(path.Join(m.dataDir, "test-tenant", s))
+				testutil.Ok(t, err)
+
+				maxts = append(maxts, meta.MaxTime)
 				shippedBlocks++
 				return nil
 			}))
 			testutil.Equals(t, test.expectedUploads, shippedBlocks)
+			testutil.Equals(t, test.expectedMaxTs, maxts)
 		})
 	}
 }
