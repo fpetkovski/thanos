@@ -482,6 +482,60 @@ func TestMultiTSDBPrune(t *testing.T) {
 	}
 }
 
+func TestTenantFlush(t *testing.T) {
+	tests := []struct {
+		name            string
+		bucket          objstore.Bucket
+		expectedUploads int
+	}{
+		{
+			name:            "prune tsdbs with object storage",
+			bucket:          objstore.NewInMemBucket(),
+			expectedUploads: 2,
+		},
+	}
+
+	threeHoursInSeconds := 3 * 60 * 60
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+
+			m := NewMultiTSDB(dir, log.NewNopLogger(), prometheus.NewRegistry(),
+				&tsdb.Options{
+					MinBlockDuration:  (2 * time.Hour).Milliseconds(),
+					MaxBlockDuration:  (2 * time.Hour).Milliseconds(),
+					RetentionDuration: (6 * time.Hour).Milliseconds(),
+				},
+				labels.FromStrings("replica", "test"),
+				"tenant_id",
+				test.bucket,
+				false,
+				metadata.NoneFunc,
+			)
+			defer func() { testutil.Ok(t, m.Close()) }()
+
+			for i := 0; i < threeHoursInSeconds; i += 60 {
+				tsMillis := int64(i * 1000)
+				testutil.Ok(t, appendSample(m, "test-tenant", time.UnixMilli(tsMillis)))
+			}
+
+			testutil.Ok(t, m.FlushTenant("test-tenant"))
+
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			_, err := m.Sync(ctx)
+			testutil.Ok(t, err)
+
+			var shippedBlocks int
+			testutil.Ok(t, test.bucket.Iter(context.Background(), "", func(s string) error {
+				shippedBlocks++
+				return nil
+			}))
+			testutil.Equals(t, test.expectedUploads, shippedBlocks)
+		})
+	}
+}
+
 func syncTSDBs(ctx context.Context, m *MultiTSDB, interval time.Duration) error {
 	for {
 		select {

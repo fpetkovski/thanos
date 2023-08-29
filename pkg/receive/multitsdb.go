@@ -318,7 +318,7 @@ func (t *MultiTSDB) FlushTenant(tenantID string) error {
 
 	blockAlignedMaxt := head.MaxTime() - (head.MaxTime() % t.tsdbOpts.MaxBlockDuration)
 	// Flush a well aligned TSDB block.
-	if err := db.CompactHead(tsdb.NewRangeHead(head, head.MinTime(), blockAlignedMaxt)); err != nil {
+	if err := db.CompactHead(tsdb.NewRangeHead(head, head.MinTime(), blockAlignedMaxt-1)); err != nil {
 		return err
 	}
 	// Flush the remainder of the head.
