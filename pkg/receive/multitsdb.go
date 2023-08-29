@@ -6,6 +6,7 @@ package receive
 import (
 	"context"
 	"fmt"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
@@ -314,7 +315,14 @@ func (t *MultiTSDB) FlushTenant(tenantID string) error {
 
 	level.Info(t.logger).Log("msg", "flushing TSDB", "tenant", tenantID)
 	head := db.Head()
-	return db.CompactHead(tsdb.NewRangeHead(head, head.MinTime(), head.MaxTime()))
+
+	blockAlignedMaxt := head.MaxTime() - (head.MaxTime() % t.tsdbOpts.MaxBlockDuration)
+	// Flush a well aligned TSDB block.
+	if err := db.CompactHead(tsdb.NewRangeHead(head, head.MinTime(), blockAlignedMaxt)); err != nil {
+		return err
+	}
+	// Flush the remainder of the head.
+	return db.CompactHead(tsdb.NewRangeHead(head, head.MinTime(), math.MaxInt64))
 }
 
 func (t *MultiTSDB) Close() error {
