@@ -483,30 +483,41 @@ func TestMultiTSDBPrune(t *testing.T) {
 	}
 }
 
-func TestTenantFlush(t *testing.T) {
+func TestAlignedHeadFlush(t *testing.T) {
+	hourInSeconds := int64(1 * 60 * 60)
+
 	tests := []struct {
-		name            string
-		tsdbStart       int64
-		bucket          objstore.Bucket
-		expectedUploads int
-		expectedMaxTs   []int64
+		name                string
+		tsdbStart           int64
+		headDurationSeconds int64
+		bucket              objstore.Bucket
+		expectedUploads     int
+		expectedMaxTs       []int64
 	}{
 		{
-			name:            "prune tsdbs with object storage",
-			bucket:          objstore.NewInMemBucket(),
-			expectedUploads: 2,
-			expectedMaxTs:   []int64{2 * 60 * 60 * 1000, math.MinInt64},
+			name:                "short head",
+			bucket:              objstore.NewInMemBucket(),
+			headDurationSeconds: hourInSeconds,
+			expectedUploads:     1,
+			expectedMaxTs:       []int64{hourInSeconds * 1000},
 		},
 		{
-			name:            "unaligned TSDB start",
-			bucket:          objstore.NewInMemBucket(),
-			tsdbStart:       90 * 60, // 90 minutes
-			expectedUploads: 2,
-			expectedMaxTs:   []int64{2 * 60 * 60 * 1000, math.MinInt64},
+			name:                "aligned head start",
+			bucket:              objstore.NewInMemBucket(),
+			headDurationSeconds: 3 * hourInSeconds,
+			expectedUploads:     2,
+			expectedMaxTs:       []int64{2 * hourInSeconds * 1000, 3 * hourInSeconds * 1000},
+		},
+		{
+			name:                "unaligned TSDB start",
+			bucket:              objstore.NewInMemBucket(),
+			headDurationSeconds: 3 * hourInSeconds,
+			tsdbStart:           90 * 60, // 90 minutes
+			expectedUploads:     2,
+			expectedMaxTs:       []int64{2 * hourInSeconds * 1000, 3*hourInSeconds*1000 + 90*60},
 		},
 	}
 
-	threeHoursInSeconds := 3 * 60 * 60
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
@@ -525,7 +536,7 @@ func TestTenantFlush(t *testing.T) {
 			)
 			defer func() { testutil.Ok(t, m.Close()) }()
 
-			for i := 0; i < threeHoursInSeconds; i += 60 {
+			for i := 0; i <= int(test.headDurationSeconds); i += 60 {
 				tsMillis := int64(i*1000) + test.tsdbStart
 				testutil.Ok(t, appendSample(m, "test-tenant", time.UnixMilli(tsMillis)))
 			}
