@@ -5,6 +5,10 @@ In this file we document the differences between this fork and the upstream Than
 
 ## Differences to upstream Thanos
 
+### Endpoint for force-flushing a tenant
+
+In [#120](https://github.com/Shopify/thanos/pull/120) we exposed an endpoint which allows a tenant TSDB to be flushed fully from a receiver.
+
 ### Sharded Compactor
 With [#115](https://github.com/Shopify/thanos/pull/115) we introduced a sharded compactor, which creates independent shards when compacting blocks. This allows us to run multiple compactor instances in parallel.
 
