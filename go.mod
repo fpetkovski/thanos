@@ -320,7 +320,7 @@ replace (
 	github.com/bradfitz/gomemcache => github.com/themihai/gomemcache v0.0.0-20180902122335-24332e2d58ab
 
 	// Pending PR https://github.com/thanos-io/promql-engine/pull/300.
-	github.com/thanos-io/promql-engine => github.com/fpetkovski/promql-engine v0.0.0-20230816120941-4b01e4942296
+	github.com/thanos-io/promql-engine => github.com/pedro-stanaka/promql-engine v0.0.0-20231013144100-7add6ab0de37
 
 	github.com/vimeo/galaxycache => github.com/thanos-community/galaxycache v0.0.0-20211122094458-3a32041a1f1e
 
