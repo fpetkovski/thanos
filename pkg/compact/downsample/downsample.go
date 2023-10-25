@@ -145,16 +145,16 @@ func Downsample(
 			chks[i].Chunk = chk
 		}
 
-		if reason, drop := dropChunks(chks); drop {
-			level.Warn(logger).Log("msg", "drop series", "series", lset.String(), "reason", reason)
-			if incDroppedSeriesMetric != nil {
-				incDroppedSeriesMetric()
-			}
-			continue
-		}
-
 		// Raw and already downsampled data need different processing.
 		if origMeta.Thanos.Downsample.Resolution == 0 {
+			if reason, drop := dropChunks(chks); drop {
+				level.Warn(logger).Log("msg", "drop series", "series", lset.String(), "reason", reason)
+				if incDroppedSeriesMetric != nil {
+					incDroppedSeriesMetric()
+				}
+				continue
+			}
+
 			for _, c := range chks {
 				// TODO(bwplotka): We can optimze this further by using in WriteSeries iterators of each chunk instead of
 				// samples. Also ensure 120 sample limit, otherwise we have gigantic chunks.
