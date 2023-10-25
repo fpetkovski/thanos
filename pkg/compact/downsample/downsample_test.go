@@ -913,7 +913,7 @@ func TestDropMixedChunkTypes(t *testing.T) {
 	// Mixed series.
 	mb.addSeries(chunksToSeriesIteratable(t, [][]sample{hSamples, fSamples}, nil, labels.FromStrings(labels.MetricName, "b")))
 
-	// Gauge float histogram series.
+	// Float histogram series with mixed gauge and non-gauge histograms.
 	mb.addSeries(chunksToSeriesIteratable(t, [][]sample{hSamples, hGaugeSamples}, nil, labels.FromStrings(labels.MetricName, "c")))
 
 	fakeMeta := &metadata.Meta{
@@ -1083,6 +1083,7 @@ func chunksToSeriesIteratable(t *testing.T, inRaw [][]sample, inAggr []map[AggrT
 
 			app, _ := chk.Appender()
 
+			// First sample determines the counter reset hint for the chunk.
 			if len(samples) > 0 && samples[0].fh != nil && samples[0].fh.CounterResetHint == histogram.GaugeType {
 				chk.(*chunkenc.FloatHistogramChunk).SetCounterResetHeader(chunkenc.GaugeType)
 			}
