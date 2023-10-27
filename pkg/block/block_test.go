@@ -87,12 +87,12 @@ func TestUpload(t *testing.T) {
 
 	bkt := objstore.NewInMemBucket()
 	b1, err := e2eutil.CreateBlock(ctx, tmpDir, []labels.Labels{
-		{{Name: "a", Value: "1"}},
-		{{Name: "a", Value: "2"}},
-		{{Name: "a", Value: "3"}},
-		{{Name: "a", Value: "4"}},
-		{{Name: "b", Value: "1"}},
-	}, 100, 0, 1000, labels.Labels{{Name: "ext1", Value: "val1"}}, 124, metadata.NoneFunc)
+		labels.New(labels.Label{Name: "a", Value: "1"}),
+		labels.New(labels.Label{Name: "a", Value: "2"}),
+		labels.New(labels.Label{Name: "a", Value: "3"}),
+		labels.New(labels.Label{Name: "a", Value: "4"}),
+		labels.New(labels.Label{Name: "b", Value: "1"}),
+	}, 100, 0, 1000, labels.New(labels.Label{Name: "ext1", Value: "val1"}), 124, metadata.NoneFunc)
 	testutil.Ok(t, err)
 	testutil.Ok(t, os.MkdirAll(path.Join(tmpDir, "test", b1.String()), os.ModePerm))
 
@@ -199,12 +199,12 @@ func TestUpload(t *testing.T) {
 	{
 		// Upload with no external labels should be blocked.
 		b2, err := e2eutil.CreateBlock(ctx, tmpDir, []labels.Labels{
-			{{Name: "a", Value: "1"}},
-			{{Name: "a", Value: "2"}},
-			{{Name: "a", Value: "3"}},
-			{{Name: "a", Value: "4"}},
-			{{Name: "b", Value: "1"}},
-		}, 100, 0, 1000, nil, 124, metadata.NoneFunc)
+			labels.New(labels.Label{Name: "a", Value: "1"}),
+			labels.New(labels.Label{Name: "a", Value: "2"}),
+			labels.New(labels.Label{Name: "a", Value: "3"}),
+			labels.New(labels.Label{Name: "a", Value: "4"}),
+			labels.New(labels.Label{Name: "b", Value: "1"}),
+		}, 100, 0, 1000, labels.EmptyLabels(), 124, metadata.NoneFunc)
 		testutil.Ok(t, err)
 		err = Upload(ctx, log.NewNopLogger(), bkt, path.Join(tmpDir, b2.String()), metadata.NoneFunc)
 		testutil.NotOk(t, err)
@@ -214,12 +214,12 @@ func TestUpload(t *testing.T) {
 	{
 		// No external labels with UploadPromBlocks.
 		b2, err := e2eutil.CreateBlock(ctx, tmpDir, []labels.Labels{
-			{{Name: "a", Value: "1"}},
-			{{Name: "a", Value: "2"}},
-			{{Name: "a", Value: "3"}},
-			{{Name: "a", Value: "4"}},
-			{{Name: "b", Value: "1"}},
-		}, 100, 0, 1000, nil, 124, metadata.NoneFunc)
+			labels.New(labels.Label{Name: "a", Value: "1"}),
+			labels.New(labels.Label{Name: "a", Value: "2"}),
+			labels.New(labels.Label{Name: "a", Value: "3"}),
+			labels.New(labels.Label{Name: "a", Value: "4"}),
+			labels.New(labels.Label{Name: "b", Value: "1"}),
+		}, 100, 0, 1000, labels.EmptyLabels(), 124, metadata.NoneFunc)
 		testutil.Ok(t, err)
 		err = UploadPromBlock(ctx, log.NewNopLogger(), bkt, path.Join(tmpDir, b2.String()), metadata.NoneFunc)
 		testutil.Ok(t, err)
@@ -239,12 +239,12 @@ func TestDelete(t *testing.T) {
 	bkt := objstore.NewInMemBucket()
 	{
 		b1, err := e2eutil.CreateBlock(ctx, tmpDir, []labels.Labels{
-			{{Name: "a", Value: "1"}},
-			{{Name: "a", Value: "2"}},
-			{{Name: "a", Value: "3"}},
-			{{Name: "a", Value: "4"}},
-			{{Name: "b", Value: "1"}},
-		}, 100, 0, 1000, labels.Labels{{Name: "ext1", Value: "val1"}}, 124, metadata.NoneFunc)
+			labels.New(labels.Label{Name: "a", Value: "1"}),
+			labels.New(labels.Label{Name: "a", Value: "2"}),
+			labels.New(labels.Label{Name: "a", Value: "3"}),
+			labels.New(labels.Label{Name: "a", Value: "4"}),
+			labels.New(labels.Label{Name: "b", Value: "1"}),
+		}, 100, 0, 1000, labels.New(labels.Label{Name: "ext1", Value: "val1"}), 124, metadata.NoneFunc)
 		testutil.Ok(t, err)
 		testutil.Ok(t, Upload(ctx, log.NewNopLogger(), bkt, path.Join(tmpDir, b1.String()), metadata.NoneFunc))
 		testutil.Equals(t, 3, len(bkt.Objects()))
@@ -258,12 +258,12 @@ func TestDelete(t *testing.T) {
 	}
 	{
 		b2, err := e2eutil.CreateBlock(ctx, tmpDir, []labels.Labels{
-			{{Name: "a", Value: "1"}},
-			{{Name: "a", Value: "2"}},
-			{{Name: "a", Value: "3"}},
-			{{Name: "a", Value: "4"}},
-			{{Name: "b", Value: "1"}},
-		}, 100, 0, 1000, labels.Labels{{Name: "ext1", Value: "val1"}}, 124, metadata.NoneFunc)
+			labels.New(labels.Label{Name: "a", Value: "1"}),
+			labels.New(labels.Label{Name: "a", Value: "2"}),
+			labels.New(labels.Label{Name: "a", Value: "3"}),
+			labels.New(labels.Label{Name: "a", Value: "4"}),
+			labels.New(labels.Label{Name: "b", Value: "1"}),
+		}, 100, 0, 1000, labels.New(labels.Label{Name: "ext1", Value: "val1"}), 124, metadata.NoneFunc)
 		testutil.Ok(t, err)
 		testutil.Ok(t, Upload(ctx, log.NewNopLogger(), bkt, path.Join(tmpDir, b2.String()), metadata.NoneFunc))
 		testutil.Equals(t, 3, len(bkt.Objects()))
@@ -309,12 +309,12 @@ func TestMarkForDeletion(t *testing.T) {
 		t.Run(tcase.name, func(t *testing.T) {
 			bkt := objstore.NewInMemBucket()
 			id, err := e2eutil.CreateBlock(ctx, tmpDir, []labels.Labels{
-				{{Name: "a", Value: "1"}},
-				{{Name: "a", Value: "2"}},
-				{{Name: "a", Value: "3"}},
-				{{Name: "a", Value: "4"}},
-				{{Name: "b", Value: "1"}},
-			}, 100, 0, 1000, labels.Labels{{Name: "ext1", Value: "val1"}}, 124, metadata.NoneFunc)
+				labels.New(labels.Label{Name: "a", Value: "1"}),
+				labels.New(labels.Label{Name: "a", Value: "2"}),
+				labels.New(labels.Label{Name: "a", Value: "3"}),
+				labels.New(labels.Label{Name: "a", Value: "4"}),
+				labels.New(labels.Label{Name: "b", Value: "1"}),
+			}, 100, 0, 1000, labels.New(labels.Label{Name: "ext1", Value: "val1"}), 124, metadata.NoneFunc)
 			testutil.Ok(t, err)
 
 			tcase.preUpload(t, id, bkt)
@@ -363,12 +363,12 @@ func TestMarkForNoCompact(t *testing.T) {
 		t.Run(tcase.name, func(t *testing.T) {
 			bkt := objstore.NewInMemBucket()
 			id, err := e2eutil.CreateBlock(ctx, tmpDir, []labels.Labels{
-				{{Name: "a", Value: "1"}},
-				{{Name: "a", Value: "2"}},
-				{{Name: "a", Value: "3"}},
-				{{Name: "a", Value: "4"}},
-				{{Name: "b", Value: "1"}},
-			}, 100, 0, 1000, labels.Labels{{Name: "ext1", Value: "val1"}}, 124, metadata.NoneFunc)
+				labels.New(labels.Label{Name: "a", Value: "1"}),
+				labels.New(labels.Label{Name: "a", Value: "2"}),
+				labels.New(labels.Label{Name: "a", Value: "3"}),
+				labels.New(labels.Label{Name: "a", Value: "4"}),
+				labels.New(labels.Label{Name: "b", Value: "1"}),
+			}, 100, 0, 1000, labels.New(labels.Label{Name: "ext1", Value: "val1"}), 124, metadata.NoneFunc)
 			testutil.Ok(t, err)
 
 			tcase.preUpload(t, id, bkt)
@@ -418,12 +418,12 @@ func TestMarkForNoDownsample(t *testing.T) {
 		t.Run(tcase.name, func(t *testing.T) {
 			bkt := objstore.NewInMemBucket()
 			id, err := e2eutil.CreateBlock(ctx, tmpDir, []labels.Labels{
-				{{Name: "a", Value: "1"}},
-				{{Name: "a", Value: "2"}},
-				{{Name: "a", Value: "3"}},
-				{{Name: "a", Value: "4"}},
-				{{Name: "b", Value: "1"}},
-			}, 100, 0, 1000, labels.Labels{{Name: "ext1", Value: "val1"}}, 124, metadata.NoneFunc)
+				labels.New(labels.Label{Name: "a", Value: "1"}),
+				labels.New(labels.Label{Name: "a", Value: "2"}),
+				labels.New(labels.Label{Name: "a", Value: "3"}),
+				labels.New(labels.Label{Name: "a", Value: "4"}),
+				labels.New(labels.Label{Name: "b", Value: "1"}),
+			}, 100, 0, 1000, labels.New(labels.Label{Name: "ext1", Value: "val1"}), 124, metadata.NoneFunc)
 			testutil.Ok(t, err)
 
 			tcase.preUpload(t, id, bkt)
@@ -542,12 +542,12 @@ func TestUploadCleanup(t *testing.T) {
 
 	bkt := objstore.NewInMemBucket()
 	b1, err := e2eutil.CreateBlock(ctx, tmpDir, []labels.Labels{
-		{{Name: "a", Value: "1"}},
-		{{Name: "a", Value: "2"}},
-		{{Name: "a", Value: "3"}},
-		{{Name: "a", Value: "4"}},
-		{{Name: "b", Value: "1"}},
-	}, 100, 0, 1000, labels.Labels{{Name: "ext1", Value: "val1"}}, 124, metadata.NoneFunc)
+		labels.New(labels.Label{Name: "a", Value: "1"}),
+		labels.New(labels.Label{Name: "a", Value: "2"}),
+		labels.New(labels.Label{Name: "a", Value: "3"}),
+		labels.New(labels.Label{Name: "a", Value: "4"}),
+		labels.New(labels.Label{Name: "b", Value: "1"}),
+	}, 100, 0, 1000, labels.New(labels.Label{Name: "ext1", Value: "val1"}), 124, metadata.NoneFunc)
 	testutil.Ok(t, err)
 
 	{
@@ -627,12 +627,12 @@ func TestRemoveMarkForDeletion(t *testing.T) {
 		t.Run(testcases.name, func(t *testing.T) {
 			bkt := objstore.NewInMemBucket()
 			id, err := e2eutil.CreateBlock(ctx, tmpDir, []labels.Labels{
-				{{Name: "cluster-eu1", Value: "service-1"}},
-				{{Name: "cluster-eu1", Value: "service-2"}},
-				{{Name: "cluster-eu1", Value: "service-3"}},
-				{{Name: "cluster-us1", Value: "service-1"}},
-				{{Name: "cluster-us1", Value: "service-2"}},
-			}, 100, 0, 1000, labels.Labels{{Name: "region-1", Value: "eu-west"}}, 124, metadata.NoneFunc)
+				labels.New(labels.Label{Name: "cluster-eu1", Value: "service-1"}),
+				labels.New(labels.Label{Name: "cluster-eu1", Value: "service-2"}),
+				labels.New(labels.Label{Name: "cluster-eu1", Value: "service-3"}),
+				labels.New(labels.Label{Name: "cluster-us1", Value: "service-1"}),
+				labels.New(labels.Label{Name: "cluster-us1", Value: "service-2"}),
+			}, 100, 0, 1000, labels.New(labels.Label{Name: "region-1", Value: "eu-west"}), 124, metadata.NoneFunc)
 			testutil.Ok(t, err)
 			testcases.preDelete(t, id, bkt)
 			counter := promauto.With(nil).NewCounter(prometheus.CounterOpts{})
@@ -674,12 +674,12 @@ func TestRemoveMarkForNoCompact(t *testing.T) {
 		t.Run(testCases.name, func(t *testing.T) {
 			bkt := objstore.NewInMemBucket()
 			id, err := e2eutil.CreateBlock(ctx, tmpDir, []labels.Labels{
-				{{Name: "cluster-eu1", Value: "service-1"}},
-				{{Name: "cluster-eu1", Value: "service-2"}},
-				{{Name: "cluster-eu1", Value: "service-3"}},
-				{{Name: "cluster-us1", Value: "service-1"}},
-				{{Name: "cluster-us1", Value: "service-2"}},
-			}, 100, 0, 1000, labels.Labels{{Name: "region-1", Value: "eu-west"}}, 124, metadata.NoneFunc)
+				labels.New(labels.Label{Name: "cluster-eu1", Value: "service-1"}),
+				labels.New(labels.Label{Name: "cluster-eu1", Value: "service-2"}),
+				labels.New(labels.Label{Name: "cluster-eu1", Value: "service-3"}),
+				labels.New(labels.Label{Name: "cluster-us1", Value: "service-1"}),
+				labels.New(labels.Label{Name: "cluster-us1", Value: "service-2"}),
+			}, 100, 0, 1000, labels.New(labels.Label{Name: "region-1", Value: "eu-west"}), 124, metadata.NoneFunc)
 			testutil.Ok(t, err)
 			testCases.preDelete(t, id, bkt)
 			counter := promauto.With(nil).NewCounter(prometheus.CounterOpts{})
@@ -721,12 +721,12 @@ func TestRemoveMmarkForNoDownsample(t *testing.T) {
 		t.Run(testCases.name, func(t *testing.T) {
 			bkt := objstore.NewInMemBucket()
 			id, err := e2eutil.CreateBlock(ctx, tmpDir, []labels.Labels{
-				{{Name: "cluster-eu1", Value: "service-1"}},
-				{{Name: "cluster-eu1", Value: "service-2"}},
-				{{Name: "cluster-eu1", Value: "service-3"}},
-				{{Name: "cluster-us1", Value: "service-1"}},
-				{{Name: "cluster-us1", Value: "service-2"}},
-			}, 100, 0, 1000, labels.Labels{{Name: "region-1", Value: "eu-west"}}, 124, metadata.NoneFunc)
+				labels.New(labels.Label{Name: "cluster-eu1", Value: "service-1"}),
+				labels.New(labels.Label{Name: "cluster-eu1", Value: "service-2"}),
+				labels.New(labels.Label{Name: "cluster-eu1", Value: "service-3"}),
+				labels.New(labels.Label{Name: "cluster-us1", Value: "service-1"}),
+				labels.New(labels.Label{Name: "cluster-us1", Value: "service-2"}),
+			}, 100, 0, 1000, labels.New(labels.Label{Name: "region-1", Value: "eu-west"}), 124, metadata.NoneFunc)
 			testutil.Ok(t, err)
 			testCases.preDelete(t, id, bkt)
 			counter := promauto.With(nil).NewCounter(prometheus.CounterOpts{})

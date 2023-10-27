@@ -941,19 +941,18 @@ func ParseRelabelConfig(contentYaml []byte, supportedActions map[relabel.Action]
 }
 
 func relabelMetas(metas *map[ulid.ULID]*metadata.Meta, relabelConfig []*relabel.Config, synced GaugeVec) {
-	var lbls labels.Labels
+	var b labels.Builder
 	for id, m := range *metas {
-		lbls = lbls[:0]
-		lbls = append(lbls,
-			labels.Label{Name: BlockIDLabel, Value: id.String()},
-			labels.Label{Name: ShardIDLabel, Value: m.Thanos.GetVerticalShardID()},
-			labels.Label{Name: SourceLabel, Value: string(m.Thanos.Source)},
-		)
+		b.Reset(labels.EmptyLabels())
+		b.Set(BlockIDLabel, id.String())
+		b.Set(ShardIDLabel, m.Thanos.GetVerticalShardID())
+		b.Set(SourceLabel, string(m.Thanos.Source))
+
 		for k, v := range m.Thanos.Labels {
-			lbls = append(lbls, labels.Label{Name: k, Value: v})
+			b.Set(k, v)
 		}
 
-		if processedLabels, _ := relabel.Process(lbls, relabelConfig...); len(processedLabels) == 0 {
+		if processedLabels, _ := relabel.Process(b.Labels(), relabelConfig...); processedLabels.IsEmpty() {
 			synced.WithLabelValues(labelExcludedMeta).Inc()
 			delete(*metas, id)
 		}
