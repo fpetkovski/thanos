@@ -891,12 +891,19 @@ func TestDropMixedChunkTypes(t *testing.T) {
 		})
 	}
 
-	var fSamples []sample
+	var (
+		fSamples      []sample
+		hGaugeSamples []sample
+	)
 	for i := 0; i < 20; i++ {
 		ts += 15_000
 		fSamples = append(fSamples, sample{
 			t: ts,
 			v: float64(i),
+		})
+		hGaugeSamples = append(hGaugeSamples, sample{
+			t:  ts,
+			fh: tsdbutil.GenerateTestGaugeFloatHistogram(i),
 		})
 	}
 
@@ -905,6 +912,9 @@ func TestDropMixedChunkTypes(t *testing.T) {
 
 	// Mixed series.
 	mb.addSeries(chunksToSeriesIteratable(t, [][]sample{hSamples, fSamples}, nil, labels.FromStrings(labels.MetricName, "b")))
+
+	// Float histogram series with mixed gauge and non-gauge histograms.
+	mb.addSeries(chunksToSeriesIteratable(t, [][]sample{hSamples, hGaugeSamples}, nil, labels.FromStrings(labels.MetricName, "c")))
 
 	fakeMeta := &metadata.Meta{
 		BlockMeta: tsdb.BlockMeta{
@@ -923,7 +933,7 @@ func TestDropMixedChunkTypes(t *testing.T) {
 
 	idResLevel1, err := Downsample(logger, fakeMeta, mb, dir, ResLevel1, incDroppedSeriesCount)
 	testutil.Ok(t, err)
-	testutil.Equals(t, 1, droppedSeriesCount)
+	testutil.Equals(t, 2, droppedSeriesCount)
 
 	_, lbls, chks := GetMetaLabelsAndChunks(t, dir, idResLevel1)
 
@@ -1072,6 +1082,11 @@ func chunksToSeriesIteratable(t *testing.T, inRaw [][]sample, inAggr []map[AggrT
 			}
 
 			app, _ := chk.Appender()
+
+			// First sample determines the counter reset hint for the chunk.
+			if len(samples) > 0 && samples[0].fh != nil && samples[0].fh.CounterResetHint == histogram.GaugeType {
+				chk.(*chunkenc.FloatHistogramChunk).SetCounterResetHeader(chunkenc.GaugeType)
+			}
 
 			for _, s := range samples {
 				if isHistogramSamples(samples) {

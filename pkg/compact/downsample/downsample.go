@@ -147,24 +147,21 @@ func Downsample(
 
 		// Raw and already downsampled data need different processing.
 		if origMeta.Thanos.Downsample.Resolution == 0 {
-			var prevEnc chunkenc.Encoding
-			for i, c := range chks {
-				// Drop series with mixed encodings, since we can't downsample them.
-				if i > 0 && prevEnc != c.Chunk.Encoding() {
-					if incDroppedSeriesMetric != nil {
-						incDroppedSeriesMetric()
-					}
-					level.Warn(logger).Log("msg", "found mixed chunk encodings, drop series", "series", lset.String())
-					all = all[:0]
-					break
+			if reason, drop := dropChunks(chks); drop {
+				level.Warn(logger).Log("msg", "drop series", "series", lset.String(), "reason", reason)
+				if incDroppedSeriesMetric != nil {
+					incDroppedSeriesMetric()
 				}
+				continue
+			}
+
+			for _, c := range chks {
 				// TODO(bwplotka): We can optimze this further by using in WriteSeries iterators of each chunk instead of
 				// samples. Also ensure 120 sample limit, otherwise we have gigantic chunks.
 				// https://github.com/thanos-io/thanos/issues/2542.
 				if err := expandChunkIterator(c.Chunk.Iterator(reuseIt), c.Chunk.Encoding(), &all); err != nil {
 					return id, errors.Wrapf(err, "expand chunk %d, series %d", c.Ref, postings.At())
 				}
-				prevEnc = c.Chunk.Encoding()
 			}
 			if err := streamedBlockWriter.WriteSeries(lset, DownsampleRaw(all, resolution)); err != nil {
 				return id, errors.Wrapf(err, "downsample raw data, series: %d", postings.At())
@@ -216,6 +213,28 @@ func Downsample(
 
 	id = uid
 	return
+}
+
+func dropChunks(chks []chunks.Meta) (string, bool) {
+	for i := 1; i < len(chks); i++ {
+		if chks[i-1].Chunk.Encoding() != chks[i].Chunk.Encoding() {
+			return "mixed encodings", true
+		}
+		if hasGaugeResetHint(chks[i-1].Chunk) != hasGaugeResetHint(chks[i].Chunk) {
+			return "mixed gauge and non gauge chunks", true
+		}
+	}
+	return "", false
+}
+
+func hasGaugeResetHint(chk chunkenc.Chunk) bool {
+	switch c := chk.(type) {
+	case *chunkenc.HistogramChunk:
+		return c.GetCounterResetHeader() == chunkenc.GaugeType
+	case *chunkenc.FloatHistogramChunk:
+		return c.GetCounterResetHeader() == chunkenc.GaugeType
+	}
+	return false
 }
 
 func isHistogram(c *AggrChunk) bool {
@@ -518,7 +537,6 @@ func (b *aggrChunkBuilder) appendFloatHistogram(t AggrType, ts int64, fh *histog
 		switch fh.CounterResetHint {
 		case histogram.GaugeType:
 			if app != nil {
-				var ()
 				pForwardInserts, nForwardInserts,
 					pBackwardInserts, nBackwardInserts,
 					pMergedSpans, nMergedSpans,
