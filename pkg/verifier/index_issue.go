@@ -97,6 +97,7 @@ func repairIndex(stats block.HealthStats, ctx Context, id ulid.ULID, meta *metad
 
 	level.Info(ctx.Logger).Log("msg", "repairing block", "id", id, "issue")
 	resid, err := block.Repair(
+		ctx,
 		ctx.Logger,
 		dir,
 		id,

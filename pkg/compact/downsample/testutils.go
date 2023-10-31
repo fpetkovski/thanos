@@ -4,6 +4,7 @@
 package downsample
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
@@ -26,7 +27,9 @@ func GetMetaLabelsAndChunks(t *testing.T, dir string, id ulid.ULID) (*metadata.M
 	testutil.Ok(t, err)
 	defer func() { testutil.Ok(t, indexr.Close()) }()
 
-	pall, err := indexr.Postings(index.AllPostingsKey())
+	ctx := context.TODO()
+	n, v := index.AllPostingsKey()
+	pall, err := indexr.Postings(ctx, n, v)
 	testutil.Ok(t, err)
 
 	var series []storage.SeriesRef

@@ -988,7 +988,7 @@ func RepairIssue347(ctx context.Context, logger log.Logger, bkt objstore.Bucket,
 		return errors.Wrapf(err, "read meta from %s", bdir)
 	}
 
-	resid, err := block.Repair(logger, tmpdir, ie.id, metadata.CompactorRepairSource, block.IgnoreIssue347OutsideChunk)
+	resid, err := block.Repair(ctx, logger, tmpdir, ie.id, metadata.CompactorRepairSource, block.IgnoreIssue347OutsideChunk)
 	if err != nil {
 		return errors.Wrapf(err, "repair failed for block %s", ie.id)
 	}
