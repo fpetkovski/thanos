@@ -4,6 +4,7 @@
 package dedup
 
 import (
+	"github.com/prometheus/prometheus/util/annotations"
 	"math"
 
 	"github.com/prometheus/prometheus/model/histogram"
@@ -201,7 +202,7 @@ func (s *dedupSeriesSet) Err() error {
 	return s.set.Err()
 }
 
-func (s *dedupSeriesSet) Warnings() storage.Warnings {
+func (s *dedupSeriesSet) Warnings() annotations.Annotations {
 	return s.set.Warnings()
 }
 

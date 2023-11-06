@@ -915,7 +915,7 @@ func (r *BinaryReader) postingsOffset(name string, values ...string) ([]index.Ra
 	return rngs, nil
 }
 
-func (r *BinaryReader) LookupSymbol(o uint32) (string, error) {
+func (r *BinaryReader) LookupSymbol(ctx context.Context, o uint32) (string, error) {
 	cacheIndex := o % valueSymbolsCacheSize
 	r.valueSymbolsMx.Lock()
 	if cached := r.valueSymbols[cacheIndex]; cached.index == o && cached.symbol != "" {
@@ -935,7 +935,7 @@ func (r *BinaryReader) LookupSymbol(o uint32) (string, error) {
 		o += headerLen - index.HeaderLen
 	}
 
-	s, err := r.symbols.Lookup(o)
+	s, err := r.symbols.Lookup(ctx, o)
 	if err != nil {
 		return s, err
 	}

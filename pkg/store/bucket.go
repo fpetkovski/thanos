@@ -2292,7 +2292,7 @@ func (r *bucketIndexReader) ExpandedPostings(ctx context.Context, ms []*labels.M
 				postingIndex++
 			}
 
-			groupAdds = append(groupAdds, index.Merge(toMerge...))
+			groupAdds = append(groupAdds, index.Merge(ctx, toMerge...))
 		}
 
 		for _, l := range g.removeKeys {
@@ -2301,7 +2301,7 @@ func (r *bucketIndexReader) ExpandedPostings(ctx context.Context, ms []*labels.M
 		}
 	}
 
-	result := index.Without(index.Intersect(groupAdds...), index.Merge(groupRemovals...))
+	result := index.Without(index.Intersect(groupAdds...), index.Merge(ctx, groupRemovals...))
 
 	ps, err := index.ExpandPostings(result)
 	if err != nil {
@@ -2840,7 +2840,7 @@ func (r *bucketIndexReader) Close() error {
 func (r *bucketIndexReader) LookupLabelsSymbols(symbolized []symbolizedLabel, lbls *labels.Labels) error {
 	*lbls = (*lbls)[:0]
 	for _, s := range symbolized {
-		ln, err := r.dec.LookupSymbol(s.name)
+		ln, err := r.dec.LookupSymbol(ctx, s.name)
 		if err != nil {
 			return errors.Wrap(err, "lookup label name")
 		}

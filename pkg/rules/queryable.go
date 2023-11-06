@@ -5,6 +5,7 @@ package rules
 
 import (
 	"context"
+	"github.com/prometheus/prometheus/util/annotations"
 	"math/rand"
 	"net/url"
 	"strings"
@@ -81,7 +82,7 @@ func (q *promClientsQueryable) Querier(ctx context.Context, mint, maxt int64) (s
 }
 
 // Select implements storage.Querier interface.
-func (q *promClientsQuerier) Select(_ bool, _ *storage.SelectHints, matchers ...*labels.Matcher) storage.SeriesSet {
+func (q *promClientsQuerier) Select(_ context.Context, _ bool, _ *storage.SelectHints, matchers ...*labels.Matcher) storage.SeriesSet {
 	query := storepb.PromMatchersToString(matchers...)
 
 	for _, i := range rand.Perm(len(q.queryClients)) {
@@ -118,18 +119,19 @@ func (q *promClientsQuerier) Select(_ bool, _ *storage.SelectHints, matchers ...
 	return storage.NoopSeriesSet()
 }
 
-// LabelValues implements storage.LabelQuerier interface.
-func (q *promClientsQuerier) LabelValues(name string, matchers ...*labels.Matcher) ([]string, storage.Warnings, error) {
+func (q *promClientsQuerier) LabelValues(ctx context.Context, name string, matchers ...*labels.Matcher) ([]string, annotations.Annotations, error) {
 	return nil, nil, nil
 }
 
-// LabelNames implements storage.LabelQuerier interface.
-func (q *promClientsQuerier) LabelNames(matchers ...*labels.Matcher) ([]string, storage.Warnings, error) {
+func (q *promClientsQuerier) LabelNames(ctx context.Context, matchers ...*labels.Matcher) ([]string, annotations.Annotations, error) {
 	return nil, nil, nil
 }
 
-// Close implements storage.LabelQuerier interface.
 func (q *promClientsQuerier) Close() error {
+	return nil
+}
+
+func (q *promClientsQuerier) Select(ctx context.Context, sortSeries bool, hints *storage.SelectHints, matchers ...*labels.Matcher) storage.SeriesSet {
 	return nil
 }
 

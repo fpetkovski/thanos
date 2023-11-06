@@ -5,6 +5,7 @@ package compactv2
 
 import (
 	"context"
+	"github.com/prometheus/prometheus/util/annotations"
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/model/histogram"
@@ -74,7 +75,7 @@ func (s *lazyPopulateChunkSeriesSet) Err() error {
 	return s.all.Err()
 }
 
-func (s *lazyPopulateChunkSeriesSet) Warnings() storage.Warnings { return nil }
+func (s *lazyPopulateChunkSeriesSet) Warnings() annotations.Annotations { return nil }
 
 type lazyPopulatableChunk struct {
 	m *chunks.Meta
