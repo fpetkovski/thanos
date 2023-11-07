@@ -67,9 +67,8 @@ func NewPromClientsQueryable(logger log.Logger, queryClients []*queryconfig.HTTP
 }
 
 // Querier returns a new Querier for the given time range.
-func (q *promClientsQueryable) Querier(ctx context.Context, mint, maxt int64) (storage.Querier, error) {
+func (q *promClientsQueryable) Querier(mint, maxt int64) (storage.Querier, error) {
 	return &promClientsQuerier{
-		ctx:                 ctx,
 		mint:                mint,
 		maxt:                maxt,
 		step:                int64(q.step / time.Second),
@@ -128,10 +127,6 @@ func (q *promClientsQuerier) LabelNames(ctx context.Context, matchers ...*labels
 }
 
 func (q *promClientsQuerier) Close() error {
-	return nil
-}
-
-func (q *promClientsQuerier) Select(ctx context.Context, sortSeries bool, hints *storage.SelectHints, matchers ...*labels.Matcher) storage.SeriesSet {
 	return nil
 }
 

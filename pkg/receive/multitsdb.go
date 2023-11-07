@@ -832,7 +832,7 @@ func (a adapter) StartTime() (int64, error) {
 }
 
 func (a adapter) Querier(ctx context.Context, mint, maxt int64) (storage.Querier, error) {
-	return a.db.Querier(ctx, mint, maxt)
+	return a.db.Querier(mint, maxt)
 }
 
 func (a adapter) ExemplarQuerier(ctx context.Context) (storage.ExemplarQuerier, error) {

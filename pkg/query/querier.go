@@ -5,6 +5,7 @@ package query
 
 import (
 	"context"
+	"github.com/prometheus/prometheus/util/annotations"
 	"strings"
 	"sync"
 	"time"
@@ -117,8 +118,8 @@ type queryable struct {
 }
 
 // Querier returns a new storage querier against the underlying proxy store API.
-func (q *queryable) Querier(ctx context.Context, mint, maxt int64) (storage.Querier, error) {
-	return newQuerier(ctx, q.logger, mint, maxt, q.replicaLabels, q.storeDebugMatchers, q.proxy, q.deduplicate, q.maxResolutionMillis, q.partialResponse, q.enableQueryPushdown, q.skipChunks, q.gateProviderFn(), q.selectTimeout, q.shardInfo, q.seriesStatsReporter), nil
+func (q *queryable) Querier(mint int64, maxt int64) (storage.Querier, error) {
+	return newQuerier(q.logger, mint, maxt, q.replicaLabels, q.storeDebugMatchers, q.proxy, q.deduplicate, q.maxResolutionMillis, q.partialResponse, q.enableQueryPushdown, q.skipChunks, q.gateProviderFn(), q.selectTimeout, q.shardInfo, q.seriesStatsReporter), nil
 }
 
 type querier struct {
@@ -143,7 +144,6 @@ type querier struct {
 // newQuerier creates implementation of storage.Querier that fetches data from the proxy
 // store API endpoints.
 func newQuerier(
-	ctx context.Context,
 	logger log.Logger,
 	mint,
 	maxt int64,
@@ -163,7 +163,6 @@ func newQuerier(
 	if logger == nil {
 		logger = log.NewNopLogger()
 	}
-	ctx, cancel := context.WithCancel(ctx)
 
 	rl := make(map[string]struct{})
 	for _, replicaLabel := range replicaLabels {
@@ -175,9 +174,7 @@ func newQuerier(
 		partialResponseStrategy = storepb.PartialResponseStrategy_WARN
 	}
 	return &querier{
-		ctx:           ctx,
 		logger:        logger,
-		cancel:        cancel,
 		selectGate:    selectGate,
 		selectTimeout: selectTimeout,
 
@@ -267,7 +264,7 @@ func storeHintsFromPromHints(hints *storage.SelectHints) *storepb.QueryHints {
 	}
 }
 
-func (q *querier) Select(_ bool, hints *storage.SelectHints, ms ...*labels.Matcher) storage.SeriesSet {
+func (q *querier) Select(ctx context.Context, _ bool, hints *storage.SelectHints, ms ...*labels.Matcher) storage.SeriesSet {
 	if hints == nil {
 		hints = &storage.SelectHints{
 			Start: q.mint,
@@ -283,7 +280,7 @@ func (q *querier) Select(_ bool, hints *storage.SelectHints, ms ...*labels.Match
 	// The querier has a context, but it gets canceled as soon as query evaluation is completed by the engine.
 	// We want to prevent this from happening for the async store API calls we make while preserving tracing context.
 	// TODO(bwplotka): Does the above still is true? It feels weird to leave unfinished calls behind query API.
-	ctx := tracing.CopyTraceContext(context.Background(), q.ctx)
+	ctx = tracing.CopyTraceContext(context.Background(), ctx)
 	ctx, cancel := context.WithTimeout(ctx, q.selectTimeout)
 	span, ctx := tracing.StartSpan(ctx, "querier_select", opentracing.Tags{
 		"minTime":  hints.Start,
@@ -368,9 +365,9 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 		return nil, storepb.SeriesStatsCounter{}, errors.Wrap(err, "proxy Series()")
 	}
 
-	var warns storage.Warnings
+	var warns annotations.Annotations
 	for _, w := range resp.warnings {
-		warns = append(warns, errors.New(w))
+		warns.Add(errors.New(w))
 	}
 
 	if q.enableQueryPushdown && (hints.Func == "max_over_time" || hints.Func == "min_over_time") {
@@ -414,7 +411,7 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 }
 
 // LabelValues returns all potential values for a label name.
-func (q *querier) LabelValues(name string, matchers ...*labels.Matcher) ([]string, storage.Warnings, error) {
+func (q *querier) LabelValues(ctx context.Context, name string, matchers ...*labels.Matcher) ([]string, annotations.Annotations, error) {
 	span, ctx := tracing.StartSpan(q.ctx, "querier_label_values")
 	defer span.Finish()
 
@@ -437,9 +434,9 @@ func (q *querier) LabelValues(name string, matchers ...*labels.Matcher) ([]strin
 		return nil, nil, errors.Wrap(err, "proxy LabelValues()")
 	}
 
-	var warns storage.Warnings
+	var warns annotations.Annotations
 	for _, w := range resp.Warnings {
-		warns = append(warns, errors.New(w))
+		warns.Add(errors.New(w))
 	}
 
 	return resp.Values, warns, nil
@@ -447,7 +444,7 @@ func (q *querier) LabelValues(name string, matchers ...*labels.Matcher) ([]strin
 
 // LabelNames returns all the unique label names present in the block in sorted order constrained
 // by the given matchers.
-func (q *querier) LabelNames(matchers ...*labels.Matcher) ([]string, storage.Warnings, error) {
+func (q *querier) LabelNames(ctx context.Context, matchers ...*labels.Matcher) ([]string, annotations.Annotations, error) {
 	span, ctx := tracing.StartSpan(q.ctx, "querier_label_names")
 	defer span.Finish()
 
@@ -469,9 +466,9 @@ func (q *querier) LabelNames(matchers ...*labels.Matcher) ([]string, storage.War
 		return nil, nil, errors.Wrap(err, "proxy LabelNames()")
 	}
 
-	var warns storage.Warnings
+	var warns annotations.Annotations
 	for _, w := range resp.Warnings {
-		warns = append(warns, errors.New(w))
+		warns.Add(errors.New(w))
 	}
 
 	return resp.Names, warns, nil
