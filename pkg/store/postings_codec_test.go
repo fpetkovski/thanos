@@ -118,13 +118,14 @@ func comparePostings(t *testing.T, p1, p2 index.Postings) {
 
 func allPostings(t testing.TB, ix tsdb.IndexReader) index.Postings {
 	k, v := index.AllPostingsKey()
-	p, err := ix.Postings(k, v)
+	p, err := ix.Postings(context.Background(), k, v)
 	testutil.Ok(t, err)
 	return p
 }
 
 func matchPostings(t testing.TB, ix tsdb.IndexReader, m *labels.Matcher) index.Postings {
-	vals, err := ix.LabelValues(m.Name)
+	ctx := context.Background()
+	vals, err := ix.LabelValues(ctx, m.Name)
 	testutil.Ok(t, err)
 
 	matching := []string(nil)
@@ -134,7 +135,7 @@ func matchPostings(t testing.TB, ix tsdb.IndexReader, m *labels.Matcher) index.P
 		}
 	}
 
-	p, err := ix.Postings(m.Name, matching...)
+	p, err := ix.Postings(ctx, m.Name, matching...)
 	testutil.Ok(t, err)
 	return p
 }

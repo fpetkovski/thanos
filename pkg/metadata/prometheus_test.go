@@ -6,7 +6,6 @@ package metadata
 import (
 	"context"
 	"fmt"
-	"github.com/prometheus/prometheus/util/annotations"
 	"net/http"
 	"net/url"
 	"testing"
@@ -114,7 +113,7 @@ scrape_configs:
 				Limit:  tcase.limit,
 			})
 
-			testutil.Equals(t, annotations.Annotations{}, w)
+			testutil.Assert(t, len(w) == 0, "unexpected warnings: %v", w)
 			testutil.Ok(t, err)
 			testutil.Assert(t, tcase.expectedFunc(meta))
 		})

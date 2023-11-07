@@ -1084,7 +1084,7 @@ func TestQuerierWithDedupUnderstoodByPromQL_Rate(t *testing.T) {
 
 		timeout := 100 * time.Second
 		g := gate.New(2)
-		q := newQuerier(context.Background(), logger, realSeriesWithStaleMarkerMint, realSeriesWithStaleMarkerMaxt, []string{"replica"}, nil, newProxyStore(s), false, 0, true, false, false, g, timeout, nil, NoopSeriesStatsReporter)
+		q := newQuerier(logger, realSeriesWithStaleMarkerMint, realSeriesWithStaleMarkerMaxt, []string{"replica"}, nil, newProxyStore(s), false, 0, true, false, false, g, timeout, nil, NoopSeriesStatsReporter)
 		t.Cleanup(func() {
 			testutil.Ok(t, q.Close())
 		})
@@ -1095,7 +1095,7 @@ func TestQuerierWithDedupUnderstoodByPromQL_Rate(t *testing.T) {
 			MaxSamples: math.MaxInt64,
 		})
 		t.Run("Rate=5mStep=100s", func(t *testing.T) {
-			q, err := e.NewRangeQuery(context.Background(), &mockedQueryable{querier: q}, &promql.QueryOpts{}, `rate(gitlab_transaction_cache_read_hit_count_total[5m])`, timestamp.Time(realSeriesWithStaleMarkerMint).Add(5*time.Minute), timestamp.Time(realSeriesWithStaleMarkerMaxt), 100*time.Second)
+			q, err := e.NewRangeQuery(context.Background(), &mockedQueryable{querier: q}, promql.NewPrometheusQueryOpts(false, 0), `rate(gitlab_transaction_cache_read_hit_count_total[5m])`, timestamp.Time(realSeriesWithStaleMarkerMint).Add(5*time.Minute), timestamp.Time(realSeriesWithStaleMarkerMaxt), 100*time.Second)
 			testutil.Ok(t, err)
 
 			r := q.Exec(context.Background())
@@ -1124,7 +1124,7 @@ func TestQuerierWithDedupUnderstoodByPromQL_Rate(t *testing.T) {
 			}, vec)
 		})
 		t.Run("Rate=30mStep=500s", func(t *testing.T) {
-			q, err := e.NewRangeQuery(context.Background(), &mockedQueryable{querier: q}, &promql.QueryOpts{}, `rate(gitlab_transaction_cache_read_hit_count_total[30m])`, timestamp.Time(realSeriesWithStaleMarkerMint).Add(30*time.Minute), timestamp.Time(realSeriesWithStaleMarkerMaxt), 500*time.Second)
+			q, err := e.NewRangeQuery(context.Background(), &mockedQueryable{querier: q}, promql.NewPrometheusQueryOpts(false, 0), `rate(gitlab_transaction_cache_read_hit_count_total[30m])`, timestamp.Time(realSeriesWithStaleMarkerMint).Add(30*time.Minute), timestamp.Time(realSeriesWithStaleMarkerMaxt), 500*time.Second)
 			testutil.Ok(t, err)
 
 			r := q.Exec(context.Background())
@@ -1154,7 +1154,7 @@ func TestQuerierWithDedupUnderstoodByPromQL_Rate(t *testing.T) {
 
 		timeout := 5 * time.Second
 		g := gate.New(2)
-		q := newQuerier(context.Background(), logger, realSeriesWithStaleMarkerMint, realSeriesWithStaleMarkerMaxt, []string{"replica"}, nil, newProxyStore(s), true, 0, true, false, false, g, timeout, nil, NoopSeriesStatsReporter)
+		q := newQuerier(logger, realSeriesWithStaleMarkerMint, realSeriesWithStaleMarkerMaxt, []string{"replica"}, nil, newProxyStore(s), true, 0, true, false, false, g, timeout, nil, NoopSeriesStatsReporter)
 		t.Cleanup(func() {
 			testutil.Ok(t, q.Close())
 		})
@@ -1165,7 +1165,7 @@ func TestQuerierWithDedupUnderstoodByPromQL_Rate(t *testing.T) {
 			MaxSamples: math.MaxInt64,
 		})
 		t.Run("Rate=5mStep=100s", func(t *testing.T) {
-			q, err := e.NewRangeQuery(context.Background(), &mockedQueryable{querier: q}, &promql.QueryOpts{}, `rate(gitlab_transaction_cache_read_hit_count_total[5m])`, timestamp.Time(realSeriesWithStaleMarkerMint).Add(5*time.Minute), timestamp.Time(realSeriesWithStaleMarkerMaxt), 100*time.Second)
+			q, err := e.NewRangeQuery(context.Background(), &mockedQueryable{querier: q}, promql.NewPrometheusQueryOpts(false, 0), `rate(gitlab_transaction_cache_read_hit_count_total[5m])`, timestamp.Time(realSeriesWithStaleMarkerMint).Add(5*time.Minute), timestamp.Time(realSeriesWithStaleMarkerMaxt), 100*time.Second)
 			testutil.Ok(t, err)
 
 			r := q.Exec(context.Background())
@@ -1189,7 +1189,7 @@ func TestQuerierWithDedupUnderstoodByPromQL_Rate(t *testing.T) {
 			}, vec)
 		})
 		t.Run("Rate=30mStep=500s", func(t *testing.T) {
-			q, err := e.NewRangeQuery(context.Background(), &mockedQueryable{querier: q}, &promql.QueryOpts{}, `rate(gitlab_transaction_cache_read_hit_count_total[30m])`, timestamp.Time(realSeriesWithStaleMarkerMint).Add(30*time.Minute), timestamp.Time(realSeriesWithStaleMarkerMaxt), 500*time.Second)
+			q, err := e.NewRangeQuery(context.Background(), &mockedQueryable{querier: q}, promql.NewPrometheusQueryOpts(false, 0), `rate(gitlab_transaction_cache_read_hit_count_total[30m])`, timestamp.Time(realSeriesWithStaleMarkerMint).Add(30*time.Minute), timestamp.Time(realSeriesWithStaleMarkerMaxt), 500*time.Second)
 			testutil.Ok(t, err)
 
 			r := q.Exec(context.Background())

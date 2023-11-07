@@ -1611,7 +1611,7 @@ func (b *memBlock) Meta() tsdb.BlockMeta {
 	return tsdb.BlockMeta{}
 }
 
-func (b *memBlock) Postings(name string, val ...string) (index.Postings, error) {
+func (b *memBlock) Postings(_ context.Context, name string, val ...string) (index.Postings, error) {
 	allName, allVal := index.AllPostingsKey()
 
 	if name != allName || val[0] != allVal {

@@ -6,6 +6,7 @@ package query
 import (
 	"context"
 	"fmt"
+	"github.com/prometheus/prometheus/promql/parser/posrange"
 	"math"
 	"os"
 	"path/filepath"
@@ -325,7 +326,7 @@ func ParseEval(lines []string, i int) (int, *evalCmd, error) {
 	if err != nil {
 		if perr, ok := err.(*parser.ParseErr); ok {
 			perr.LineOffset = i
-			posOffset := parser.Pos(strings.Index(lines[i], expr))
+			posOffset := posrange.Pos(strings.Index(lines[i], expr))
 			perr.PositionRange.Start += posOffset
 			perr.PositionRange.End += posOffset
 			perr.Query = lines[i]
@@ -556,7 +557,7 @@ func (ev *evalCmd) compareResult(result parser.Value) error {
 }
 
 func (ev *evalCmd) Eval(ctx context.Context, queryEngine *promql.Engine, queryable storage.Queryable) error {
-	q, err := queryEngine.NewInstantQuery(ctx, queryable, &promql.QueryOpts{}, ev.expr, ev.start)
+	q, err := queryEngine.NewInstantQuery(ctx, queryable, promql.NewPrometheusQueryOpts(false, 0), ev.expr, ev.start)
 	if err != nil {
 		return err
 	}
@@ -580,7 +581,7 @@ func (ev *evalCmd) Eval(ctx context.Context, queryEngine *promql.Engine, queryab
 
 	// Check query returns same result in range mode,
 	// by checking against the middle step.
-	q, err = queryEngine.NewRangeQuery(ctx, queryable, &promql.QueryOpts{}, ev.expr, ev.start.Add(-time.Minute), ev.start.Add(time.Minute), time.Minute)
+	q, err = queryEngine.NewRangeQuery(ctx, queryable, promql.NewPrometheusQueryOpts(false, 0), ev.expr, ev.start.Add(-time.Minute), ev.start.Add(time.Minute), time.Minute)
 	if err != nil {
 		return err
 	}
