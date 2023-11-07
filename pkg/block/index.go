@@ -220,8 +220,7 @@ func GatherIndexHealthStats(logger log.Logger, fn string, minTime, maxTime int64
 	}
 	defer runutil.CloseWithErrCapture(&err, r, "gather index issue file reader")
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := context.Background()
 	name, values := index.AllPostingsKey()
 	p, err := r.Postings(ctx, name, values)
 	if err != nil {

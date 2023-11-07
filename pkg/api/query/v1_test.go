@@ -1791,7 +1791,7 @@ func TestRulesHandler(t *testing.T) {
 			}
 			res, errors, apiError, releaseResources := endpoint(req.WithContext(ctx))
 			defer releaseResources()
-			if errors != nil {
+			if len(errors) > 0 {
 				t.Fatalf("Unexpected errors: %s", errors)
 				return
 			}

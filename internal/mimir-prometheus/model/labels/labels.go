@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"strconv"
+	"strings"
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/prometheus/common/model"
@@ -356,14 +357,7 @@ func EmptyLabels() Labels {
 }
 
 func lblCmp(a, b Label) int {
-	if a.Name > b.Name {
-		return 1
-	}
-	if a.Name < b.Name {
-		return -1
-	}
-
-	return 0
+	return strings.Compare(a.Name, b.Name)
 }
 
 // New returns a sorted Labels from the given labels.
