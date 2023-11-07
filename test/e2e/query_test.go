@@ -1663,7 +1663,7 @@ func storeWriteRequest(ctx context.Context, rawRemoteWriteURL string, req *promp
 	}
 
 	compressed := snappy.Encode(buf, pBuf.Bytes())
-	return client.Store(ctx, compressed)
+	return client.Store(ctx, compressed, 0)
 }
 
 func TestSidecarQueryEvaluationWithDedup(t *testing.T) {
