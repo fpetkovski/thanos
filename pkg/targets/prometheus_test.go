@@ -6,6 +6,7 @@ package targets
 import (
 	"context"
 	"fmt"
+	"github.com/prometheus/prometheus/util/annotations"
 	"net/http"
 	"net/url"
 	"testing"
@@ -134,7 +135,7 @@ scrape_configs:
 			targets, w, err := grpcClient.Targets(context.Background(), &targetspb.TargetsRequest{
 				State: tcase.requestedState,
 			})
-			testutil.Equals(t, nil, w)
+			testutil.Equals(t, annotations.Annotations(nil), w)
 			if tcase.expectedErr != nil {
 				testutil.NotOk(t, err)
 				testutil.Equals(t, tcase.expectedErr.Error(), err.Error())

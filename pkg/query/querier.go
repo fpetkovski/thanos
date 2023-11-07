@@ -123,9 +123,7 @@ func (q *queryable) Querier(mint int64, maxt int64) (storage.Querier, error) {
 }
 
 type querier struct {
-	ctx                     context.Context
 	logger                  log.Logger
-	cancel                  func()
 	mint, maxt              int64
 	replicaLabels           []string
 	storeDebugMatchers      [][]*labels.Matcher
@@ -412,7 +410,7 @@ func (q *querier) selectFn(ctx context.Context, hints *storage.SelectHints, ms .
 
 // LabelValues returns all potential values for a label name.
 func (q *querier) LabelValues(ctx context.Context, name string, matchers ...*labels.Matcher) ([]string, annotations.Annotations, error) {
-	span, ctx := tracing.StartSpan(q.ctx, "querier_label_values")
+	span, ctx := tracing.StartSpan(ctx, "querier_label_values")
 	defer span.Finish()
 
 	// TODO(bwplotka): Pass it using the SeriesRequest instead of relying on context.
@@ -445,7 +443,7 @@ func (q *querier) LabelValues(ctx context.Context, name string, matchers ...*lab
 // LabelNames returns all the unique label names present in the block in sorted order constrained
 // by the given matchers.
 func (q *querier) LabelNames(ctx context.Context, matchers ...*labels.Matcher) ([]string, annotations.Annotations, error) {
-	span, ctx := tracing.StartSpan(q.ctx, "querier_label_names")
+	span, ctx := tracing.StartSpan(ctx, "querier_label_names")
 	defer span.Finish()
 
 	// TODO(bwplotka): Pass it using the SeriesRequest instead of relying on context.
@@ -475,6 +473,5 @@ func (q *querier) LabelNames(ctx context.Context, matchers ...*labels.Matcher) (
 }
 
 func (q *querier) Close() error {
-	q.cancel()
 	return nil
 }
