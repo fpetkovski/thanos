@@ -117,7 +117,7 @@ require (
 )
 
 require (
-	github.com/onsi/gomega v1.27.6
+	github.com/onsi/gomega v1.27.10
 	go.opentelemetry.io/contrib/propagators/autoprop v0.38.0
 	go4.org/intern v0.0.0-20220617035311-6925f38cc365
 	golang.org/x/exp v0.0.0-20230801115018-d63ba01acd4b
@@ -280,7 +280,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/common/sigv4 v0.1.0
 	github.com/prometheus/procfs v0.11.1 // indirect
-	github.com/redis/rueidis v1.0.2-go1.18
+	github.com/redis/rueidis v1.0.14-go1.18
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/rs/xid v1.4.0 // indirect
 	github.com/santhosh-tekuri/jsonschema v1.2.4 // indirect
