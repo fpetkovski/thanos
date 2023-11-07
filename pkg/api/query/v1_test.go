@@ -20,6 +20,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prometheus/prometheus/tsdb/chunks"
+	"github.com/prometheus/prometheus/util/annotations"
 	"io"
 	"math"
 	"math/rand"
@@ -44,7 +46,6 @@ import (
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
-	"github.com/prometheus/prometheus/tsdb/tsdbutil"
 	promgate "github.com/prometheus/prometheus/util/gate"
 	"github.com/prometheus/prometheus/util/stats"
 
@@ -690,7 +691,7 @@ func TestMetadataEndpoints(t *testing.T) {
 	var series []storage.Series
 
 	for _, lbl := range old {
-		var samples []tsdbutil.Sample
+		var samples []chunks.Sample
 
 		for i := int64(0); i < 10; i++ {
 			samples = append(samples, sample{
@@ -1843,11 +1844,11 @@ func BenchmarkQueryResultEncoding(b *testing.B) {
 
 type mockedRulesClient struct {
 	g   map[rulespb.RulesRequest_Type][]*rulespb.RuleGroup
-	w   storage.Warnings
+	w   annotations.Annotations
 	err error
 }
 
-func (c mockedRulesClient) Rules(_ context.Context, req *rulespb.RulesRequest) (*rulespb.RuleGroups, storage.Warnings, error) {
+func (c mockedRulesClient) Rules(_ context.Context, req *rulespb.RulesRequest) (*rulespb.RuleGroups, annotations.Annotations, error) {
 	return &rulespb.RuleGroups{Groups: c.g[req.Type]}, c.w, c.err
 }
 

@@ -69,7 +69,8 @@ func TestRewrite(t *testing.T) {
 
 	defer func() { testutil.Ok(t, ir2.Close()) }()
 
-	all, err := ir2.Postings(index.AllPostingsKey())
+	n, k := index.AllPostingsKey()
+	all, err := ir2.Postings(ctx, n, k)
 	testutil.Ok(t, err)
 
 	for p := ir2.SortedPostings(all); p.Next(); {

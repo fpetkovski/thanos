@@ -5,6 +5,7 @@ package v1
 
 import (
 	"context"
+	"github.com/prometheus/prometheus/util/annotations"
 	"testing"
 	"time"
 
@@ -41,7 +42,7 @@ func TestGRPCQueryAPIErrorHandling(t *testing.T) {
 		{
 			name: "error response",
 			engine: &engineStub{
-				warns: []error{errors.New("warn stub")},
+				warns: annotations.New().Add(errors.New("warn stub")),
 			},
 		},
 	}
@@ -68,7 +69,7 @@ func TestGRPCQueryAPIErrorHandling(t *testing.T) {
 			if len(test.engine.warns) > 0 {
 				testutil.Ok(t, err)
 				for i, resp := range srv.responses {
-					testutil.Equals(t, test.engine.warns[i].Error(), resp.GetWarnings())
+					testutil.Equals(t, test.engine.warns.AsErrors()[i].Error(), resp.GetWarnings())
 				}
 			}
 		})
@@ -87,7 +88,7 @@ func TestGRPCQueryAPIErrorHandling(t *testing.T) {
 			if len(test.engine.warns) > 0 {
 				testutil.Ok(t, err)
 				for i, resp := range srv.responses {
-					testutil.Equals(t, test.engine.warns[i].Error(), resp.GetWarnings())
+					testutil.Equals(t, test.engine.warns.AsErrors()[i].Error(), resp.GetWarnings())
 				}
 			}
 		})
@@ -97,21 +98,21 @@ func TestGRPCQueryAPIErrorHandling(t *testing.T) {
 type engineStub struct {
 	v1.QueryEngine
 	err   error
-	warns []error
+	warns annotations.Annotations
 }
 
-func (e engineStub) NewInstantQuery(_ context.Context, q storage.Queryable, opts *promql.QueryOpts, qs string, ts time.Time) (promql.Query, error) {
+func (e engineStub) NewInstantQuery(_ context.Context, q storage.Queryable, opts promql.QueryOpts, qs string, ts time.Time) (promql.Query, error) {
 	return &queryStub{err: e.err, warns: e.warns}, nil
 }
 
-func (e engineStub) NewRangeQuery(_ context.Context, q storage.Queryable, opts *promql.QueryOpts, qs string, start, end time.Time, interval time.Duration) (promql.Query, error) {
+func (e engineStub) NewRangeQuery(_ context.Context, q storage.Queryable, opts promql.QueryOpts, qs string, start, end time.Time, interval time.Duration) (promql.Query, error) {
 	return &queryStub{err: e.err, warns: e.warns}, nil
 }
 
 type queryStub struct {
 	promql.Query
 	err   error
-	warns []error
+	warns annotations.Annotations
 }
 
 func (q queryStub) Close() {}

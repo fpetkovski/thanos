@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prometheus/prometheus/util/annotations"
 	"math"
 	"os"
 	"reflect"
@@ -59,7 +60,7 @@ func TestQueryableCreator_MaxResolution(t *testing.T) {
 		NoopSeriesStatsReporter,
 	)
 
-	q, err := queryable.Querier(context.Background(), 0, 42)
+	q, err := queryable.Querier(0, 42)
 	testutil.Ok(t, err)
 	t.Cleanup(func() { testutil.Ok(t, q.Close()) })
 
@@ -119,7 +120,7 @@ func TestQuerier_DownsampledData(t *testing.T) {
 	qry, err := engine.NewRangeQuery(
 		context.Background(),
 		q,
-		&promql.QueryOpts{},
+		promql.NewPrometheusQueryOpts(false, 0),
 		"sum(a) by (zzz)",
 		st,
 		ed,
@@ -394,13 +395,13 @@ func TestQuerier_Select_AfterPromQL(t *testing.T) {
 						g := gate.New(2)
 						mq := &mockedQueryable{
 							Creator: func(mint, maxt int64) storage.Querier {
-								return newQuerier(context.Background(), nil, mint, maxt, tcase.replicaLabels, nil, tcase.storeAPI, sc.dedup, 0, true, false, false, g, timeout, nil, NoopSeriesStatsReporter)
+								return newQuerier(nil, mint, maxt, tcase.replicaLabels, nil, tcase.storeAPI, sc.dedup, 0, true, false, false, g, timeout, nil, NoopSeriesStatsReporter)
 							},
 						}
 						t.Cleanup(func() {
 							testutil.Ok(t, mq.Close())
 						})
-						q, err := e.NewRangeQuery(context.Background(), mq, &promql.QueryOpts{}, tcase.equivalentQuery, timestamp.Time(tcase.hints.Start), timestamp.Time(tcase.hints.End), resolution)
+						q, err := e.NewRangeQuery(context.Background(), mq, promql.NewPrometheusQueryOpts(false, 0), tcase.equivalentQuery, timestamp.Time(tcase.hints.Start), timestamp.Time(tcase.hints.End), resolution)
 						testutil.Ok(t, err)
 						t.Cleanup(q.Close)
 						res := q.Exec(context.Background())
@@ -409,7 +410,7 @@ func TestQuerier_Select_AfterPromQL(t *testing.T) {
 						if tcase.expectedWarning != "" {
 							warns := res.Warnings
 							testutil.Assert(t, len(warns) == 1, "expected only single warnings")
-							testutil.Equals(t, tcase.expectedWarning, warns[0].Error())
+							testutil.Equals(t, tcase.expectedWarning, warns.AsErrors()[0].Error())
 						}
 					}
 
@@ -773,7 +774,6 @@ func TestQuerier_Select(t *testing.T) {
 			} {
 				g := gate.New(2)
 				q := newQuerier(
-					context.Background(),
 					nil,
 					tcase.mint,
 					tcase.maxt,
@@ -793,24 +793,25 @@ func TestQuerier_Select(t *testing.T) {
 				t.Cleanup(func() { testutil.Ok(t, q.Close()) })
 
 				proxy := newProxyStore(tcase.storeEndpoints...)
-				q = newQuerier(context.Background(), nil, tcase.mint, tcase.maxt, tcase.replicaLabels, nil, proxy, sc.dedup, 0, true, false, false, g, timeout, nil, NoopSeriesStatsReporter)
+				q = newQuerier(nil, tcase.mint, tcase.maxt, tcase.replicaLabels, nil, proxy, sc.dedup, 0, true, false, false, g, timeout, nil, NoopSeriesStatsReporter)
 
 				t.Cleanup(func() { testutil.Ok(t, q.Close()) })
 				t.Run(fmt.Sprintf("dedup=%v", sc.dedup), func(t *testing.T) {
 					t.Run("querier.Select", func(t *testing.T) {
-						res := q.Select(false, tcase.hints, tcase.matchers...)
+						ctx := context.Background()
+						res := q.Select(ctx, false, tcase.hints, tcase.matchers...)
 						testSelectResponse(t, sc.expected, res)
 
 						if tcase.expectedWarning != "" {
 							w := res.Warnings()
 							testutil.Equals(t, 1, len(w))
-							testutil.Equals(t, tcase.expectedWarning, w[0].Error())
+							testutil.Equals(t, tcase.expectedWarning, w.AsErrors()[0].Error())
 						}
 					})
 					// Integration test: Make sure the PromQL would select exactly the same.
 					t.Run("through PromQL with 100s step", func(t *testing.T) {
 						catcher := &querierResponseCatcher{t: t, Querier: q}
-						q, err := e.NewRangeQuery(context.Background(), &mockedQueryable{querier: catcher}, &promql.QueryOpts{}, tcase.equivalentQuery, timestamp.Time(tcase.mint), timestamp.Time(tcase.maxt), 100*time.Second)
+						q, err := e.NewRangeQuery(context.Background(), &mockedQueryable{querier: catcher}, promql.NewPrometheusQueryOpts(false, 0), tcase.equivalentQuery, timestamp.Time(tcase.mint), timestamp.Time(tcase.maxt), 100*time.Second)
 						testutil.Ok(t, err)
 						t.Cleanup(q.Close)
 
@@ -824,10 +825,9 @@ func TestQuerier_Select(t *testing.T) {
 						testutil.Assert(t, len(warns) == 1, "expected only single warnings")
 						testutil.Assert(t, len(catcher.resp) == 1, "expected only single response, subqueries?")
 
-						w := warns[0]
 						if tcase.expectedWarning != "" {
-							testutil.Equals(t, 1, len(w))
-							testutil.Equals(t, tcase.expectedWarning, w[0].Error())
+							testutil.Equals(t, 1, len(warns))
+							testutil.Equals(t, tcase.expectedWarning, warns.AsErrors()[0].Error())
 						}
 					})
 				})
@@ -970,7 +970,7 @@ type mockedQueryable struct {
 
 // Querier creates a querier with the provided min and max time.
 // The promQL engine sets mint and it is calculated based on the default lookback delta.
-func (q *mockedQueryable) Querier(_ context.Context, mint, maxt int64) (storage.Querier, error) {
+func (q *mockedQueryable) Querier(mint, maxt int64) (storage.Querier, error) {
 	if q.Creator == nil {
 		return q.querier, nil
 	}
@@ -997,18 +997,18 @@ type querierResponseCatcher struct {
 	resp []storage.SeriesSet
 }
 
-func (q *querierResponseCatcher) Select(selectSorted bool, p *storage.SelectHints, m ...*labels.Matcher) storage.SeriesSet {
-	s := q.Querier.Select(selectSorted, p, m...)
+func (q *querierResponseCatcher) Select(ctx context.Context, selectSorted bool, p *storage.SelectHints, m ...*labels.Matcher) storage.SeriesSet {
+	s := q.Querier.Select(ctx, selectSorted, p, m...)
 	q.resp = append(q.resp, s)
 	return storage.NoopSeriesSet()
 }
 
 func (q querierResponseCatcher) Close() error { return nil }
 
-func (q *querierResponseCatcher) warns() []storage.Warnings {
-	var warns []storage.Warnings
+func (q *querierResponseCatcher) warns() annotations.Annotations {
+	var warns annotations.Annotations
 	for _, r := range q.resp {
-		warns = append(warns, r.Warnings())
+		warns.Merge(r.Warnings())
 	}
 	return warns
 }
