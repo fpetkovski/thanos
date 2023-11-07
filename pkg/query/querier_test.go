@@ -822,7 +822,7 @@ func TestQuerier_Select(t *testing.T) {
 
 						warns := catcher.warns()
 						// We don't care about anything else, all should be recorded.
-						testutil.Assert(t, len(warns) == 1, "expected only single warnings")
+						testutil.Assert(t, len(warns) == 1, "expected only single warnings. Got: %v", warns)
 						testutil.Assert(t, len(catcher.resp) == 1, "expected only single response, subqueries?")
 
 						if tcase.expectedWarning != "" {
