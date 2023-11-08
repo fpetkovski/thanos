@@ -59,7 +59,7 @@ const (
 
 var histogramSample = histogram.Histogram{
 	Schema:        0,
-	Count:         9,
+	Count:         20,
 	Sum:           -3.1415,
 	ZeroCount:     12,
 	ZeroThreshold: 0.001,
