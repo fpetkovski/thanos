@@ -37,7 +37,6 @@ type promClientsQueryable struct {
 	duplicatedQuery prometheus.Counter
 }
 type promClientsQuerier struct {
-	ctx        context.Context
 	mint, maxt int64
 	step       int64
 	httpMethod string
@@ -81,14 +80,14 @@ func (q *promClientsQueryable) Querier(mint, maxt int64) (storage.Querier, error
 }
 
 // Select implements storage.Querier interface.
-func (q *promClientsQuerier) Select(_ context.Context, _ bool, _ *storage.SelectHints, matchers ...*labels.Matcher) storage.SeriesSet {
+func (q *promClientsQuerier) Select(ctx context.Context, _ bool, _ *storage.SelectHints, matchers ...*labels.Matcher) storage.SeriesSet {
 	query := storepb.PromMatchersToString(matchers...)
 
 	for _, i := range rand.Perm(len(q.queryClients)) {
 		promClient := q.promClients[i]
 		endpoints := RemoveDuplicateQueryEndpoints(q.logger, q.duplicatedQuery, q.queryClients[i].Endpoints())
 		for _, i := range rand.Perm(len(endpoints)) {
-			m, warns, _, err := promClient.QueryRange(q.ctx, endpoints[i], query, q.mint, q.maxt, q.step, promclient.QueryOptions{
+			m, warns, _, err := promClient.QueryRange(ctx, endpoints[i], query, q.mint, q.maxt, q.step, promclient.QueryOptions{
 				Deduplicate: true,
 				Method:      q.httpMethod,
 			})
