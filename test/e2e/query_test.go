@@ -6,7 +6,6 @@ package e2e_test
 import (
 	"context"
 	"fmt"
-	"github.com/thanos-io/thanos/pkg/extannotations"
 	"io"
 	"math/rand"
 	"net/http"
@@ -39,16 +38,17 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/prometheus/prometheus/rules"
 	"github.com/prometheus/prometheus/storage/remote"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-
 	"github.com/thanos-io/objstore"
 	"github.com/thanos-io/objstore/client"
 	"github.com/thanos-io/objstore/providers/s3"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
 	"github.com/thanos-io/thanos/internal/cortex/querier/queryrange"
 	"github.com/thanos-io/thanos/pkg/api/query/querypb"
 	"github.com/thanos-io/thanos/pkg/block/metadata"
 	"github.com/thanos-io/thanos/pkg/exemplars/exemplarspb"
+	"github.com/thanos-io/thanos/pkg/extannotations"
 	"github.com/thanos-io/thanos/pkg/metadata/metadatapb"
 	"github.com/thanos-io/thanos/pkg/promclient"
 	"github.com/thanos-io/thanos/pkg/rules/rulespb"

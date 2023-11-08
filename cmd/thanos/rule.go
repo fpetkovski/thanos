@@ -5,7 +5,6 @@ package main
 
 import (
 	"context"
-	"github.com/prometheus/prometheus/tsdb/wlog"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -38,6 +37,7 @@ import (
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/prometheus/prometheus/tsdb/agent"
+	"github.com/prometheus/prometheus/tsdb/wlog"
 	"github.com/prometheus/prometheus/util/strutil"
 	"github.com/thanos-io/objstore/client"
 	"gopkg.in/yaml.v2"

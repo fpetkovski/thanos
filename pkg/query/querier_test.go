@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prometheus/prometheus/util/annotations"
 	"math"
 	"os"
 	"reflect"
@@ -29,6 +28,7 @@ import (
 	"github.com/prometheus/prometheus/promql"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
+	"github.com/prometheus/prometheus/util/annotations"
 	"github.com/prometheus/prometheus/util/gate"
 
 	"github.com/thanos-io/thanos/pkg/component"

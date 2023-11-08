@@ -6,7 +6,6 @@ package targets
 import (
 	"context"
 	"fmt"
-	"github.com/prometheus/prometheus/util/annotations"
 	"net/http"
 	"net/url"
 	"testing"
@@ -17,6 +16,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/util/annotations"
+
 	"github.com/thanos-io/thanos/pkg/promclient"
 	"github.com/thanos-io/thanos/pkg/runutil"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"

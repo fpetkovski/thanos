@@ -6,7 +6,6 @@ package query
 import (
 	"context"
 	"fmt"
-	"github.com/prometheus/prometheus/promql/parser/posrange"
 	"math"
 	"os"
 	"path/filepath"
@@ -22,6 +21,7 @@ import (
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/promql"
 	"github.com/prometheus/prometheus/promql/parser"
+	"github.com/prometheus/prometheus/promql/parser/posrange"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/util/teststorage"
 )

@@ -5,11 +5,12 @@ package targets
 
 import (
 	"context"
-	"github.com/prometheus/prometheus/util/annotations"
 	"sort"
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/prometheus/util/annotations"
+
 	"github.com/thanos-io/thanos/pkg/store/storepb"
 	"github.com/thanos-io/thanos/pkg/targets/targetspb"
 )
