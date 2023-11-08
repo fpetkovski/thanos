@@ -5,13 +5,10 @@ package main
 
 import (
 	"context"
-	"github.com/prometheus/prometheus/tsdb/wlog"
 	"os"
 	"path"
 	"strings"
 	"time"
-
-	"google.golang.org/grpc"
 
 	extflag "github.com/efficientgo/tools/extkingpin"
 	"github.com/go-kit/log"
@@ -27,8 +24,10 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/prometheus/prometheus/tsdb"
+	"github.com/prometheus/prometheus/tsdb/wlog"
 	"github.com/thanos-io/objstore"
 	"github.com/thanos-io/objstore/client"
+	"google.golang.org/grpc"
 	"gopkg.in/yaml.v2"
 
 	"github.com/thanos-io/thanos/pkg/block/metadata"

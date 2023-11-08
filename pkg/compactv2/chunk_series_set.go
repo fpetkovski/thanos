@@ -5,7 +5,6 @@ package compactv2
 
 import (
 	"context"
-	"github.com/prometheus/prometheus/util/annotations"
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/model/histogram"
@@ -15,6 +14,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
 	"github.com/prometheus/prometheus/tsdb/chunks"
 	"github.com/prometheus/prometheus/tsdb/index"
+	"github.com/prometheus/prometheus/util/annotations"
 
 	"github.com/thanos-io/thanos/pkg/block"
 )

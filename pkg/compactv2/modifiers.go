@@ -4,7 +4,6 @@
 package compactv2
 
 import (
-	"github.com/prometheus/prometheus/util/annotations"
 	"math"
 	"sort"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/chunks"
 	"github.com/prometheus/prometheus/tsdb/index"
 	"github.com/prometheus/prometheus/tsdb/tombstones"
+	"github.com/prometheus/prometheus/util/annotations"
 
 	"github.com/thanos-io/thanos/pkg/block/metadata"
 )

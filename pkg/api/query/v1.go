@@ -22,7 +22,6 @@ package v1
 import (
 	"context"
 	"encoding/json"
-	"github.com/prometheus/prometheus/util/annotations"
 	"math"
 	"net/http"
 	"sort"
@@ -42,6 +41,7 @@ import (
 	"github.com/prometheus/prometheus/promql"
 	"github.com/prometheus/prometheus/promql/parser"
 	"github.com/prometheus/prometheus/storage"
+	"github.com/prometheus/prometheus/util/annotations"
 	"github.com/prometheus/prometheus/util/stats"
 	v1 "github.com/prometheus/prometheus/web/api/v1"
 	promqlapi "github.com/thanos-io/promql-engine/api"

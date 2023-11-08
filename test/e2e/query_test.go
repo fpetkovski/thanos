@@ -6,6 +6,7 @@ package e2e_test
 import (
 	"context"
 	"fmt"
+	"github.com/thanos-io/thanos/pkg/extannotations"
 	"io"
 	"math/rand"
 	"net/http"
@@ -1396,8 +1397,10 @@ func simpleInstantQuery(t testing.TB, ctx context.Context, addr string, q func()
 		return nil, nil, err
 	}
 
-	if len(warnings) > 0 {
-		return nil, nil, errors.Errorf("unexpected warnings %s", warnings)
+	for _, w := range warnings {
+		if !extannotations.IsPromQLAnnotation(w) {
+			return nil, nil, errors.Errorf("unexpected warnings %s", warnings)
+		}
 	}
 
 	if len(res) != expectedSeriesLen {

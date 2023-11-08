@@ -5,7 +5,6 @@ package dedup
 
 import (
 	"fmt"
-	"github.com/prometheus/prometheus/util/annotations"
 	"io"
 	"math"
 	"math/rand"
@@ -16,6 +15,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
+	"github.com/prometheus/prometheus/util/annotations"
 	"github.com/thanos-io/thanos/pkg/store/storepb"
 
 	"github.com/efficientgo/core/testutil"

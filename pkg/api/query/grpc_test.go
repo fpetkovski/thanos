@@ -5,7 +5,6 @@ package v1
 
 import (
 	"context"
-	"github.com/prometheus/prometheus/util/annotations"
 	"testing"
 	"time"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/prometheus/promql"
 	"github.com/prometheus/prometheus/storage"
+	"github.com/prometheus/prometheus/util/annotations"
 	v1 "github.com/prometheus/prometheus/web/api/v1"
 
 	"github.com/thanos-io/thanos/pkg/api/query/querypb"
