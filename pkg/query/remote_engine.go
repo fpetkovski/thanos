@@ -5,7 +5,6 @@ package query
 
 import (
 	"context"
-	"github.com/prometheus/prometheus/util/annotations"
 	"io"
 	"math"
 	"sync"
@@ -19,6 +18,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/promql"
 	"github.com/prometheus/prometheus/promql/parser"
+	"github.com/prometheus/prometheus/util/annotations"
 	"github.com/prometheus/prometheus/util/stats"
 	"github.com/thanos-io/promql-engine/api"
 

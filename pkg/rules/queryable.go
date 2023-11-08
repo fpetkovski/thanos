@@ -5,7 +5,6 @@ package rules
 
 import (
 	"context"
-	"github.com/prometheus/prometheus/util/annotations"
 	"math/rand"
 	"net/url"
 	"strings"
@@ -18,6 +17,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
+	"github.com/prometheus/prometheus/util/annotations"
 
 	"github.com/thanos-io/thanos/internal/cortex/querier/series"
 	"github.com/thanos-io/thanos/pkg/promclient"
