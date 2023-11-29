@@ -9,7 +9,7 @@ on:
 
 jobs:
   check:
-    runs-on: shopify-ubuntu-latest
+    runs-on: shopify-ubuntu-latest-2
     name: Documentation check
     env:
       GOBIN: /tmp/.bin
