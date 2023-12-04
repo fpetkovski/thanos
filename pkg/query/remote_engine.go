@@ -20,6 +20,7 @@ import (
 	"github.com/prometheus/prometheus/util/stats"
 
 	"github.com/thanos-io/promql-engine/api"
+
 	"github.com/thanos-io/thanos/pkg/api/query/querypb"
 	"github.com/thanos-io/thanos/pkg/info/infopb"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
@@ -259,7 +260,7 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 			continue
 		}
 		series := promql.Series{
-			Metric:     labelpb.ZLabelsToPromLabels(ts.Labels),
+			Metric:     labelpb.ZLabelsToPromLabels(labelpb.DeepCopy(ts.Labels)),
 			Floats:     make([]promql.FPoint, 0, len(ts.Samples)),
 			Histograms: make([]promql.HPoint, 0, len(ts.Histograms)),
 		}
