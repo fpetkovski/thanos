@@ -384,7 +384,7 @@ func processDownsampling(
 		metrics.downsampleDroppedMixedChunksSeries.WithLabelValues(m.Thanos.GroupKey()).Inc()
 	}
 
-	id, err := downsample.Downsample(logger, m, b, dir, resolution, incDropSeriesMetric)
+	id, err := downsample.Downsample(ctx, logger, m, b, dir, resolution, incDropSeriesMetric)
 	if err != nil {
 		return errors.Wrapf(err, "downsample block %s to window %d", m.ULID, resolution)
 	}

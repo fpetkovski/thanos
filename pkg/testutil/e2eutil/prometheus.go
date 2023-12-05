@@ -59,7 +59,7 @@ const (
 
 var histogramSample = histogram.Histogram{
 	Schema:        0,
-	Count:         9,
+	Count:         20,
 	Sum:           -3.1415,
 	ZeroCount:     12,
 	ZeroThreshold: 0.001,
@@ -440,15 +440,16 @@ func createBlockWithDelay(ctx context.Context, dir string, series []labels.Label
 		return ulid.ULID{}, errors.Wrap(err, "create block id")
 	}
 
-	m, err := metadata.ReadFromDir(path.Join(dir, blockID.String()))
+	bdir := path.Join(dir, blockID.String())
+	m, err := metadata.ReadFromDir(bdir)
 	if err != nil {
 		return ulid.ULID{}, errors.Wrap(err, "open meta file")
 	}
 
+	logger := log.NewNopLogger()
 	m.ULID = id
 	m.Compaction.Sources = []ulid.ULID{id}
-
-	if err := m.WriteToDir(log.NewNopLogger(), path.Join(dir, blockID.String())); err != nil {
+	if err := m.WriteToDir(logger, path.Join(dir, blockID.String())); err != nil {
 		return ulid.ULID{}, errors.Wrap(err, "write meta.json file")
 	}
 
@@ -503,10 +504,6 @@ func createBlock(
 				app := h.Appender(ctx)
 
 				for _, lset := range batch {
-					sort.Slice(lset, func(i, j int) bool {
-						return lset[i].Name < lset[j].Name
-					})
-
 					var err error
 					if sampleType == chunkenc.ValFloat {
 						randMutex.Lock()
@@ -550,6 +547,7 @@ func createBlock(
 	}
 
 	blockDir := filepath.Join(dir, id.String())
+	logger := log.NewNopLogger()
 
 	files := []metadata.File{}
 	if hashFunc != metadata.NoneFunc {
@@ -576,7 +574,7 @@ func createBlock(
 		}
 	}
 
-	if _, err = metadata.InjectThanos(log.NewNopLogger(), blockDir, metadata.Thanos{
+	if _, err = metadata.InjectThanos(logger, blockDir, metadata.Thanos{
 		Labels:     extLset.Map(),
 		Downsample: metadata.ThanosDownsample{Resolution: resolution},
 		Source:     metadata.TestSource,

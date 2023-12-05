@@ -23,9 +23,9 @@ func Instrument(name string, cache Cache, reg prometheus.Registerer) Cache {
 		// get big.  Histogram goes from 1KB to 4MB.
 		// 1024 * 4^(7-1) = 4MB
 		Buckets:                        prometheus.ExponentialBuckets(1024, 4, 7),
-		ConstLabels:                    prometheus.Labels{"name": name},
 		NativeHistogramBucketFactor:    1.1,
 		NativeHistogramMaxBucketNumber: 100,
+		ConstLabels:                    prometheus.Labels{"name": name},
 	}, []string{"method"})
 
 	return &instrumentedCache{

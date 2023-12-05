@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"strconv"
+	"strings"
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/prometheus/common/model"
@@ -355,12 +356,17 @@ func EmptyLabels() Labels {
 	return Labels{}
 }
 
+func lblCmp(a, b Label) int {
+	return strings.Compare(a.Name, b.Name)
+}
+
 // New returns a sorted Labels from the given labels.
 // The caller has to guarantee that all label names are unique.
 func New(ls ...Label) Labels {
 	set := make(Labels, 0, len(ls))
 	set = append(set, ls...)
-	slices.SortFunc(set, func(a, b Label) bool { return a.Name < b.Name })
+
+	slices.SortFunc(set, lblCmp)
 
 	return set
 }
@@ -384,7 +390,7 @@ func FromStrings(ss ...string) Labels {
 		res = append(res, Label{Name: ss[i], Value: ss[i+1]})
 	}
 
-	slices.SortFunc(res, func(a, b Label) bool { return a.Name < b.Name })
+	slices.SortFunc(res, lblCmp)
 	return res
 }
 
@@ -593,7 +599,7 @@ func (b *Builder) Labels(res Labels) Labels {
 	}
 	if len(b.add) > 0 { // Base is already in order, so we only need to sort if we add to it.
 		res = append(res, b.add...)
-		slices.SortFunc(res, func(a, b Label) bool { return a.Name < b.Name })
+		slices.SortFunc(res, lblCmp)
 	}
 	return res
 }
@@ -620,7 +626,7 @@ func (b *ScratchBuilder) Add(name, value string) {
 
 // Sort the labels added so far by name.
 func (b *ScratchBuilder) Sort() {
-	slices.SortFunc(b.add, func(a, b Label) bool { return a.Name < b.Name })
+	slices.SortFunc(b.add, lblCmp)
 }
 
 // Asssign is for when you already have a Labels which you want this ScratchBuilder to return.

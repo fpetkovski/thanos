@@ -37,6 +37,7 @@ import (
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/prometheus/prometheus/tsdb/agent"
+	"github.com/prometheus/prometheus/tsdb/wlog"
 	"github.com/prometheus/prometheus/util/strutil"
 	"github.com/thanos-io/objstore/client"
 	"gopkg.in/yaml.v2"
@@ -171,11 +172,11 @@ func registerRule(app *extkingpin.App) {
 			MaxBlockDuration:  int64(time.Duration(*tsdbBlockDuration) / time.Millisecond),
 			RetentionDuration: int64(time.Duration(*tsdbRetention) / time.Millisecond),
 			NoLockfile:        *noLockFile,
-			WALCompression:    *walCompression,
+			WALCompression:    wlog.ParseCompressionType(*walCompression, string(wlog.CompressionSnappy)),
 		}
 
 		agentOpts := &agent.Options{
-			WALCompression: *walCompression,
+			WALCompression: wlog.ParseCompressionType(*walCompression, string(wlog.CompressionSnappy)),
 			NoLockfile:     *noLockFile,
 		}
 
@@ -896,7 +897,7 @@ func queryFuncCreator(
 				queryAPIClients := grpcEndpointSet.GetQueryAPIClients()
 				for _, i := range rand.Perm(len(queryAPIClients)) {
 					e := query.NewRemoteEngine(logger, queryAPIClients[i], query.Opts{})
-					q, err := e.NewInstantQuery(ctx, &promql.QueryOpts{}, qs, t)
+					q, err := e.NewInstantQuery(ctx, promql.NewPrometheusQueryOpts(false, 0), qs, t)
 					if err != nil {
 						level.Error(logger).Log("err", err, "query", qs)
 						continue

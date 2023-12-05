@@ -659,11 +659,8 @@ func benchTSDBStoreSeries(t testutil.TB, totalSamples, totalSeries int) {
 			resps[j] = append(resps[j], storepb.NewSeriesResponse(created[i]))
 		}
 
-		_ = storetestutil.CreateBlockFromHead(t, tmpDir, head)
-		t.Cleanup(func() {
-			testutil.Ok(t, head.Close())
-		})
-
+		_ = createBlockFromHead(t, tmpDir, head)
+		testutil.Ok(t, head.Close())
 	}
 
 	head2, created := storetestutil.CreateHeadWithSeries(t, 3, storetestutil.HeadGenOptions{
@@ -673,9 +670,7 @@ func benchTSDBStoreSeries(t testutil.TB, totalSamples, totalSeries int) {
 		WithWAL:          true,
 		Random:           random,
 	})
-	t.Cleanup(func() {
-		testutil.Ok(t, head2.Close())
-	})
+	testutil.Ok(t, head2.Close())
 
 	for i := 0; i < len(created); i++ {
 		resps[3] = append(resps[3], storepb.NewSeriesResponse(created[i]))

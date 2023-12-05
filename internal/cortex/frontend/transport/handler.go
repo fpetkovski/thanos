@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -120,7 +119,7 @@ func (f *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Buffer the body for later use to track slow queries.
 	var buf bytes.Buffer
 	r.Body = http.MaxBytesReader(w, r.Body, f.cfg.MaxBodySize)
-	r.Body = ioutil.NopCloser(io.TeeReader(r.Body, &buf))
+	r.Body = io.NopCloser(io.TeeReader(r.Body, &buf))
 
 	startTime := time.Now()
 	resp, err := f.roundTripper.RoundTrip(r)
@@ -133,7 +132,7 @@ func (f *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		err = writeError(w, err)
+		writeError(w, err)
 		f.reportQueryWithError(r, queryString, err)
 		return
 	}
@@ -152,6 +151,11 @@ func (f *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	bytesCopied, err := io.Copy(w, resp.Body)
 	if err != nil && !errors.Is(err, syscall.EPIPE) {
 		level.Error(util_log.WithContext(r.Context(), f.log)).Log("msg", "write response body error", "bytesCopied", bytesCopied, "err", err)
+	}
+
+	// Check whether we should parse the query string.
+	if shouldReportSlowQuery || f.cfg.QueryStatsEnabled {
+		queryString = f.parseRequestQueryString(r, buf)
 	}
 
 	if shouldReportSlowQuery {
@@ -261,7 +265,7 @@ func (f *Handler) reportQueryStats(r *http.Request, queryString url.Values, quer
 
 func (f *Handler) parseRequestQueryString(r *http.Request, bodyBuf bytes.Buffer) url.Values {
 	// Use previously buffered body.
-	r.Body = ioutil.NopCloser(&bodyBuf)
+	r.Body = io.NopCloser(&bodyBuf)
 
 	// Ensure the form has been parsed so all the parameters are present
 	err := r.ParseForm()
@@ -280,7 +284,7 @@ func formatQueryString(queryString url.Values) (fields []interface{}) {
 	return fields
 }
 
-func writeError(w http.ResponseWriter, err error) error {
+func writeError(w http.ResponseWriter, err error) {
 	switch err {
 	case context.Canceled:
 		err = errCanceled
@@ -292,7 +296,6 @@ func writeError(w http.ResponseWriter, err error) error {
 		}
 	}
 	server.WriteError(w, err)
-	return err
 }
 
 func writeServiceTimingHeader(queryResponseTime time.Duration, headers http.Header, stats *querier_stats.Stats) {

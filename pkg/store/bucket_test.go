@@ -64,6 +64,18 @@ import (
 
 var emptyRelabelConfig = make([]*relabel.Config, 0)
 
+func createBlockFromHead(t testing.TB, dir string, head *tsdb.Head) ulid.ULID {
+	compactor, err := tsdb.NewLeveledCompactor(context.Background(), nil, log.NewNopLogger(), []int64{1000000}, nil, nil)
+	testutil.Ok(t, err)
+	testutil.Ok(t, os.MkdirAll(dir, 0777))
+
+	// Add +1 millisecond to block maxt because block intervals are half-open: [b.MinTime, b.MaxTime).
+	// Because of this block intervals are always +1 than the total samples it includes.
+	ulid, err := compactor.Write(dir, head, head.MinTime(), head.MaxTime()+1, nil)
+	testutil.Ok(t, err)
+	return ulid
+}
+
 func TestBucketBlock_Property(t *testing.T) {
 	parameters := gopter.DefaultTestParameters()
 	parameters.Rng.Seed(2000)
@@ -2619,7 +2631,7 @@ func prepareBucket(b testing.TB, resolutionLevel compact.ResolutionLevel, sample
 
 	if resolutionLevel > 0 {
 		// Downsample newly-created block.
-		blockID, err = downsample.Downsample(logger, blockMeta, head, tmpDir, int64(resolutionLevel), nil)
+		blockID, err = downsample.Downsample(nil, logger, blockMeta, head, tmpDir, int64(resolutionLevel), nil)
 		testutil.Ok(b, err)
 		blockMeta, err = metadata.ReadFromDir(filepath.Join(tmpDir, blockID.String()))
 		testutil.Ok(b, err)

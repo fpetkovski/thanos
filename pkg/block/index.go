@@ -220,7 +220,9 @@ func GatherIndexHealthStats(logger log.Logger, fn string, minTime, maxTime int64
 	}
 	defer runutil.CloseWithErrCapture(&err, r, "gather index issue file reader")
 
-	p, err := r.Postings(index.AllPostingsKey())
+	ctx := context.Background()
+	name, values := index.AllPostingsKey()
+	p, err := r.Postings(ctx, name, values)
 	if err != nil {
 		return stats, errors.Wrap(err, "get all postings")
 	}
@@ -238,13 +240,13 @@ func GatherIndexHealthStats(logger log.Logger, fn string, minTime, maxTime int64
 		seriesSize                                  = newMinMaxSumInt64()
 	)
 
-	lnames, err := r.LabelNames()
+	lnames, err := r.LabelNames(ctx)
 	if err != nil {
 		return stats, errors.Wrap(err, "label names")
 	}
 	stats.LabelNamesCount = int64(len(lnames))
 
-	lvals, err := r.LabelValues("__name__")
+	lvals, err := r.LabelValues(ctx, "__name__")
 	if err != nil {
 		return stats, errors.Wrap(err, "metric label values")
 	}
@@ -405,7 +407,7 @@ type ignoreFnType func(mint, maxt int64, prev *chunks.Meta, curr *chunks.Meta) (
 // - removes all near "complete" outside chunks introduced by https://github.com/prometheus/tsdb/issues/347.
 // Fixable inconsistencies are resolved in the new block.
 // TODO(bplotka): https://github.com/thanos-io/thanos/issues/378.
-func Repair(logger log.Logger, dir string, id ulid.ULID, source metadata.SourceType, ignoreChkFns ...ignoreFnType) (resid ulid.ULID, err error) {
+func Repair(ctx context.Context, logger log.Logger, dir string, id ulid.ULID, source metadata.SourceType, ignoreChkFns ...ignoreFnType) (resid ulid.ULID, err error) {
 	if len(ignoreChkFns) == 0 {
 		return resid, errors.New("no ignore chunk function specified")
 	}
@@ -461,7 +463,7 @@ func Repair(logger log.Logger, dir string, id ulid.ULID, source metadata.SourceT
 	resmeta.Stats = tsdb.BlockStats{} // Reset stats.
 	resmeta.Thanos.Source = source    // Update source.
 
-	if err := rewrite(logger, indexr, chunkr, indexw, chunkw, &resmeta, ignoreChkFns); err != nil {
+	if err := rewrite(ctx, logger, indexr, chunkr, indexw, chunkw, &resmeta, ignoreChkFns); err != nil {
 		return resid, errors.Wrap(err, "rewrite block")
 	}
 	resmeta.Thanos.SegmentFiles = GetSegmentFiles(resdir)
@@ -566,13 +568,7 @@ type seriesRepair struct {
 
 // rewrite writes all data from the readers back into the writers while cleaning
 // up mis-ordered and duplicated chunks.
-func rewrite(
-	logger log.Logger,
-	indexr tsdb.IndexReader, chunkr tsdb.ChunkReader,
-	indexw tsdb.IndexWriter, chunkw tsdb.ChunkWriter,
-	meta *metadata.Meta,
-	ignoreChkFns []ignoreFnType,
-) error {
+func rewrite(ctx context.Context, logger log.Logger, indexr tsdb.IndexReader, chunkr tsdb.ChunkReader, indexw tsdb.IndexWriter, chunkw tsdb.ChunkWriter, meta *metadata.Meta, ignoreChkFns []ignoreFnType) error {
 	symbols := indexr.Symbols()
 	for symbols.Next() {
 		if err := indexw.AddSymbol(symbols.At()); err != nil {
@@ -583,7 +579,8 @@ func rewrite(
 		return errors.Wrap(symbols.Err(), "next symbol")
 	}
 
-	all, err := indexr.Postings(index.AllPostingsKey())
+	name, value := index.AllPostingsKey()
+	all, err := indexr.Postings(ctx, name, value)
 	if err != nil {
 		return errors.Wrap(err, "postings")
 	}

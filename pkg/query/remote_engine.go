@@ -18,7 +18,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/promql"
 	"github.com/prometheus/prometheus/promql/parser"
-	"github.com/prometheus/prometheus/storage"
+	"github.com/prometheus/prometheus/util/annotations"
 	"github.com/prometheus/prometheus/util/stats"
 	"github.com/thanos-io/promql-engine/api"
 
@@ -176,7 +176,7 @@ func (r *remoteEngine) infosWithoutReplicaLabels() infopb.TSDBInfos {
 	return infos
 }
 
-func (r *remoteEngine) NewRangeQuery(_ context.Context, opts *promql.QueryOpts, qs string, start, end time.Time, interval time.Duration) (promql.Query, error) {
+func (r *remoteEngine) NewRangeQuery(_ context.Context, _ promql.QueryOpts, qs string, start time.Time, end time.Time, interval time.Duration) (promql.Query, error) {
 	qry := &remoteQuery{
 		logger: r.logger,
 		client: r.client,
@@ -191,7 +191,7 @@ func (r *remoteEngine) NewRangeQuery(_ context.Context, opts *promql.QueryOpts, 
 	return newRetriableQuery(qry), nil
 }
 
-func (r *remoteEngine) NewInstantQuery(_ context.Context, _ *promql.QueryOpts, qs string, ts time.Time) (promql.Query, error) {
+func (r *remoteEngine) NewInstantQuery(_ context.Context, _ promql.QueryOpts, qs string, ts time.Time) (promql.Query, error) {
 	qry := &remoteQuery{
 		logger: r.logger,
 		client: r.client,
@@ -251,7 +251,7 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 		}
 		var (
 			result   = make(promql.Vector, 0)
-			warnings storage.Warnings
+			warnings annotations.Annotations
 		)
 
 		for {
@@ -264,7 +264,7 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 			}
 
 			if warn := msg.GetWarnings(); warn != "" {
-				warnings = append(warnings, errors.New(warn))
+				warnings.Add(errors.New(warn))
 				continue
 			}
 
@@ -303,7 +303,7 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 
 	var (
 		result   = make(promql.Matrix, 0)
-		warnings storage.Warnings
+		warnings annotations.Annotations
 	)
 
 	for {
@@ -316,7 +316,7 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 		}
 
 		if warn := msg.GetWarnings(); warn != "" {
-			warnings = append(warnings, errors.New(warn))
+			warnings.Add(errors.New(warn))
 			continue
 		}
 

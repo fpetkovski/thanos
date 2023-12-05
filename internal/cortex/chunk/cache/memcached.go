@@ -69,6 +69,7 @@ func NewMemcached(cfg MemcachedConfig, client MemcachedClient, name string, reg 
 				Buckets:                        prometheus.ExponentialBuckets(0.000016, 4, 8),
 				NativeHistogramBucketFactor:    1.1,
 				NativeHistogramMaxBucketNumber: 100,
+				ConstLabels:                    prometheus.Labels{"name": name},
 			}, []string{"method", "status_code"}),
 		),
 	}

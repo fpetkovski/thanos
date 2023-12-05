@@ -194,20 +194,21 @@ func compareIndexToHeader(t *testing.T, indexByteSlice index.ByteSlice, headerRe
 	actVersion, err := headerReader.IndexVersion()
 	testutil.Ok(t, err)
 	testutil.Equals(t, indexReader.Version(), actVersion)
+	ctx := context.Background()
 
 	if indexReader.Version() == index.FormatV2 {
 		// For v2 symbols ref sequential integers 0, 1, 2 etc.
 		iter := indexReader.Symbols()
 		i := 0
 		for iter.Next() {
-			r, err := headerReader.LookupSymbol(uint32(i))
+			r, err := headerReader.LookupSymbol(ctx, uint32(i))
 			testutil.Ok(t, err)
 			testutil.Equals(t, iter.At(), r)
 
 			i++
 		}
 		testutil.Ok(t, iter.Err())
-		_, err := headerReader.LookupSymbol(uint32(i))
+		_, err := headerReader.LookupSymbol(ctx, uint32(i))
 		testutil.NotOk(t, err)
 
 	} else {
@@ -216,15 +217,15 @@ func compareIndexToHeader(t *testing.T, indexByteSlice index.ByteSlice, headerRe
 		testutil.Ok(t, err)
 
 		for refs, sym := range symbols {
-			r, err := headerReader.LookupSymbol(refs)
+			r, err := headerReader.LookupSymbol(ctx, refs)
 			testutil.Ok(t, err)
 			testutil.Equals(t, sym, r)
 		}
-		_, err = headerReader.LookupSymbol(200000)
+		_, err = headerReader.LookupSymbol(ctx, 200000)
 		testutil.NotOk(t, err)
 	}
 
-	expLabelNames, err := indexReader.LabelNames()
+	expLabelNames, err := indexReader.LabelNames(ctx)
 	testutil.Ok(t, err)
 	actualLabelNames, err := headerReader.LabelNames()
 	testutil.Ok(t, err)
@@ -236,7 +237,7 @@ func compareIndexToHeader(t *testing.T, indexByteSlice index.ByteSlice, headerRe
 	minStart := int64(math.MaxInt64)
 	maxEnd := int64(math.MinInt64)
 	for il, lname := range expLabelNames {
-		expectedLabelVals, err := indexReader.SortedLabelValues(lname)
+		expectedLabelVals, err := indexReader.SortedLabelValues(ctx, lname)
 		testutil.Ok(t, err)
 
 		vals, err := headerReader.LabelValues(lname)
@@ -415,7 +416,7 @@ func benchmarkBinaryReaderLookupSymbol(b *testing.B, numSeries int) {
 
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < len(symbolsOffsets); i++ {
-			if _, err := reader.LookupSymbol(symbolsOffsets[i]); err != nil {
+			if _, err := reader.LookupSymbol(ctx, symbolsOffsets[i]); err != nil {
 				b.Fail()
 			}
 		}

@@ -24,7 +24,6 @@ import (
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
 	"github.com/prometheus/prometheus/tsdb/chunks"
 	"github.com/prometheus/prometheus/tsdb/index"
-	"github.com/prometheus/prometheus/tsdb/tsdbutil"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/thanos-io/objstore"
@@ -50,6 +49,7 @@ const (
 
 // Downsample downsamples the given block. It writes a new block into dir and returns its ID.
 func Downsample(
+	ctx context.Context,
 	logger log.Logger,
 	origMeta *metadata.Meta,
 	b tsdb.BlockReader,
@@ -104,8 +104,8 @@ func Downsample(
 		return id, errors.Wrap(err, "get streamed block writer")
 	}
 	defer runutil.CloseWithErrCapture(&err, streamedBlockWriter, "close stream block writer")
-
-	postings, err := indexr.Postings(index.AllPostingsKey())
+	n, v := index.AllPostingsKey()
+	postings, err := indexr.Postings(ctx, n, v)
 	if err != nil {
 		return id, errors.Wrap(err, "get all postings list")
 	}
@@ -468,15 +468,9 @@ func newHistogramAggrChunkBuilder(counterIsGauge bool) *aggrChunkBuilder {
 	// append can fail when sum_window_n > sum_window_n+1 (.i.e
 	// if last window contains fewer samples than previous window).
 	sumChunk := chunkenc.NewFloatHistogramChunk()
-	sumChunk.SetCounterResetHeader(chunkenc.GaugeType)
 	b.chunks[AggrSum] = sumChunk
 
 	counterChunk := chunkenc.NewFloatHistogramChunk()
-	// For gauge histograms the counter needs to be set to gauge type,
-	// so we can append to chunk when sum_window_n > sum_window_n+1.
-	if counterIsGauge {
-		counterChunk.SetCounterResetHeader(chunkenc.GaugeType)
-	}
 	b.chunks[AggrCounter] = counterChunk
 
 	for i, c := range b.chunks {
@@ -526,48 +520,19 @@ func (b *aggrChunkBuilder) addHistogram(t int64, a sampleAggregator) {
 func (b *aggrChunkBuilder) appendFloatHistogram(t AggrType, ts int64, fh *histogram.FloatHistogram) {
 	app := b.apps[t].(*chunkenc.FloatHistogramAppender)
 
-	if app.NumSamples() > 0 {
-		var (
-			pForwardInserts, nForwardInserts   []chunkenc.Insert
-			pBackwardInserts, nBackwardInserts []chunkenc.Insert
-			pMergedSpans, nMergedSpans         []histogram.Span
-			okToAppend                         bool
-		)
-
-		switch fh.CounterResetHint {
-		case histogram.GaugeType:
-			if app != nil {
-				pForwardInserts, nForwardInserts,
-					pBackwardInserts, nBackwardInserts,
-					pMergedSpans, nMergedSpans,
-					okToAppend = app.AppendableGauge(fh)
-			}
-		default:
-			pForwardInserts, nForwardInserts, okToAppend, _ = app.Appendable(fh)
-		}
-
-		// If not appendable we did something wrong.
-		if !okToAppend {
-			panic("Not appendable")
-		}
-
-		if pBackwardInserts != nil || nBackwardInserts != nil {
-			fh.PositiveSpans = pMergedSpans
-			fh.NegativeSpans = nMergedSpans
-			app.RecodeHistogramm(fh, pBackwardInserts, nBackwardInserts)
-		}
-
-		if len(pForwardInserts) > 0 || len(nForwardInserts) > 0 {
-			rChunk, rApp := app.Recode(
-				pForwardInserts, nForwardInserts,
-				fh.PositiveSpans, fh.NegativeSpans,
-			)
-			b.apps[t] = rApp
-			b.chunks[t] = rChunk
-		}
+	if app.NumSamples() == 0 && t == AggrSum {
+		fh.CounterResetHint = histogram.GaugeType
+	}
+	newChk, recoded, newApp, err := app.AppendFloatHistogram(nil, ts, fh, true)
+	if err != nil {
+		// TODO: (pedro-stanaka) Probably need to handle this better.
+		panic(err)
 	}
 
-	b.apps[t].AppendFloatHistogram(ts, fh)
+	if recoded {
+		b.chunks[t] = newChk
+		b.apps[t] = newApp
+	}
 }
 
 func (b *aggrChunkBuilder) encode() chunks.Meta {
@@ -1277,7 +1242,7 @@ func (it *AverageChunkIterator) Err() error {
 }
 
 // SamplesFromTSDBSamples converts tsdbutil.Sample slice to samples.
-func SamplesFromTSDBSamples(spls []tsdbutil.Sample) []sample {
+func SamplesFromTSDBSamples(spls []chunks.Sample) []sample {
 	res := make([]sample, len(spls))
 	for i, s := range spls {
 		res[i] = sample{t: s.T(), v: s.F()}

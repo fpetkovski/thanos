@@ -659,7 +659,8 @@ func readBlockSeries(t *testing.T, bDir string) []seriesSamples {
 	testutil.Ok(t, err)
 	defer chunkr.Close()
 
-	all, err := indexr.Postings(index.AllPostingsKey())
+	n, v := index.AllPostingsKey()
+	all, err := indexr.Postings(context.Background(), n, v)
 	testutil.Ok(t, err)
 	all = indexr.SortedPostings(all)
 

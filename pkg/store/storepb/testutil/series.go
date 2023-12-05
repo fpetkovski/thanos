@@ -43,7 +43,7 @@ const (
 
 func allPostings(t testing.TB, ix tsdb.IndexReader) index.Postings {
 	k, v := index.AllPostingsKey()
-	p, err := ix.Postings(k, v)
+	p, err := ix.Postings(context.Background(), k, v)
 	testutil.Ok(t, err)
 	return p
 }
@@ -90,7 +90,7 @@ func CreateHeadWithSeries(t testing.TB, j int, opts HeadGenOptions) (*tsdb.Head,
 	var w *wlog.WL
 	var err error
 	if opts.WithWAL {
-		w, err = wlog.New(nil, nil, filepath.Join(opts.TSDBDir, "wal"), true)
+		w, err = wlog.New(nil, nil, filepath.Join(opts.TSDBDir, "wal"), wlog.ParseCompressionType(true, string(wlog.CompressionSnappy)))
 		testutil.Ok(t, err)
 	} else {
 		testutil.Ok(t, os.MkdirAll(filepath.Join(opts.TSDBDir, "wal"), os.ModePerm))
