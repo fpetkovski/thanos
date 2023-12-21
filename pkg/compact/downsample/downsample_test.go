@@ -516,7 +516,7 @@ func TestDownsample(t *testing.T) {
 
 			var got []map[AggrType][]sample
 			for _, c := range chks {
-				chk, err := chunkr.Chunk(c)
+				chk, _, err := chunkr.ChunkOrIterable(c)
 				testutil.Ok(t, err)
 
 				m := map[AggrType][]sample{}
@@ -638,7 +638,7 @@ func TestDownsampleAggrAndNonEmptyXORChunks(t *testing.T) {
 
 	var got []map[AggrType][]sample
 	for _, c := range chks {
-		chk, err := chunkr.Chunk(c)
+		chk, _, err := chunkr.ChunkOrIterable(c)
 		testutil.Ok(t, err)
 
 		m := map[AggrType][]sample{}
@@ -1557,6 +1557,11 @@ type memBlock struct {
 	numberOfChunks uint64
 
 	minTime, maxTime int64
+}
+
+func (b *memBlock) ChunkOrIterable(meta chunks.Meta) (chunkenc.Chunk, chunkenc.Iterable, error) {
+	chk, err := b.Chunk(meta)
+	return chk, nil, err
 }
 
 type series struct {
