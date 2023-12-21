@@ -15,6 +15,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
 	"github.com/prometheus/prometheus/tsdb/chunks"
 	"github.com/prometheus/prometheus/tsdb/index"
+
 	"github.com/thanos-io/thanos/pkg/block"
 	"github.com/thanos-io/thanos/pkg/block/metadata"
 )
@@ -54,7 +55,7 @@ func GetMetaLabelsAndChunks(t *testing.T, dir string, id ulid.ULID) (*metadata.M
 }
 
 func GetAggregateFromChunk(t *testing.T, chunkr *chunks.Reader, c chunks.Meta, aggrType AggrType) []sample {
-	chk, err := chunkr.Chunk(c)
+	chk, _, err := chunkr.ChunkOrIterable(c)
 	testutil.Ok(t, err)
 
 	ac, ok := chk.(*AggrChunk)

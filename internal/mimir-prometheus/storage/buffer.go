@@ -18,6 +18,7 @@ import (
 	"math"
 
 	"github.com/prometheus/prometheus/model/histogram"
+
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/tsdb/chunkenc"
 )
 
@@ -279,7 +280,7 @@ func (it *sampleRingIterator) AtHistogram() (int64, *histogram.Histogram) {
 
 func (it *sampleRingIterator) AtFloatHistogram() (int64, *histogram.FloatHistogram) {
 	if it.fh == nil {
-		return it.t, it.h.ToFloat()
+		return it.t, it.h.ToFloat(nil)
 	}
 	return it.t, it.fh
 }

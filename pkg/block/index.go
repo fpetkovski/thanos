@@ -606,7 +606,7 @@ func rewrite(ctx context.Context, logger log.Logger, indexr tsdb.IndexReader, ch
 		builder.Sort()
 
 		for i, c := range chks {
-			chks[i].Chunk, err = chunkr.Chunk(c)
+			chks[i].Chunk, _, err = chunkr.ChunkOrIterable(c)
 			if err != nil {
 				return errors.Wrap(err, "chunk read")
 			}
