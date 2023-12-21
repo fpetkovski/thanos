@@ -146,6 +146,10 @@ func (f *fakeAppender) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e 
 	return ref, f.appendErr()
 }
 
+func (f *fakeAppender) AppendCTZeroSample(ref storage.SeriesRef, l labels.Labels, t, ct int64) (storage.SeriesRef, error) {
+	return 0, nil
+}
+
 // TODO(rabenhorst): Needs to be implement for native histogram support.
 func (f *fakeAppender) AppendHistogram(ref storage.SeriesRef, l labels.Labels, t int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (storage.SeriesRef, error) {
 	panic("not implemented")
