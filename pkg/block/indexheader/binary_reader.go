@@ -935,7 +935,7 @@ func (r *BinaryReader) LookupSymbol(ctx context.Context, o uint32) (string, erro
 		o += headerLen - index.HeaderLen
 	}
 
-	s, err := r.symbols.Lookup(ctx, o)
+	s, err := r.symbols.Lookup(o)
 	if err != nil {
 		return s, err
 	}

@@ -144,7 +144,7 @@ func ReadSeriesFromBlock(t testing.TB, h tsdb.BlockReader, extLabels labels.Labe
 		}
 
 		for _, c := range chunkMetas {
-			chEnc, err := chks.Chunk(c)
+			chEnc, _, err := chks.ChunkOrIterable(c)
 			testutil.Ok(t, err)
 
 			// Open Chunk.

@@ -39,6 +39,7 @@ import (
 	"github.com/prometheus/prometheus/model/textparse"
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/scrape"
+
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/config"
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/model/labels"
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/prompb"
@@ -619,7 +620,7 @@ func createHistograms(numSamples, numSeries int, floatHistogram bool) ([]record.
 				fh := record.RefFloatHistogramSample{
 					Ref: chunks.HeadSeriesRef(i),
 					T:   int64(j),
-					FH:  hist.ToFloat(),
+					FH:  hist.ToFloat(nil),
 				}
 				floatHistograms = append(floatHistograms, fh)
 			} else {

@@ -31,6 +31,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/prometheus/prometheus/model/histogram"
+
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/model/labels"
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/storage"
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/tsdb/chunkenc"
@@ -646,7 +647,7 @@ func genHistogramSeries(totalSeries, labelCount int, mint, maxt, step int64, flo
 			h.CounterResetHint = histogram.NotCounterReset
 		}
 		if floatHistogram {
-			return sample{t: ts, fh: h.ToFloat()}
+			return sample{t: ts, fh: h.ToFloat(nil)}
 		}
 		return sample{t: ts, h: h}
 	})
@@ -682,7 +683,7 @@ func genHistogramAndFloatSeries(totalSeries, labelCount int, mint, maxt, step in
 				h.CounterResetHint = histogram.NotCounterReset
 			}
 			if floatHistogram {
-				s = sample{t: ts, fh: h.ToFloat()}
+				s = sample{t: ts, fh: h.ToFloat(nil)}
 			} else {
 				s = sample{t: ts, h: h}
 			}

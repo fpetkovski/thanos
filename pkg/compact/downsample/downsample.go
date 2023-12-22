@@ -138,7 +138,7 @@ func Downsample(
 		// While #183 exists, we sanitize the chunks we retrieved from the block
 		// before retrieving their samples.
 		for i, c := range chks {
-			chk, err := chunkr.Chunk(c)
+			chk, _, err := chunkr.ChunkOrIterable(c)
 			if err != nil {
 				return id, errors.Wrapf(err, "get chunk %d, series %d", c.Ref, postings.At())
 			}
@@ -793,7 +793,7 @@ func expandHistogramChunkIterator(it chunkenc.Iterator, buf *[]sample) error {
 			continue
 		}
 		if t >= lastT {
-			*buf = append(*buf, sample{t: t, fh: h.ToFloat()})
+			*buf = append(*buf, sample{t: t, fh: h.ToFloat(nil)})
 			lastT = t
 		}
 	}

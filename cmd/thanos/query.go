@@ -260,7 +260,10 @@ func registerQuery(app *extkingpin.App) {
 				Files:           *fileSDFiles,
 				RefreshInterval: *fileSDInterval,
 			}
-			fileSD = file.NewDiscovery(conf, logger)
+			fileSD, err = file.NewDiscovery(conf, logger, prometheus.NewRegistry())
+			if err != nil {
+				return errors.Wrap(err, "create file discovery failed")
+			}
 		}
 
 		if *webRoutePrefix == "" {
