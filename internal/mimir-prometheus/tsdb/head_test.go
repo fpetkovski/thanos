@@ -39,6 +39,7 @@ import (
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/value"
+
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/model/exemplar"
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/model/labels"
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/storage"
@@ -3630,8 +3631,8 @@ func testHistogramStaleSampleHelper(t *testing.T, floatHistogram bool) {
 	for _, h := range tsdbutil.GenerateTestHistograms(numHistograms) {
 		var err error
 		if floatHistogram {
-			_, err = app.AppendHistogram(0, l, 100*int64(len(expHistograms)), nil, h.ToFloat())
-			expHistograms = append(expHistograms, timedHistogram{t: 100 * int64(len(expHistograms)), fh: h.ToFloat()})
+			_, err = app.AppendHistogram(0, l, 100*int64(len(expHistograms)), nil, h.ToFloat(nil))
+			expHistograms = append(expHistograms, timedHistogram{t: 100 * int64(len(expHistograms)), fh: h.ToFloat(nil)})
 		} else {
 			_, err = app.AppendHistogram(0, l, 100*int64(len(expHistograms)), h, nil)
 			expHistograms = append(expHistograms, timedHistogram{t: 100 * int64(len(expHistograms)), h: h})
@@ -3659,8 +3660,8 @@ func testHistogramStaleSampleHelper(t *testing.T, floatHistogram bool) {
 	for _, h := range tsdbutil.GenerateTestHistograms(2 * numHistograms)[numHistograms:] {
 		var err error
 		if floatHistogram {
-			_, err = app.AppendHistogram(0, l, 100*int64(len(expHistograms)), nil, h.ToFloat())
-			expHistograms = append(expHistograms, timedHistogram{t: 100 * int64(len(expHistograms)), fh: h.ToFloat()})
+			_, err = app.AppendHistogram(0, l, 100*int64(len(expHistograms)), nil, h.ToFloat(nil))
+			expHistograms = append(expHistograms, timedHistogram{t: 100 * int64(len(expHistograms)), fh: h.ToFloat(nil)})
 		} else {
 			_, err = app.AppendHistogram(0, l, 100*int64(len(expHistograms)), h, nil)
 			expHistograms = append(expHistograms, timedHistogram{t: 100 * int64(len(expHistograms)), h: h})
@@ -3703,7 +3704,7 @@ func TestHistogramCounterResetHeader(t *testing.T) {
 				app := head.Appender(context.Background())
 				var err error
 				if floatHisto {
-					_, err = app.AppendHistogram(0, l, ts, nil, h.ToFloat())
+					_, err = app.AppendHistogram(0, l, ts, nil, h.ToFloat(nil))
 				} else {
 					_, err = app.AppendHistogram(0, l, ts, h.Copy(), nil)
 				}
@@ -4521,7 +4522,7 @@ func TestHistogramValidation(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			err = ValidateFloatHistogram(tc.h.ToFloat())
+			err = ValidateFloatHistogram(tc.h.ToFloat(nil))
 			if tc.errMsgFloat != "" {
 				require.ErrorContains(t, err, tc.errMsgFloat)
 			} else if tc.errMsg != "" {

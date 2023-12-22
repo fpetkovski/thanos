@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/prometheus/prometheus/model/histogram"
+
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/model/labels"
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/tsdb/chunks"
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/tsdb/record"
@@ -199,7 +200,7 @@ func TestTailSamples(t *testing.T) {
 					floatHistogram := enc.FloatHistogramSamples([]record.RefFloatHistogramSample{{
 						Ref: chunks.HeadSeriesRef(inner),
 						T:   now.UnixNano() + 1,
-						FH:  hist.ToFloat(),
+						FH:  hist.ToFloat(nil),
 					}}, nil)
 					require.NoError(t, w.Log(floatHistogram))
 				}

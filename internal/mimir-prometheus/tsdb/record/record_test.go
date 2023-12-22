@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/prometheus/prometheus/model/histogram"
+
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/model/labels"
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/tsdb/encoding"
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/tsdb/tombstones"
@@ -159,7 +160,7 @@ func TestRecord_EncodeDecode(t *testing.T) {
 		floatHistograms[i] = RefFloatHistogramSample{
 			Ref: h.Ref,
 			T:   h.T,
-			FH:  h.H.ToFloat(),
+			FH:  h.H.ToFloat(nil),
 		}
 	}
 	decFloatHistograms, err := dec.FloatHistogramSamples(enc.FloatHistogramSamples(floatHistograms, nil), nil)
