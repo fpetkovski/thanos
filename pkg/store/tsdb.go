@@ -12,6 +12,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/apache/arrow/go/v14/arrow/array"
+	"github.com/apache/arrow/go/v14/arrow/flight"
+	"github.com/apache/arrow/go/v14/arrow/ipc"
+	"github.com/apache/arrow/go/v14/arrow/memory"
 	"github.com/go-kit/log"
 	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/model/labels"
@@ -25,6 +29,8 @@ import (
 	"github.com/thanos-io/thanos/pkg/runutil"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
 	"github.com/thanos-io/thanos/pkg/store/storepb"
+
+	"github.com/apache/arrow/go/v14/arrow"
 )
 
 const RemoteReadFrameLimit = 1048576
@@ -38,6 +44,8 @@ type TSDBReader interface {
 // It attaches the provided external labels to all results. It only responds with raw data
 // and does not support downsampling.
 type TSDBStore struct {
+	flight.FlightServer
+
 	logger           log.Logger
 	db               TSDBReader
 	component        component.StoreAPI
@@ -282,6 +290,147 @@ func (s *TSDBStore) Series(r *storepb.SeriesRequest, seriesSrv storepb.Store_Ser
 		}
 	}
 	return srv.Flush()
+}
+
+func (s *TSDBStore) DoGet(ticket *flight.Ticket, fs flight.FlightService_DoGetServer) error {
+	r := &storepb.SeriesRequest{}
+	if err := r.Unmarshal(ticket.GetTicket()); err != nil {
+		return err
+	}
+
+	match, matchers, err := matchesExternalLabels(r.Matchers, s.getExtLset())
+	if err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+	if !match {
+		return nil
+	}
+	if len(matchers) == 0 {
+		return status.Error(codes.InvalidArgument, errors.New("no matchers specified (excluding external labels)").Error())
+	}
+
+	q, err := s.db.ChunkQuerier(r.MinTime, r.MaxTime)
+	if err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+	set := q.Select(fs.Context(), true, nil, matchers...)
+
+	shardMatcher := r.ShardInfo.Matcher(&s.buffers)
+	defer shardMatcher.Close()
+	hasher := hashPool.Get().(hash.Hash64)
+	defer hashPool.Put(hasher)
+
+	extLsetToRemove := map[string]struct{}{}
+	for _, lbl := range r.WithoutReplicaLabels {
+		extLsetToRemove[lbl] = struct{}{}
+	}
+	finalExtLset := rmLabels(s.extLset.Copy(), extLsetToRemove)
+
+	schema := arrow.NewSchema(
+		[]arrow.Field{
+			{Name: "label_names", Type: arrow.ListOfField(arrow.Field{
+				Name: "label",
+				Type: &arrow.DictionaryType{
+					IndexType: arrow.PrimitiveTypes.Int32,
+					ValueType: arrow.BinaryTypes.String,
+				},
+			})},
+			{Name: "label_values", Type: arrow.ListOfField(arrow.Field{
+				Name: "label",
+				Type: &arrow.DictionaryType{
+					IndexType: arrow.PrimitiveTypes.Int32,
+					ValueType: arrow.BinaryTypes.String,
+				},
+			})},
+			{Name: "mint", Type: arrow.PrimitiveTypes.Int64},
+			{Name: "maxt", Type: arrow.PrimitiveTypes.Int64},
+			{Name: "chunk", Type: arrow.BinaryTypes.Binary},
+		},
+		nil,
+	)
+	builder := array.NewRecordBuilder(memory.NewGoAllocator(), schema)
+	defer builder.Release()
+
+	var (
+		namesBuilder    = builder.Field(0).(*array.ListBuilder)
+		nameValsBuilder = namesBuilder.ValueBuilder().(*array.BinaryDictionaryBuilder)
+		valsBuilder     = builder.Field(1).(*array.ListBuilder)
+		valsValsBuilder = valsBuilder.ValueBuilder().(*array.BinaryDictionaryBuilder)
+		mintBuilder     = builder.Field(2).(*array.Int64Builder)
+		maxtBuilder     = builder.Field(3).(*array.Int64Builder)
+		chunksBuilder   = builder.Field(4).(*array.BinaryBuilder)
+	)
+	for set.Next() {
+		series := set.At()
+
+		completeLabelset := labelpb.ExtendSortedLabels(rmLabels(series.Labels(), extLsetToRemove), finalExtLset)
+		if !shardMatcher.MatchesLabels(completeLabelset) {
+			continue
+		}
+
+		chIter := series.Iterator(nil)
+		seriesLabels := series.Labels()
+		var addLabelsErr error
+
+		for chIter.Next() {
+			chk := chIter.At()
+			if chk.Chunk == nil {
+				return status.Errorf(codes.Internal, "TSDBStore: found not populated chunk returned by SeriesSet at ref: %v", chk.Ref)
+			}
+
+			chunkBytes := make([]byte, len(chk.Chunk.Bytes()))
+			copy(chunkBytes, chk.Chunk.Bytes())
+
+			namesBuilder.Append(true)
+			valsBuilder.Append(true)
+			seriesLabels.Range(func(l labels.Label) {
+				if err := nameValsBuilder.Append([]byte(l.Name)); err != nil {
+					addLabelsErr = err
+					return
+				}
+				if err := valsValsBuilder.Append([]byte(l.Value)); err != nil {
+					addLabelsErr = err
+					return
+				}
+			})
+			if addLabelsErr != nil {
+				return err
+			}
+			mintBuilder.Append(chk.MinTime)
+			maxtBuilder.Append(chk.MaxTime)
+			chunksBuilder.Append(chk.Chunk.Bytes())
+			//c := storepb.AggrChunk{
+			//	MinTime: chk.MinTime,
+			//	MaxTime: chk.MaxTime,
+			//	Raw: &storepb.Chunk{
+			//		Type: storepb.Chunk_Encoding(chk.Chunk.Encoding() - 1), // Proto chunk encoding is one off to TSDB one.
+			//		Data: chunkBytes,
+			//		Hash: hashChunk(hasher, chunkBytes, enableChunkHashCalculation),
+			//	},
+			//}
+
+			//if err := srv.Send(storepb.NewSeriesResponse(&storepb.Series{Labels: storeSeries.Labels, Chunks: seriesChunks})); err != nil {
+			//	return status.Error(codes.Aborted, err.Error())
+			//}
+		}
+		if err := chIter.Err(); err != nil {
+			return status.Error(codes.Internal, errors.Wrap(err, "chunk iter").Error())
+		}
+
+	}
+	if err := set.Err(); err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+	for _, w := range set.Warnings() {
+		panic(w)
+	}
+	record := builder.NewRecord()
+	defer record.Release()
+
+	w := flight.NewRecordWriter(fs, ipc.WithSchema(schema))
+	defer w.Close()
+
+	return w.Write(record)
 }
 
 // LabelNames returns all known label names constrained with the given matchers.

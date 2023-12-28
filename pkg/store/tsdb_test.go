@@ -9,15 +9,21 @@ import (
 	"io"
 	"math"
 	"math/rand"
+	"net"
 	"sort"
+	"strings"
 	"testing"
 
+	"github.com/apache/arrow/go/v14/arrow/array"
+	"github.com/apache/arrow/go/v14/arrow/flight"
 	"github.com/cespare/xxhash"
+	"github.com/efficientgo/core/testutil"
 	"github.com/go-kit/log"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/tsdb"
-
-	"github.com/efficientgo/core/testutil"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/test/bufconn"
 
 	"github.com/thanos-io/thanos/pkg/component"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
@@ -224,6 +230,93 @@ func TestTSDBStore_Series(t *testing.T) {
 			}
 		}); !ok {
 			return
+		}
+	}
+}
+
+func TestTSDBStore_SeriesArrow(t *testing.T) {
+	defer custom.TolerantVerifyLeak(t)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	db, err := e2eutil.NewTSDB()
+	defer func() { testutil.Ok(t, db.Close()) }()
+	testutil.Ok(t, err)
+
+	const metricName = "http_requests_total"
+	appender := db.Appender(ctx)
+	for i := 1; i <= 3; i++ {
+		_, err = appender.Append(0, labels.FromStrings(labels.MetricName, metricName, "a", "1"), int64(i), float64(i))
+		testutil.Ok(t, err)
+		_, err = appender.Append(0, labels.FromStrings(labels.MetricName, metricName, "a", "2"), int64(i), float64(i))
+		testutil.Ok(t, err)
+		_, err = appender.Append(0, labels.FromStrings(labels.MetricName, metricName, "b", "1"), int64(i), float64(i))
+		testutil.Ok(t, err)
+		_, err = appender.Append(0, labels.FromStrings(labels.MetricName, metricName, "b", "2"), int64(i), float64(i))
+		testutil.Ok(t, err)
+	}
+	err = appender.Commit()
+	testutil.Ok(t, err)
+
+	tsdbStore := NewTSDBStore(nil, db, component.Rule, labels.FromStrings("region", "eu-west"))
+	listener := bufconn.Listen(64 * 1024)
+	srv := flight.NewServerWithMiddleware(nil)
+	srv.InitListener(listener)
+	srv.RegisterFlightService(tsdbStore)
+	go func() { testutil.Ok(t, srv.Serve()) }()
+	defer srv.Shutdown()
+
+	dialOpts := grpc.WithTransportCredentials(insecure.NewCredentials())
+	conn, err := grpc.DialContext(
+		ctx,
+		"",
+		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) { return listener.Dial() }),
+		dialOpts,
+	)
+	testutil.Ok(t, err)
+
+	client := flight.NewClientFromConn(conn, nil)
+	defer func() { testutil.Ok(t, client.Close()) }()
+
+	req := &storepb.SeriesRequest{
+		MinTime: 1,
+		MaxTime: 3,
+		Matchers: []storepb.LabelMatcher{
+			{Type: storepb.LabelMatcher_EQ, Name: labels.MetricName, Value: metricName},
+		},
+	}
+	data, err := req.Marshal()
+	testutil.Ok(t, err)
+	stream, err := client.DoGet(context.Background(), &flight.Ticket{Ticket: data})
+	testutil.Ok(t, err)
+
+	reader, err := flight.NewRecordReader(stream)
+	testutil.Ok(t, err)
+
+	for reader.Next() {
+		record := reader.Record()
+		var (
+			lblNames    = record.Column(0).(*array.List)
+			lblNameVals = lblNames.ListValues()
+			lblVals     = record.Column(1).(*array.List)
+			lblValVals  = lblVals.ListValues()
+			mints       = record.Column(2).(*array.Int64)
+			maxts       = record.Column(3).(*array.Int64)
+			chunks      = record.Column(4)
+		)
+		for iChunk := 0; iChunk < chunks.Len(); iChunk++ {
+			lbls := make([]string, 0)
+			for start, end := lblNames.ValueOffsets(iChunk); start < end; start++ {
+				lbls = append(lbls, lblNameVals.ValueStr(int(start)))
+			}
+			i := 0
+			for start, end := lblVals.ValueOffsets(iChunk); start < end; start++ {
+				lbls[i] = lbls[i] + "=" + lblValVals.ValueStr(int(start))
+				i++
+			}
+
+			fmt.Println(mints.Value(iChunk), maxts.Value(iChunk), strings.Join(lbls, ", "))
 		}
 	}
 }
