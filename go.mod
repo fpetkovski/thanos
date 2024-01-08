@@ -59,14 +59,14 @@ require (
 	github.com/prometheus/alertmanager v0.26.0
 	github.com/prometheus/client_golang v1.17.0
 	github.com/prometheus/client_model v0.5.0
-	github.com/prometheus/common v0.45.0
+	github.com/prometheus/common v0.45.1-0.20231122191551-832cd6e99f99
 	github.com/prometheus/exporter-toolkit v0.10.0
 	// Prometheus maps version 2.x.y to tags v0.x.y.
-	github.com/prometheus/prometheus v0.48.1-0.20231212213830-d0c2d9c0b9cc
+	github.com/prometheus/prometheus v0.48.1-0.20231231112717-756202aa4fc0
 	github.com/sony/gobreaker v0.5.0
 	github.com/stretchr/testify v1.8.4
 	github.com/thanos-io/objstore v0.0.0-20230201072718-11ffbc490204
-	github.com/thanos-io/promql-engine v0.0.0-20231221153314-7e2f0a17e749
+	github.com/thanos-io/promql-engine v0.0.0-20240107031548-d826633a4b7f
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/vimeo/galaxycache v0.0.0-20210323154928-b7e5d71c067a
@@ -124,8 +124,8 @@ require (
 )
 
 require (
-	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.2.1 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2 v2.2.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5 v5.3.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/Code-Hex/go-generics-cache v1.3.1 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
