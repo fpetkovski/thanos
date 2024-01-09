@@ -319,8 +319,8 @@ replace (
 	// Required by Cortex https://github.com/cortexproject/cortex/pull/3051.
 	github.com/bradfitz/gomemcache => github.com/themihai/gomemcache v0.0.0-20180902122335-24332e2d58ab
 
-	// See https://github.com/thanos-io/promql-engine/pull/393.
-	github.com/thanos-io/promql-engine => github.com/fpetkovski/promql-engine v0.0.0-20240109065133-0ea72713be23
+	// See .
+	github.com/thanos-io/promql-engine => github.com/fpetkovski/promql-engine v0.0.0-20240109154850-c032d6e7442a
 
 	github.com/vimeo/galaxycache => github.com/thanos-community/galaxycache v0.0.0-20211122094458-3a32041a1f1e
 
