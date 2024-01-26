@@ -113,11 +113,11 @@ func (it *pushdownSeriesIterator) At() (int64, float64) {
 }
 
 // TODO(rabenhorst): Needs to be implemented for native histogram support.
-func (it *pushdownSeriesIterator) AtHistogram() (int64, *histogram.Histogram) {
+func (it *pushdownSeriesIterator) AtHistogram(*histogram.Histogram) (int64, *histogram.Histogram) {
 	panic("not implemented")
 }
 
-func (it *pushdownSeriesIterator) AtFloatHistogram() (int64, *histogram.FloatHistogram) {
+func (it *pushdownSeriesIterator) AtFloatHistogram(*histogram.FloatHistogram) (int64, *histogram.FloatHistogram) {
 	panic("not implemented")
 }
 
