@@ -807,19 +807,19 @@ func TestBucketStore_Sharding(t *testing.T) {
 	bkt := objstore.NewInMemBucket()
 	series := []labels.Labels{labels.FromStrings("a", "1", "b", "1")}
 
-	id1, err := e2eutil.CreateBlock(ctx, dir, series, 10, 0, 1000, labels.Labels{{Name: "cluster", Value: "a"}, {Name: "region", Value: "r1"}}, 0, metadata.NoneFunc)
+	id1, err := e2eutil.CreateBlock(ctx, dir, series, 10, 0, 1000, labels.FromStrings("cluster", "a", "region", "r1"), 0, metadata.NoneFunc)
 	testutil.Ok(t, err)
 	testutil.Ok(t, block.Upload(ctx, logger, bkt, filepath.Join(dir, id1.String()), metadata.NoneFunc))
 
-	id2, err := e2eutil.CreateBlock(ctx, dir, series, 10, 1000, 2000, labels.Labels{{Name: "cluster", Value: "a"}, {Name: "region", Value: "r1"}}, 0, metadata.NoneFunc)
+	id2, err := e2eutil.CreateBlock(ctx, dir, series, 10, 1000, 2000, labels.FromStrings("cluster", "a", "region", "r1"), 0, metadata.NoneFunc)
 	testutil.Ok(t, err)
 	testutil.Ok(t, block.Upload(ctx, logger, bkt, filepath.Join(dir, id2.String()), metadata.NoneFunc))
 
-	id3, err := e2eutil.CreateBlock(ctx, dir, series, 10, 0, 1000, labels.Labels{{Name: "cluster", Value: "b"}, {Name: "region", Value: "r1"}}, 0, metadata.NoneFunc)
+	id3, err := e2eutil.CreateBlock(ctx, dir, series, 10, 0, 1000, labels.FromStrings("cluster", "b", "region", "r1"), 0, metadata.NoneFunc)
 	testutil.Ok(t, err)
 	testutil.Ok(t, block.Upload(ctx, logger, bkt, filepath.Join(dir, id3.String()), metadata.NoneFunc))
 
-	id4, err := e2eutil.CreateBlock(ctx, dir, series, 10, 0, 1000, labels.Labels{{Name: "cluster", Value: "a"}, {Name: "region", Value: "r2"}}, 0, metadata.NoneFunc)
+	id4, err := e2eutil.CreateBlock(ctx, dir, series, 10, 0, 1000, labels.FromStrings("cluster", "a", "region", "r2"), 0, metadata.NoneFunc)
 	testutil.Ok(t, err)
 	testutil.Ok(t, block.Upload(ctx, logger, bkt, filepath.Join(dir, id4.String()), metadata.NoneFunc))
 
@@ -1204,7 +1204,7 @@ func uploadTestBlock(t testing.TB, tmpDir string, bkt objstore.Bucket, series in
 	id := storetestutil.CreateBlockFromHead(t, filepath.Join(tmpDir, "tmp"), h)
 
 	_, err = metadata.InjectThanos(log.NewNopLogger(), filepath.Join(tmpDir, "tmp", id.String()), metadata.Thanos{
-		Labels:     labels.Labels{{Name: "ext1", Value: "1"}}.Map(),
+		Labels:     labels.FromStrings("ext1", "1").Map(),
 		Downsample: metadata.ThanosDownsample{Resolution: 0},
 		Source:     metadata.TestSource,
 	}, nil)
@@ -1376,13 +1376,12 @@ func benchBucketSeries(t testutil.TB, sampleType chunkenc.ValueType, skipChunk b
 		random = rand.New(rand.NewSource(120))
 	)
 
-	extLset := labels.Labels{{Name: "ext1", Value: "1"}}
+	extLset := labels.FromStrings("ext1", "1")
 	thanosMeta := metadata.Thanos{
 		Labels:     extLset.Map(),
 		Downsample: metadata.ThanosDownsample{Resolution: 0},
 		Source:     metadata.TestSource,
 	}
-
 	blockDir := filepath.Join(tmpDir, "tmp")
 
 	samplesPerSeriesPerBlock := samplesPerSeries / numOfBlocks
@@ -1565,7 +1564,7 @@ func TestBucketSeries_OneBlock_InMemIndexCacheSegfault(t *testing.T) {
 
 	logger := log.NewLogfmtLogger(os.Stderr)
 	thanosMeta := metadata.Thanos{
-		Labels:     labels.Labels{{Name: "ext1", Value: "1"}}.Map(),
+		Labels:     labels.FromStrings("ext1", "1").Map(),
 		Downsample: metadata.ThanosDownsample{Resolution: 0},
 		Source:     metadata.TestSource,
 	}
@@ -1679,7 +1678,7 @@ func TestBucketSeries_OneBlock_InMemIndexCacheSegfault(t *testing.T) {
 		indexReaderPool: indexheader.NewReaderPool(log.NewNopLogger(), false, 0, indexheader.NewReaderPoolMetrics(nil)),
 		metrics:         newBucketStoreMetrics(nil),
 		blockSets: map[uint64]*bucketBlockSet{
-			labels.Labels{{Name: "ext1", Value: "1"}}.Hash(): {blocks: [][]*bucketBlock{{b1, b2}}},
+			labels.FromStrings("ext1", "1").Hash(): {blocks: [][]*bucketBlock{{b1, b2}}},
 		},
 		blocks: map[ulid.ULID]*bucketBlock{
 			b1.meta.ULID: b1,
@@ -1945,7 +1944,7 @@ func TestSeries_BlockWithMultipleChunks(t *testing.T) {
 	blk := storetestutil.CreateBlockFromHead(t, headOpts.ChunkDirRoot, h)
 
 	thanosMeta := metadata.Thanos{
-		Labels:     labels.Labels{{Name: "ext1", Value: "1"}}.Map(),
+		Labels:     labels.FromStrings("ext1", "1").Map(),
 		Downsample: metadata.ThanosDownsample{Resolution: 0},
 		Source:     metadata.TestSource,
 	}
@@ -2197,7 +2196,7 @@ func uploadSeriesToBucket(t *testing.T, bkt *filesystem.Bucket, replica string, 
 	blk := storetestutil.CreateBlockFromHead(t, headOpts.ChunkDirRoot, h)
 
 	thanosMeta := metadata.Thanos{
-		Labels:     labels.Labels{{Name: "ext1", Value: replica}}.Map(),
+		Labels:     labels.FromStrings("ext1", replica).Map(),
 		Downsample: metadata.ThanosDownsample{Resolution: 0},
 		Source:     metadata.TestSource,
 	}
@@ -2251,7 +2250,7 @@ func createBlockWithOneSeriesWithStep(t testutil.TB, dir string, lbls labels.Lab
 	ref, err := app.Append(0, lbls, ts, random.Float64())
 	testutil.Ok(t, err)
 	for i := 1; i < totalSamples; i++ {
-		_, err := app.Append(ref, nil, ts+step*int64(i), random.Float64())
+		_, err := app.Append(ref, labels.EmptyLabels(), ts+step*int64(i), random.Float64())
 		testutil.Ok(t, err)
 	}
 	testutil.Ok(t, app.Commit())
@@ -2277,7 +2276,7 @@ func setupStoreForHintsTest(t *testing.T) (testutil.TB, *BucketStore, []*storepb
 		random   = rand.New(rand.NewSource(120))
 	)
 
-	extLset := labels.Labels{{Name: "ext1", Value: "1"}}
+	extLset := labels.FromStrings("ext1", "1")
 	// Inject the Thanos meta to each block in the storage.
 	thanosMeta := metadata.Thanos{
 		Labels:     extLset.Map(),
@@ -2508,7 +2507,7 @@ func TestSeries_ChunksHaveHashRepresentation(t *testing.T) {
 	blk := storetestutil.CreateBlockFromHead(t, headOpts.ChunkDirRoot, h)
 
 	thanosMeta := metadata.Thanos{
-		Labels:     labels.Labels{{Name: "ext1", Value: "1"}}.Map(),
+		Labels:     labels.FromStrings("ext1", "1").Map(),
 		Downsample: metadata.ThanosDownsample{Resolution: 0},
 		Source:     metadata.TestSource,
 	}
@@ -2637,7 +2636,7 @@ func BenchmarkBucketBlock_readChunkRange(b *testing.B) {
 
 	// Upload the block to the bucket.
 	thanosMeta := metadata.Thanos{
-		Labels:     labels.Labels{{Name: "ext1", Value: "1"}}.Map(),
+		Labels:     labels.FromStrings("ext1", "1").Map(),
 		Downsample: metadata.ThanosDownsample{Resolution: 0},
 		Source:     metadata.TestSource,
 	}
@@ -2699,7 +2698,7 @@ func prepareBucket(b testing.TB, resolutionLevel compact.ResolutionLevel, sample
 		SamplesPerSeries: 86400 / 15, // Simulate 1 day block with 15s scrape interval.
 		ScrapeInterval:   15 * time.Second,
 		Series:           1000,
-		PrependLabels:    nil,
+		PrependLabels:    labels.EmptyLabels(),
 		Random:           rand.New(rand.NewSource(120)),
 		SkipChunks:       true,
 		SampleType:       sampleType,
@@ -2708,7 +2707,7 @@ func prepareBucket(b testing.TB, resolutionLevel compact.ResolutionLevel, sample
 
 	// Upload the block to the bucket.
 	thanosMeta := metadata.Thanos{
-		Labels:     labels.Labels{{Name: "ext1", Value: "1"}}.Map(),
+		Labels:     labels.FromStrings("ext1", "1").Map(),
 		Downsample: metadata.ThanosDownsample{Resolution: 0},
 		Source:     metadata.TestSource,
 	}
