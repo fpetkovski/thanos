@@ -62,6 +62,7 @@ require (
 	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.54.1-0.20240615204547-04635d2962f9
 	github.com/prometheus/exporter-toolkit v0.11.0
+
 	// Prometheus maps version 2.x.y to tags v0.x.y.
 	github.com/prometheus/prometheus v0.53.2-0.20240718123124-e9dec5fc537b
 	github.com/sony/gobreaker v0.5.0
