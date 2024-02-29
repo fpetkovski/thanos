@@ -21,6 +21,32 @@ import (
 	"github.com/thanos-io/thanos/pkg/store/storepb/prompb"
 )
 
+type writeRequest interface {
+	Next() bool
+	At(t *prompb.TimeSeries)
+}
+
+type protobufWriteRequest struct {
+	i          int
+	timeseries []prompb.TimeSeries
+}
+
+func newProtobufWriteRequest(timeseries []prompb.TimeSeries) *protobufWriteRequest {
+	return &protobufWriteRequest{
+		i:          -1,
+		timeseries: timeseries,
+	}
+}
+
+func (p *protobufWriteRequest) Next() bool {
+	p.i++
+	return p.i < len(p.timeseries)
+}
+
+func (p *protobufWriteRequest) At(t *prompb.TimeSeries) {
+	*t = p.timeseries[p.i]
+}
+
 // Appendable returns an Appender.
 type Appendable interface {
 	Appender(ctx context.Context) (storage.Appender, error)
@@ -73,7 +99,7 @@ func NewWriter(logger log.Logger, multiTSDB TenantStorage, opts *WriterOptions) 
 	}
 }
 
-func (r *Writer) Write(ctx context.Context, tenantID string, wreq *prompb.WriteRequest) error {
+func (r *Writer) Write(ctx context.Context, tenantID string, wreq writeRequest, reallocZLabels bool) error {
 	tLogger := log.With(r.logger, "tenant", tenantID)
 
 	var (
@@ -113,7 +139,11 @@ func (r *Writer) Write(ctx context.Context, tenantID string, wreq *prompb.WriteR
 		tooFarInFuture: r.opts.TooFarInFutureTimeWindow,
 		Appender:       app,
 	}
-	for _, t := range wreq.Timeseries {
+
+	var t prompb.TimeSeries
+	for wreq.Next() {
+		wreq.At(&t)
+
 		// Check if time series labels are valid. If not, skip the time series
 		// and report the error.
 		if err := labelpb.ValidateLabels(t.Labels); err != nil {
@@ -140,26 +170,30 @@ func (r *Writer) Write(ctx context.Context, tenantID string, wreq *prompb.WriteR
 		// Check if the TSDB has cached reference for those labels.
 		ref, lset = getRef.GetRef(lset, lset.Hash())
 		if ref == 0 {
-			// If not, copy labels, as TSDB will hold those strings long term. Given no
-			// copy unmarshal we don't want to keep memory for whole protobuf, only for labels.
-			labelpb.ReAllocZLabelsStrings(&t.Labels, r.opts.Intern)
-			lset = labelpb.ZLabelsToPromLabels(t.Labels)
+			if reallocZLabels {
+				// If not, copy labels, as TSDB will hold those strings long term. Given no
+				// copy unmarshal we don't want to keep memory for whole protobuf, only for labels.
+				labelpb.ReAllocZLabelsStrings(&t.Labels, r.opts.Intern)
+				lset = labelpb.ZLabelsToPromLabels(t.Labels)
+			} else {
+				lset = labelpb.ZLabelsToPromLabels(t.Labels).Copy()
+			}
 		}
 
 		// Append as many valid samples as possible, but keep track of the errors.
 		for _, s := range t.Samples {
 			ref, err = app.Append(ref, lset, s.Timestamp, s.Value)
-			switch err {
-			case storage.ErrOutOfOrderSample:
+			switch {
+			case errors.Is(err, storage.ErrOutOfOrderSample):
 				numSamplesOutOfOrder++
 				level.Debug(tLogger).Log("msg", "Out of order sample", "lset", lset, "value", s.Value, "timestamp", s.Timestamp)
-			case storage.ErrDuplicateSampleForTimestamp:
+			case errors.Is(err, storage.ErrDuplicateSampleForTimestamp):
 				numSamplesDuplicates++
 				level.Debug(tLogger).Log("msg", "Duplicate sample for timestamp", "lset", lset, "value", s.Value, "timestamp", s.Timestamp)
-			case storage.ErrOutOfBounds:
+			case errors.Is(err, storage.ErrOutOfBounds):
 				numSamplesOutOfBounds++
 				level.Debug(tLogger).Log("msg", "Out of bounds metric", "lset", lset, "value", s.Value, "timestamp", s.Timestamp)
-			case storage.ErrTooOldSample:
+			case errors.Is(err, storage.ErrTooOldSample):
 				numSamplesTooOld++
 				level.Debug(tLogger).Log("msg", "Sample is too old", "lset", lset, "value", s.Value, "timestamp", s.Timestamp)
 			default:
@@ -182,17 +216,17 @@ func (r *Writer) Write(ctx context.Context, tenantID string, wreq *prompb.WriteR
 			}
 
 			ref, err = app.AppendHistogram(ref, lset, hp.Timestamp, h, fh)
-			switch err {
-			case storage.ErrOutOfOrderSample:
+			switch {
+			case errors.Is(err, storage.ErrOutOfOrderSample):
 				numSamplesOutOfOrder++
 				level.Debug(tLogger).Log("msg", "Out of order histogram", "lset", lset, "timestamp", hp.Timestamp)
-			case storage.ErrDuplicateSampleForTimestamp:
+			case errors.Is(err, storage.ErrDuplicateSampleForTimestamp):
 				numSamplesDuplicates++
 				level.Debug(tLogger).Log("msg", "Duplicate histogram for timestamp", "lset", lset, "timestamp", hp.Timestamp)
-			case storage.ErrOutOfBounds:
+			case errors.Is(err, storage.ErrOutOfBounds):
 				numSamplesOutOfBounds++
 				level.Debug(tLogger).Log("msg", "Out of bounds metric", "lset", lset, "timestamp", hp.Timestamp)
-			case storage.ErrTooOldSample:
+			case errors.Is(err, storage.ErrTooOldSample):
 				numSamplesTooOld++
 				level.Debug(tLogger).Log("msg", "Histogram is too old", "lset", lset, "timestamp", hp.Timestamp)
 			default:
@@ -215,14 +249,14 @@ func (r *Writer) Write(ctx context.Context, tenantID string, wreq *prompb.WriteR
 					Ts:     ex.Timestamp,
 					HasTs:  true,
 				}); err != nil {
-					switch err {
-					case storage.ErrOutOfOrderExemplar:
+					switch {
+					case errors.Is(err, storage.ErrOutOfOrderExemplar):
 						numExemplarsOutOfOrder++
 						level.Debug(exLogger).Log("msg", "Out of order exemplar")
-					case storage.ErrDuplicateExemplar:
+					case errors.Is(err, storage.ErrDuplicateExemplar):
 						numExemplarsDuplicate++
 						level.Debug(exLogger).Log("msg", "Duplicate exemplar")
-					case storage.ErrExemplarLabelLength:
+					case errors.Is(err, storage.ErrExemplarLabelLength):
 						numExemplarsLabelLength++
 						level.Debug(exLogger).Log("msg", "Label length for exemplar exceeds max limit", "limit", exemplar.ExemplarMaxLabelSetLength)
 					default:
