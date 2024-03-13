@@ -1,4 +1,4 @@
-FROM golang:1.21-alpine as builder
+FROM golang:1.21.8-alpine as builder
 # Copied from Dockerfile.multi-stage, but using a different base image
 
 WORKDIR $GOPATH/src/github.com/thanos-io/thanos
