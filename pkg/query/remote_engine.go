@@ -231,11 +231,16 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 	if r.opts.AutoDownsample {
 		maxResolution = int64(r.interval.Seconds() / 5)
 	}
+	plan, err := querypb.NewJSONEncodedPlan(r.plan)
+	if err != nil {
+		level.Warn(r.logger).Log("msg", "Failed to encode query plan", "err", err)
+	}
 
 	// Instant query.
 	if r.start == r.end {
 		request := &querypb.QueryRequest{
 			Query:                 r.plan.String(),
+			QueryPlan:             plan,
 			TimeSeconds:           r.start.Unix(),
 			TimeoutSeconds:        int64(r.opts.Timeout.Seconds()),
 			EnablePartialResponse: r.opts.EnablePartialResponse,
@@ -287,6 +292,7 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 
 	request := &querypb.QueryRangeRequest{
 		Query:                 r.plan.String(),
+		QueryPlan:             plan,
 		StartTimeSeconds:      r.start.Unix(),
 		EndTimeSeconds:        r.end.Unix(),
 		IntervalSeconds:       int64(r.interval.Seconds()),
