@@ -31,14 +31,15 @@ import (
 
 	"github.com/thanos-io/thanos/pkg/block"
 	"github.com/thanos-io/thanos/pkg/block/metadata"
+	"github.com/thanos-io/thanos/pkg/extprom"
 	"github.com/thanos-io/thanos/pkg/testutil/e2eutil"
 )
 
 func TestShipper_SyncBlocks_e2e(t *testing.T) {
 	objtesting.ForeachStore(t, func(t *testing.T, bkt objstore.Bucket) {
-		// TODO(GiedriusS): consider switching to BucketWithMetrics() everywhere?
+		// TODO(GiedriusS): consider switching to WrapWithMetrics() everywhere?
 		metrics := prometheus.NewRegistry()
-		metricsBucket := objstore.WrapWithMetrics(bkt, metrics, "test")
+		metricsBucket := objstore.WrapWithMetrics(bkt, extprom.WrapRegistererWithPrefix("thanos_", metrics), "test")
 
 		dir := t.TempDir()
 
