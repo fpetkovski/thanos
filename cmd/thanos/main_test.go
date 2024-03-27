@@ -21,6 +21,7 @@ import (
 	"github.com/thanos-io/objstore"
 
 	"github.com/efficientgo/core/testutil"
+
 	"github.com/thanos-io/thanos/pkg/block"
 	"github.com/thanos-io/thanos/pkg/block/metadata"
 	"github.com/thanos-io/thanos/pkg/compact/downsample"
@@ -29,6 +30,10 @@ import (
 
 type erroringBucket struct {
 	bkt objstore.InstrumentedBucket
+}
+
+func (b *erroringBucket) IsAccessDeniedErr(err error) bool {
+	return b.bkt.IsAccessDeniedErr(err)
 }
 
 func (b *erroringBucket) Close() error {

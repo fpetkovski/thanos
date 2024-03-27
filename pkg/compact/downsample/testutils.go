@@ -72,7 +72,7 @@ func GetAggregateFromChunk(t *testing.T, chunkr *chunks.Reader, c chunks.Meta, a
 			t, v := it.At()
 			samples = append(samples, sample{t: t, v: v})
 		case chunkenc.ValFloatHistogram:
-			t, fh := it.AtFloatHistogram()
+			t, fh := it.AtFloatHistogram(nil)
 			samples = append(samples, sample{t: t, fh: fh})
 		default:
 			t.Fatalf("unexpected value type %v", valueType)

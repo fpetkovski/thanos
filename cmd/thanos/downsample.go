@@ -86,15 +86,15 @@ func RunDownsample(
 		return err
 	}
 
-	bkt, err := client.NewBucket(logger, confContentYaml, reg, component.Downsample.String())
+	bkt, err := client.NewBucket(logger, confContentYaml, component.Downsample.String())
 	if err != nil {
 		return err
 	}
-
+	instrBucket := objstore.WrapWithMetrics(bkt, reg, component.Downsample.String())
 	// While fetching blocks, filter out blocks that were marked for no downsample.
-	metaFetcher, err := block.NewMetaFetcher(logger, block.FetcherConcurrency, bkt, "", extprom.WrapRegistererWithPrefix("thanos_", reg), []block.MetadataFilter{
+	metaFetcher, err := block.NewMetaFetcher(logger, block.FetcherConcurrency, instrBucket, "", extprom.WrapRegistererWithPrefix("thanos_", reg), []block.MetadataFilter{
 		block.NewDeduplicateFilter(block.FetcherConcurrency),
-		downsample.NewGatherNoDownsampleMarkFilter(logger, bkt),
+		downsample.NewGatherNoDownsampleMarkFilter(logger, instrBucket),
 	})
 	if err != nil {
 		return errors.Wrap(err, "create meta fetcher")

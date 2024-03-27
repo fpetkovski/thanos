@@ -788,7 +788,7 @@ func expandHistogramChunkIterator(it chunkenc.Iterator, buf *[]sample) error {
 	lastT := int64(0)
 
 	for it.Next() != chunkenc.ValNone {
-		t, h := it.AtHistogram()
+		t, h := it.AtHistogram(nil)
 		if value.IsStaleNaN(h.Sum) {
 			continue
 		}
@@ -807,7 +807,7 @@ func expandFloatHistogramChunkIterator(it chunkenc.Iterator, buf *[]sample) erro
 	lastT := int64(0)
 
 	for it.Next() != chunkenc.ValNone {
-		t, fh := it.AtFloatHistogram()
+		t, fh := it.AtFloatHistogram(nil)
 		if value.IsStaleNaN(fh.Sum) {
 			continue
 		}
@@ -1123,12 +1123,12 @@ func (it *ApplyCounterResetsSeriesIterator) At() (t int64, v float64) {
 	return it.lastT, it.totalV
 }
 
-func (it *ApplyCounterResetsSeriesIterator) AtHistogram() (int64, *histogram.Histogram) {
-	return it.chks[it.i].AtHistogram()
+func (it *ApplyCounterResetsSeriesIterator) AtHistogram(h *histogram.Histogram) (int64, *histogram.Histogram) {
+	return it.chks[it.i].AtHistogram(h)
 }
 
-func (it *ApplyCounterResetsSeriesIterator) AtFloatHistogram() (int64, *histogram.FloatHistogram) {
-	return it.chks[it.i].AtFloatHistogram()
+func (it *ApplyCounterResetsSeriesIterator) AtFloatHistogram(fh *histogram.FloatHistogram) (int64, *histogram.FloatHistogram) {
+	return it.chks[it.i].AtFloatHistogram(fh)
 }
 
 func (it *ApplyCounterResetsSeriesIterator) AtT() int64 {
@@ -1194,7 +1194,7 @@ func (it *AverageChunkIterator) Next() chunkenc.ValueType {
 	_, cntV := it.cntIt.At()
 
 	if st == chunkenc.ValFloatHistogram {
-		_, sumV := it.sumIt.AtFloatHistogram()
+		_, sumV := it.sumIt.AtFloatHistogram(nil)
 		it.fh = sumV.Mul(1 / cntV)
 		return chunkenc.ValFloatHistogram
 	}
@@ -1216,15 +1216,13 @@ func (it *AverageChunkIterator) At() (int64, float64) {
 	return it.t, it.v
 }
 
-func (it *AverageChunkIterator) AtHistogram() (int64, *histogram.Histogram) {
+// TODO(rabenhorst): Needs to be implemented for native histogram support.
+func (it *AverageChunkIterator) AtHistogram(*histogram.Histogram) (int64, *histogram.Histogram) {
 	panic("not implemented")
 }
 
-func (it *AverageChunkIterator) AtFloatHistogram() (int64, *histogram.FloatHistogram) {
-	if it.fh == nil {
-		panic("not float histogram iterator")
-	}
-	return it.t, it.fh
+func (it *AverageChunkIterator) AtFloatHistogram(*histogram.FloatHistogram) (int64, *histogram.FloatHistogram) {
+	panic("not implemented")
 }
 
 func (it *AverageChunkIterator) AtT() int64 {

@@ -24,7 +24,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/common/route"
+	"github.com/thanos-io/objstore"
 	"github.com/thanos-io/objstore/client"
+	objstoretracing "github.com/thanos-io/objstore/tracing/opentracing"
 
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/storage"
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/tsdb"
@@ -203,10 +205,11 @@ func runCompact(
 		return err
 	}
 
-	bkt, err := client.NewBucket(logger, confContentYaml, reg, component.String())
+	bkt, err := client.NewBucket(logger, confContentYaml, component.String())
 	if err != nil {
 		return err
 	}
+	insBkt := objstoretracing.WrapWithTraces(objstore.WrapWithMetrics(bkt, extprom.WrapRegistererWithPrefix("thanos_", reg), bkt.Name()))
 
 	relabelContentYaml, err := conf.selectorRelabelConf.Content()
 	if err != nil {
@@ -221,22 +224,22 @@ func runCompact(
 	// Ensure we close up everything properly.
 	defer func() {
 		if err != nil {
-			runutil.CloseWithLogOnErr(logger, bkt, "bucket client")
+			runutil.CloseWithLogOnErr(logger, insBkt, "bucket client")
 		}
 	}()
 
 	// While fetching blocks, we filter out blocks that were marked for deletion by using IgnoreDeletionMarkFilter.
 	// The delay of deleteDelay/2 is added to ensure we fetch blocks that are meant to be deleted but do not have a replacement yet.
 	// This is to make sure compactor will not accidentally perform compactions with gap instead.
-	ignoreDeletionMarkerFilter := block.NewIgnoreDeletionMarkFilter(logger, bkt, deleteDelay/2, conf.blockMetaFetchConcurrency)
+	ignoreDeletionMarkerFilter := block.NewIgnoreDeletionMarkFilter(logger, insBkt, deleteDelay/2, conf.blockMetaFetchConcurrency)
 	globalDuplicateBlocksFilter := block.NewDeduplicateFilterWithVerticalSharding(conf.blockMetaFetchConcurrency, conf.verticalBlockShards != 1)
 	duplicateBlocksFilter := block.NewDeduplicateFilterWithVerticalSharding(conf.blockMetaFetchConcurrency, conf.verticalBlockShards != 1)
-	noCompactMarkerFilter := compact.NewGatherNoCompactionMarkFilter(logger, bkt, conf.blockMetaFetchConcurrency)
+	noCompactMarkerFilter := compact.NewGatherNoCompactionMarkFilter(logger, insBkt, conf.blockMetaFetchConcurrency)
 	labelShardedMetaFilter := block.NewLabelShardedMetaFilter(relabelConfig)
 	consistencyDelayMetaFilter := block.NewConsistencyDelayMetaFilter(logger, conf.consistencyDelay, extprom.WrapRegistererWithPrefix("thanos_", reg))
 	timePartitionMetaFilter := block.NewTimePartitionMetaFilter(conf.filterConf.MinTime, conf.filterConf.MaxTime)
 
-	baseMetaFetcher, err := block.NewBaseFetcher(logger, conf.blockMetaFetchConcurrency, bkt, conf.dataDir, extprom.WrapRegistererWithPrefix("thanos_", reg))
+	baseMetaFetcher, err := block.NewBaseFetcher(logger, conf.blockMetaFetchConcurrency, insBkt, conf.dataDir, extprom.WrapRegistererWithPrefix("thanos_", reg))
 	if err != nil {
 		return errors.Wrap(err, "create meta fetcher")
 	}
@@ -254,7 +257,7 @@ func runCompact(
 		)
 	}
 	var (
-		api = blocksAPI.NewBlocksAPI(logger, conf.webConf.disableCORS, conf.label, flagsMap, bkt)
+		api = blocksAPI.NewBlocksAPI(logger, conf.webConf.disableCORS, conf.label, flagsMap, insBkt)
 		sy  *compact.Syncer
 	)
 	{
@@ -278,7 +281,7 @@ func runCompact(
 		sy, err = compact.NewMetaSyncer(
 			logger,
 			reg,
-			bkt,
+			insBkt,
 			cf,
 			duplicateBlocksFilter,
 			ignoreDeletionMarkerFilter,
@@ -345,7 +348,7 @@ func runCompact(
 
 	grouper := compact.NewDefaultGrouper(
 		logger,
-		bkt,
+		insBkt,
 		conf.acceptMalformedIndex,
 		enableVerticalCompaction,
 		reg,
@@ -360,14 +363,14 @@ func runCompact(
 	tsdbPlanner := compact.NewPlanner(logger, levels, noCompactMarkerFilter)
 	planner := compact.WithLargeTotalIndexSizeFilter(
 		tsdbPlanner,
-		bkt,
+		insBkt,
 		int64(conf.maxBlockIndexSize),
 		compactMetrics.blocksMarked.WithLabelValues(metadata.NoCompactMarkFilename, metadata.IndexSizeExceedingNoCompactReason),
 	)
 
 	cleanerReg := extprom.WrapRegistererWithPrefix("thanos_cleaner_", reg)
 	cleanerDuplicateBlocksFilter := block.NewDeduplicateFilterWithVerticalSharding(conf.blockMetaFetchConcurrency, conf.verticalBlockShards != 1)
-	cleanerDeletionMarkerFilter := block.NewIgnoreDeletionMarkFilter(logger, bkt, deleteDelay/2, conf.blockMetaFetchConcurrency)
+	cleanerDeletionMarkerFilter := block.NewIgnoreDeletionMarkFilter(logger, insBkt, deleteDelay/2, conf.blockMetaFetchConcurrency)
 	cleanerFetcher := baseMetaFetcher.NewMetaFetcher(
 		cleanerReg,
 		[]block.MetadataFilter{
@@ -379,7 +382,7 @@ func runCompact(
 	cleanerSyncer, err := compact.NewMetaSyncer(
 		logger,
 		cleanerReg,
-		bkt,
+		insBkt,
 		cleanerFetcher,
 		cleanerDuplicateBlocksFilter,
 		cleanerDeletionMarkerFilter,
@@ -389,7 +392,7 @@ func runCompact(
 	if err != nil {
 		return errors.Wrap(err, "create syncer")
 	}
-	blocksCleaner := compact.NewBlocksCleaner(logger, bkt, cleanerDeletionMarkerFilter, deleteDelay, compactMetrics.blocksCleaned, compactMetrics.blockCleanupFailures)
+	blocksCleaner := compact.NewBlocksCleaner(logger, insBkt, cleanerDeletionMarkerFilter, deleteDelay, compactMetrics.blocksCleaned, compactMetrics.blockCleanupFailures)
 	compactor, err := compact.NewBucketCompactor(
 		logger,
 		sy,
@@ -397,7 +400,7 @@ func runCompact(
 		planner,
 		comp,
 		compactDir,
-		bkt,
+		insBkt,
 		conf.compactionConcurrency,
 		conf.skipBlockWithOutOfOrderChunks,
 	)
@@ -438,7 +441,7 @@ func runCompact(
 		if err := cleanerSyncer.SyncMetas(ctx); err != nil {
 			return errors.Wrap(err, "syncing metas for cleaner")
 		}
-		compact.BestEffortCleanAbortedPartialUploads(ctx, logger, cleanerSyncer.Partial(), bkt, compactMetrics.partialUploadDeleteAttempts, compactMetrics.blocksCleaned, compactMetrics.blockCleanupFailures)
+		compact.BestEffortCleanAbortedPartialUploads(ctx, logger, cleanerSyncer.Partial(), insBkt, compactMetrics.partialUploadDeleteAttempts, compactMetrics.blocksCleaned, compactMetrics.blockCleanupFailures)
 
 		if err := blocksCleaner.DeleteMarkedBlocks(ctx); err != nil {
 			level.Error(logger).Log("err", err)
@@ -471,7 +474,7 @@ func runCompact(
 				downsampleMetrics.downsamples.WithLabelValues(groupKey)
 				downsampleMetrics.downsampleFailures.WithLabelValues(groupKey)
 			}
-			if err := downsampleBucket(ctx, logger, downsampleMetrics, bkt, sy.Metas(), downsamplingDir, conf.downsampleConcurrency, metadata.HashFunc(conf.hashFunc), conf.acceptMalformedIndex); err != nil {
+			if err := downsampleBucket(ctx, logger, downsampleMetrics, insBkt, sy.Metas(), downsamplingDir, conf.downsampleConcurrency, metadata.HashFunc(conf.hashFunc), conf.acceptMalformedIndex); err != nil {
 				return errors.Wrap(err, "first pass of downsampling failed")
 			}
 
@@ -479,7 +482,7 @@ func runCompact(
 			if err := sy.SyncMetas(ctx); err != nil {
 				return errors.Wrap(err, "sync before second pass of downsampling")
 			}
-			if err := downsampleBucket(ctx, logger, downsampleMetrics, bkt, sy.Metas(), downsamplingDir, conf.downsampleConcurrency, metadata.HashFunc(conf.hashFunc), conf.acceptMalformedIndex); err != nil {
+			if err := downsampleBucket(ctx, logger, downsampleMetrics, insBkt, sy.Metas(), downsamplingDir, conf.downsampleConcurrency, metadata.HashFunc(conf.hashFunc), conf.acceptMalformedIndex); err != nil {
 				return errors.Wrap(err, "second pass of downsampling failed")
 			}
 			level.Info(logger).Log("msg", "downsampling iterations done")
@@ -492,7 +495,7 @@ func runCompact(
 			return errors.Wrap(err, "sync before retention")
 		}
 
-		if err := compact.ApplyRetentionPolicyByResolution(ctx, logger, bkt, sy.Metas(), retentionByResolution, compactMetrics.blocksMarked.WithLabelValues(metadata.DeletionMarkFilename, "")); err != nil {
+		if err := compact.ApplyRetentionPolicyByResolution(ctx, logger, insBkt, sy.Metas(), retentionByResolution, compactMetrics.blocksMarked.WithLabelValues(metadata.DeletionMarkFilename, "")); err != nil {
 			return errors.Wrap(err, "retention failed")
 		}
 
@@ -500,7 +503,7 @@ func runCompact(
 	}
 
 	g.Add(func() error {
-		defer runutil.CloseWithLogOnErr(logger, bkt, "bucket client")
+		defer runutil.CloseWithLogOnErr(logger, insBkt, "bucket client")
 
 		if !conf.wait {
 			return compactMainFn()
