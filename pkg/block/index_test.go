@@ -83,6 +83,7 @@ func TestRewrite(t *testing.T) {
 }
 
 func TestGatherIndexHealthStatsReturnsOutOfOrderChunksErr(t *testing.T) {
+	t.Skipf("This is no longer possible in Prometheus")
 	blockDir := t.TempDir()
 
 	err := e2eutil.PutOutOfOrderIndex(blockDir, 0, math.MaxInt64)

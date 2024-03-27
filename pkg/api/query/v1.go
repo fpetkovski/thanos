@@ -43,7 +43,6 @@ import (
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/util/annotations"
 	"github.com/prometheus/prometheus/util/stats"
-	v1 "github.com/prometheus/prometheus/web/api/v1"
 	promqlapi "github.com/thanos-io/promql-engine/api"
 	"github.com/thanos-io/promql-engine/engine"
 	"github.com/thanos-io/promql-engine/logicalplan"
@@ -94,11 +93,11 @@ type QueryEngineFactory struct {
 	engineOpts            promql.EngineOpts
 	remoteEngineEndpoints promqlapi.RemoteEndpoints
 
-	prometheusEngine v1.QueryEngine
-	thanosEngine     v1.QueryEngine
+	prometheusEngine promql.QueryEngine
+	thanosEngine     promql.QueryEngine
 }
 
-func (f *QueryEngineFactory) GetPrometheusEngine() v1.QueryEngine {
+func (f *QueryEngineFactory) GetPrometheusEngine() promql.QueryEngine {
 	if f.prometheusEngine != nil {
 		return f.prometheusEngine
 	}
@@ -107,14 +106,36 @@ func (f *QueryEngineFactory) GetPrometheusEngine() v1.QueryEngine {
 	return f.prometheusEngine
 }
 
-func (f *QueryEngineFactory) GetThanosEngine() v1.QueryEngine {
+type secondPrecisionEngine struct {
+	ng promql.QueryEngine
+}
+
+func newSecondPrecisionEngine(ng promql.QueryEngine) *secondPrecisionEngine {
+	return &secondPrecisionEngine{ng: ng}
+}
+
+func (s secondPrecisionEngine) SetQueryLogger(l promql.QueryLogger) {}
+
+func (s secondPrecisionEngine) NewInstantQuery(ctx context.Context, q storage.Queryable, opts promql.QueryOpts, qs string, ts time.Time) (promql.Query, error) {
+	ts = ts.Truncate(time.Second)
+	return s.ng.NewInstantQuery(ctx, q, opts, qs, ts)
+}
+
+func (s secondPrecisionEngine) NewRangeQuery(ctx context.Context, q storage.Queryable, opts promql.QueryOpts, qs string, start, end time.Time, interval time.Duration) (promql.Query, error) {
+	start = start.Truncate(time.Second)
+	end = end.Truncate(time.Second)
+	interval = interval.Truncate(time.Second)
+	return s.ng.NewRangeQuery(ctx, q, opts, qs, start, end, interval)
+}
+
+func (f *QueryEngineFactory) GetThanosEngine() promql.QueryEngine {
 	if f.thanosEngine != nil {
 		return f.thanosEngine
 	}
 	if f.remoteEngineEndpoints == nil {
 		f.thanosEngine = engine.New(engine.Opts{EngineOpts: f.engineOpts, Engine: f.GetPrometheusEngine(), EnableAnalysis: true, EnableXFunctions: true})
 	} else {
-		f.thanosEngine = engine.New(
+		f.thanosEngine = newSecondPrecisionEngine(engine.New(
 			engine.Opts{
 				EngineOpts:     f.engineOpts,
 				Engine:         f.GetPrometheusEngine(),
@@ -126,7 +147,7 @@ func (f *QueryEngineFactory) GetThanosEngine() v1.QueryEngine {
 					logicalplan.DistributedExecutionOptimizer{Endpoints: f.remoteEngineEndpoints},
 				},
 			},
-		)
+		))
 	}
 
 	return f.thanosEngine
@@ -323,8 +344,8 @@ func (qapi *QueryAPI) parseEnableDedupParam(r *http.Request) (enableDeduplicatio
 	return enableDeduplication, nil
 }
 
-func (qapi *QueryAPI) parseEngineParam(r *http.Request) (queryEngine v1.QueryEngine, _ *api.ApiError) {
-	var engine v1.QueryEngine
+func (qapi *QueryAPI) parseEngineParam(r *http.Request) (queryEngine promql.QueryEngine, _ *api.ApiError) {
+	var engine promql.QueryEngine
 
 	param := PromqlEngineType(r.FormValue("engine"))
 	if param == "" {
