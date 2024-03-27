@@ -27,7 +27,7 @@ import (
 	"github.com/prometheus/common/model"
 
 	"github.com/prometheus/prometheus/model/histogram"
-	"github.com/prometheus/prometheus/model/textparse"
+
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/model/exemplar"
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/model/labels"
 	"github.com/thanos-io/thanos/internal/mimir-prometheus/prompb"
@@ -641,7 +641,7 @@ func labelsToLabelsProto(lbls labels.Labels, buf []prompb.Label) []prompb.Label 
 }
 
 // metricTypeToMetricTypeProto transforms a Prometheus metricType into prompb metricType. Since the former is a string we need to transform it to an enum.
-func metricTypeToMetricTypeProto(t textparse.MetricType) prompb.MetricMetadata_MetricType {
+func metricTypeToMetricTypeProto(t model.MetricType) prompb.MetricMetadata_MetricType {
 	mt := strings.ToUpper(string(t))
 	v, ok := prompb.MetricMetadata_MetricType_value[mt]
 	if !ok {

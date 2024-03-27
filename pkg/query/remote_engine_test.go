@@ -14,6 +14,7 @@ import (
 	"github.com/go-kit/log"
 	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/promql/parser"
 	"google.golang.org/grpc"
 
 	"github.com/thanos-io/thanos/pkg/api/query/querypb"
@@ -32,7 +33,10 @@ func TestRemoteEngine_Warnings(t *testing.T) {
 		end   = time.Unix(120, 0)
 		step  = 30 * time.Second
 	)
-	qry, err := engine.NewRangeQuery(context.Background(), nil, query, start, end, step)
+	expr, err := parser.ParseExpr(query)
+	testutil.Ok(t, err)
+
+	qry, err := engine.NewRangeQuery(context.Background(), nil, expr, start, end, step)
 	testutil.Ok(t, err)
 	res := qry.Exec(context.Background())
 	testutil.Ok(t, res.Err)

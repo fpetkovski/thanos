@@ -27,6 +27,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/wlog"
 	"github.com/thanos-io/objstore"
 	"github.com/thanos-io/objstore/client"
+	objstoretracing "github.com/thanos-io/objstore/tracing/opentracing"
 	"google.golang.org/grpc"
 	"gopkg.in/yaml.v2"
 
@@ -153,7 +154,7 @@ func runReceive(
 		dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.UseCompressor(conf.compression)))
 	}
 
-	var bkt objstore.Bucket
+	var insBucket objstore.Bucket
 	confContentYaml, err := conf.objStoreConfig.Content()
 	if err != nil {
 		return err
@@ -174,10 +175,11 @@ func runReceive(
 			}
 			// The background shipper continuously scans the data directory and uploads
 			// new blocks to object storage service.
-			bkt, err = client.NewBucket(logger, confContentYaml, reg, comp.String())
+			bkt, err := client.NewBucket(logger, confContentYaml, comp.String())
 			if err != nil {
 				return err
 			}
+			bkt = objstoretracing.WrapWithTraces(objstore.WrapWithMetrics(bkt, extprom.WrapRegistererWithPrefix("thanos_", reg), bkt.Name()))
 		} else {
 			level.Info(logger).Log("msg", "no supported bucket was configured, uploads will be disabled")
 		}
@@ -205,7 +207,7 @@ func runReceive(
 		tsdbOpts,
 		lset,
 		conf.tenantLabelName,
-		bkt,
+		insBucket,
 		conf.allowOutOfOrderUpload,
 		hashFunc,
 	)
@@ -273,7 +275,7 @@ func runReceive(
 
 		level.Debug(logger).Log("msg", "setting up TSDB")
 		{
-			if err := startTSDBAndUpload(g, logger, reg, dbs, uploadC, hashringChangedChan, upload, uploadDone, statusProber, bkt, receive.HashringAlgorithm(conf.hashringsAlgorithm)); err != nil {
+			if err := startTSDBAndUpload(g, logger, reg, dbs, uploadC, hashringChangedChan, upload, uploadDone, statusProber, insBucket, receive.HashringAlgorithm(conf.hashringsAlgorithm)); err != nil {
 				return err
 			}
 		}

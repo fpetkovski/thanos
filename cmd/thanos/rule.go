@@ -40,7 +40,9 @@ import (
 	"github.com/prometheus/prometheus/tsdb/agent"
 	"github.com/prometheus/prometheus/tsdb/wlog"
 	"github.com/prometheus/prometheus/util/strutil"
+	"github.com/thanos-io/objstore"
 	"github.com/thanos-io/objstore/client"
+	objstoretracing "github.com/thanos-io/objstore/tracing/opentracing"
 	"github.com/thanos-io/promql-engine/execution/parse"
 	"gopkg.in/yaml.v2"
 
@@ -773,10 +775,11 @@ func runRule(
 	if len(confContentYaml) > 0 {
 		// The background shipper continuously scans the data directory and uploads
 		// new blocks to Google Cloud Storage or an S3-compatible storage service.
-		bkt, err := client.NewBucket(logger, confContentYaml, reg, component.Rule.String())
+		bkt, err := client.NewBucket(logger, confContentYaml, component.Rule.String())
 		if err != nil {
 			return err
 		}
+		bkt = objstoretracing.WrapWithTraces(objstore.WrapWithMetrics(bkt, extprom.WrapRegistererWithPrefix("thanos_", reg), bkt.Name()))
 
 		// Ensure we close up everything properly.
 		defer func() {
@@ -909,7 +912,12 @@ func queryFuncCreator(
 				queryAPIClients := grpcEndpointSet.GetQueryAPIClients()
 				for _, i := range rand.Perm(len(queryAPIClients)) {
 					e := query.NewRemoteEngine(logger, queryAPIClients[i], query.Opts{})
-					q, err := e.NewInstantQuery(ctx, promql.NewPrometheusQueryOpts(false, 0), qs, t)
+					expr, err := parser.ParseExpr(qs)
+					if err != nil {
+						level.Error(logger).Log("err", err, "query", qs)
+						continue
+					}
+					q, err := e.NewInstantQuery(ctx, nil, expr, t)
 					if err != nil {
 						level.Error(logger).Log("err", err, "query", qs)
 						continue

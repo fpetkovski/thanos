@@ -25,6 +25,7 @@ import (
 	"github.com/thanos-io/objstore"
 
 	"github.com/efficientgo/core/testutil"
+
 	"github.com/thanos-io/thanos/pkg/block/metadata"
 	"github.com/thanos-io/thanos/pkg/testutil/custom"
 	"github.com/thanos-io/thanos/pkg/testutil/e2eutil"
@@ -448,7 +449,7 @@ func TestHashDownload(t *testing.T) {
 
 	bkt := objstore.NewInMemBucket()
 	r := prometheus.NewRegistry()
-	instrumentedBkt := objstore.BucketWithMetrics("test", bkt, r)
+	instrumentedBkt := objstore.WrapWithMetrics(bkt, r, "test")
 
 	b1, err := e2eutil.CreateBlockWithTombstone(ctx, tmpDir, []labels.Labels{
 		{{Name: "a", Value: "1"}},
