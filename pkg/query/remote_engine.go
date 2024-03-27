@@ -182,7 +182,7 @@ func (r *remoteEngine) NewRangeQuery(_ context.Context, _ promql.QueryOpts, quer
 		client: r.client,
 		opts:   r.opts,
 
-		query:    query,
+		plan:     query,
 		start:    start,
 		end:      end,
 		interval: interval,
@@ -197,7 +197,7 @@ func (r *remoteEngine) NewInstantQuery(_ context.Context, _ promql.QueryOpts, qu
 		client: r.client,
 		opts:   r.opts,
 
-		query:    query,
+		plan:     query,
 		start:    ts,
 		end:      ts,
 		interval: 0,
@@ -211,7 +211,7 @@ type remoteQuery struct {
 	client Client
 	opts   Opts
 
-	query    api.RemoteQuery
+	plan     api.RemoteQuery
 	start    time.Time
 	end      time.Time
 	interval time.Duration
@@ -230,11 +230,16 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 	if r.opts.AutoDownsample {
 		maxResolution = int64(r.interval.Seconds() / 5)
 	}
+	plan, err := querypb.NewJSONEncodedPlan(r.plan)
+	if err != nil {
+		level.Warn(r.logger).Log("msg", "Failed to encode query plan", "err", err)
+	}
 
 	// Instant query.
 	if r.start == r.end {
 		request := &querypb.QueryRequest{
-			Query:                 r.query.String(),
+			Query:                 r.plan.String(),
+			QueryPlan:             plan,
 			TimeSeconds:           r.start.Unix(),
 			TimeoutSeconds:        int64(r.opts.Timeout.Seconds()),
 			EnablePartialResponse: r.opts.EnablePartialResponse,
@@ -284,7 +289,8 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 	}
 
 	request := &querypb.QueryRangeRequest{
-		Query:                 r.query.String(),
+		Query:                 r.plan.String(),
+		QueryPlan:             plan,
 		StartTimeSeconds:      r.start.Unix(),
 		EndTimeSeconds:        r.end.Unix(),
 		IntervalSeconds:       int64(r.interval.Seconds()),
@@ -343,7 +349,7 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 		}
 		result = append(result, series)
 	}
-	level.Debug(r.logger).Log("msg", "Executed query", "query", r.query, "time", time.Since(start), "client", r.client.GetAddress())
+	level.Debug(r.logger).Log("msg", "Executed query", "query", r.plan.String(), "time", time.Since(start), "client", r.client.GetAddress())
 
 	return &promql.Result{Value: result, Warnings: warnings}
 }
@@ -360,7 +366,7 @@ func (r *remoteQuery) Cancel() {
 	}
 }
 
-func (r *remoteQuery) String() string { return r.query.String() }
+func (r *remoteQuery) String() string { return r.plan.String() }
 
 type retriableQuery struct {
 	*remoteQuery
