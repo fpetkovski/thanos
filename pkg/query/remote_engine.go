@@ -181,7 +181,7 @@ func (r *remoteEngine) infosWithoutReplicaLabels() infopb.TSDBInfos {
 	return infos
 }
 
-func (r *remoteEngine) NewRangeQuery(_ context.Context, _ promql.QueryOpts, plan parser.Expr, start, end time.Time, interval time.Duration) (promql.Query, error) {
+func (r *remoteEngine) NewRangeQuery(_ context.Context, _ promql.QueryOpts, plan api.RemoteQuery, start, end time.Time, interval time.Duration) (promql.Query, error) {
 	return &remoteQuery{
 		logger: r.logger,
 		client: r.client,
@@ -194,7 +194,7 @@ func (r *remoteEngine) NewRangeQuery(_ context.Context, _ promql.QueryOpts, plan
 	}, nil
 }
 
-func (r *remoteEngine) NewInstantQuery(_ context.Context, _ promql.QueryOpts, plan parser.Expr, ts time.Time) (promql.Query, error) {
+func (r *remoteEngine) NewInstantQuery(_ context.Context, _ promql.QueryOpts, plan api.RemoteQuery, ts time.Time) (promql.Query, error) {
 	return &remoteQuery{
 		logger: r.logger,
 		client: r.client,
@@ -212,7 +212,7 @@ type remoteQuery struct {
 	client Client
 	opts   Opts
 
-	plan     parser.Expr
+	plan     api.RemoteQuery
 	start    time.Time
 	end      time.Time
 	interval time.Duration

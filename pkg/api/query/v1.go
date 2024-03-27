@@ -471,7 +471,7 @@ func (qapi *QueryAPI) parseQueryAnalyzeParam(r *http.Request, query promql.Query
 
 func processAnalysis(a *engine.AnalyzeOutputNode) queryTelemetry {
 	var analysis queryTelemetry
-	analysis.OperatorName = a.OperatorTelemetry.Name()
+	analysis.OperatorName = a.OperatorTelemetry.String()
 	analysis.Execution = a.OperatorTelemetry.ExecutionTimeTaken().String()
 	for _, c := range a.Children {
 		analysis.Children = append(analysis.Children, processAnalysis(&c))

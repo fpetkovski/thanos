@@ -28,8 +28,15 @@ enum EngineType {
   thanos     = 2;
 }
 
+message queryPlan {
+  oneof encoding {
+    bytes json = 1;
+  }
+}
+
 message QueryRequest {
   string query = 1;
+  queryPlan queryPlan = 14;
 
   int64 time_seconds = 2;
   int64 timeout_seconds = 3;
@@ -67,6 +74,7 @@ message QueryResponse {
 
 message QueryRangeRequest {
   string query = 1;
+  queryPlan queryPlan = 16;
 
   int64 start_time_seconds = 2;
   int64 end_time_seconds = 3;
