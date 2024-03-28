@@ -864,6 +864,8 @@ github.com/fogleman/gg v1.2.1-0.20190220221249-0403632d5b90/go.mod h1:R/bRT+9gY/
 github.com/fogleman/gg v1.3.0/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
 github.com/fortytw2/leaktest v1.3.0 h1:u8491cBMTQ8ft8aeV+adlcytMZylmA5nnwwkRZjI8vw=
 github.com/fortytw2/leaktest v1.3.0/go.mod h1:jDsjWgpAGjm2CA7WthBh/CdZYEPF31XHquHwclZch5g=
+github.com/fpetkovski/promql-engine v0.0.0-20240328141108-27e3f6763bd2 h1:wff4jDE2M5C7LLiTY3zhuQ+SELU+rSRAeRj3ODzl8xI=
+github.com/fpetkovski/promql-engine v0.0.0-20240328141108-27e3f6763bd2/go.mod h1:FEPnabuTql1bDA4OUM41mwcZOJ20R436k8vq+xtGEG0=
 github.com/franela/goblin v0.0.0-20200105215937-c9ffbefa60db/go.mod h1:7dvUGVsVBjqR7JHJk0brhHOZYGmfBYOrK0ZhYMEtBr4=
 github.com/franela/goreq v0.0.0-20171204163338-bcd34c9993f8/go.mod h1:ZhphrRTfi2rbfLwlschooIH4+wKKDR4Pdxhh+TRoA20=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
@@ -1585,8 +1587,6 @@ github.com/thanos-community/galaxycache v0.0.0-20211122094458-3a32041a1f1e h1:f1
 github.com/thanos-community/galaxycache v0.0.0-20211122094458-3a32041a1f1e/go.mod h1:jXcofnrSln/cLI6/dhlBxPQZEEQHVPCcFaH75M+nSzM=
 github.com/thanos-io/objstore v0.0.0-20240309075357-e8336a5fd5f3 h1:Q0BjHI7FMe5KkKVXBFYto5VNASxiA/+AEhHup/IT7N0=
 github.com/thanos-io/objstore v0.0.0-20240309075357-e8336a5fd5f3/go.mod h1:ptMYNPgbyAR7a2Ab2t7zHA2/0be2ePyawVR7lp7fZtg=
-github.com/thanos-io/promql-engine v0.0.0-20240328104046-7939b4ffe6c2 h1:l0obXz5pEKS53zFm6JxN7H9OQnImjlIcXslSIV/e1Zo=
-github.com/thanos-io/promql-engine v0.0.0-20240328104046-7939b4ffe6c2/go.mod h1:FEPnabuTql1bDA4OUM41mwcZOJ20R436k8vq+xtGEG0=
 github.com/themihai/gomemcache v0.0.0-20180902122335-24332e2d58ab h1:7ZR3hmisBWw77ZpO1/o86g+JV3VKlk3d48jopJxzTjU=
 github.com/themihai/gomemcache v0.0.0-20180902122335-24332e2d58ab/go.mod h1:eheTFp954zcWZXCU8d0AT76ftsQOTo4DTqkN/h3k1MY=
 github.com/tklauser/go-sysconf v0.3.4/go.mod h1:Cl2c8ZRWfHD5IrfHo9VN+FX9kCFjIOyVklgXycLB6ek=

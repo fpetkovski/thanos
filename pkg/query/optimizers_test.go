@@ -79,17 +79,17 @@ sum by (instance, node, region) (
 		{
 			name:     "double aggregation with grouping",
 			expr:     `max by (pod) (sum by (pod, target) (kube_node_info{node="gke-1"}))`,
-			expected: `max by (pod) (sum by (pod, target) (kube_node_info{node="gke-1"}[project(pod)]))`,
+			expected: `max by (pod) (sum by (pod, target) (kube_node_info{node="gke-1"}[project(pod, target)]))`,
 		},
 		{
 			name:     "double aggregation with by and without grouping",
 			expr:     `max by (pod) (sum without (pod, target) (kube_node_info{node="gke-1"}))`,
-			expected: `max by (pod) (sum without (pod, target) (kube_node_info{node="gke-1"}[project()]))`,
+			expected: `max by (pod) (sum without (pod, target) (kube_node_info{node="gke-1"}[exclude(pod, target)]))`,
 		},
 		{
 			name:     "double aggregation with by and without grouping",
 			expr:     `max by (pod) (sum without (target) (kube_node_info{node="gke-1"}))`,
-			expected: `max by (pod) (sum without (target) (kube_node_info{node="gke-1"}[project(pod)]))`,
+			expected: `max by (pod) (sum without (target) (kube_node_info{node="gke-1"}[exclude(target)]))`,
 		},
 		{
 			name:     "aggregation without grouping",
