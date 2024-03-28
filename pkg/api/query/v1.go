@@ -146,6 +146,7 @@ func (f *QueryEngineFactory) GetThanosEngine() promql.QueryEngine {
 					logicalplan.DistributeAvgOptimizer{},
 					logicalplan.DistributedExecutionOptimizer{Endpoints: f.remoteEngineEndpoints},
 				},
+				EnableXFunctions: true,
 			},
 		))
 	}
