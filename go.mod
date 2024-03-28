@@ -318,6 +318,9 @@ replace (
 	// Required by Cortex https://github.com/cortexproject/cortex/pull/3051.
 	github.com/bradfitz/gomemcache => github.com/themihai/gomemcache v0.0.0-20180902122335-24332e2d58ab
 
+	// https://github.com/thanos-io/promql-engine/pull/439
+	github.com/thanos-io/promql-engine => github.com/fpetkovski/promql-engine v0.0.0-20240328141108-27e3f6763bd2
+
 	github.com/vimeo/galaxycache => github.com/thanos-community/galaxycache v0.0.0-20211122094458-3a32041a1f1e
 
 	// Override due to https://github.com/weaveworks/common/issues/239

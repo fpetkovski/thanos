@@ -50,8 +50,12 @@ func (s SetProjectionLabels) optimize(expr logicalplan.Node, projection logicalp
 			case parser.TOPK, parser.BOTTOMK:
 				projection = logicalplan.Projection{}
 			default:
-				projection = reduceProjection(projection, !e.Without, e.Grouping)
+				projection = logicalplan.Projection{
+					Labels:  append([]string{}, e.Grouping...),
+					Include: !e.Without,
+				}
 			}
+			return
 		case *logicalplan.FunctionCall:
 			switch e.Func.Name {
 			case "absent_over_time", "absent", "scalar":
