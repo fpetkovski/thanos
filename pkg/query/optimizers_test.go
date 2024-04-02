@@ -1,13 +1,19 @@
 package query
 
 import (
+	"context"
 	"fmt"
+	"math"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/promql"
 	"github.com/prometheus/prometheus/promql/parser"
 	"github.com/prometheus/prometheus/util/annotations"
 	"github.com/stretchr/testify/require"
+	"github.com/thanos-io/promql-engine/api"
 	"github.com/thanos-io/promql-engine/logicalplan"
 	"github.com/thanos-io/promql-engine/query"
 )
@@ -202,11 +208,150 @@ count by (cluster) (
 	}
 }
 
+func TestOptimizeSetProjectionLabelsWithDistributedQuery(t *testing.T) {
+	cases := []struct {
+		name     string
+		expr     string
+		expected string
+	}{
+		{
+			name: "simple vector selector",
+			expr: `metric_a{job="api-server"}`,
+			expected: `
+dedup(
+	remote(metric_a{job="api-server"}[exclude()]) [0001-01-01 00:00:00 +0000 UTC], 
+	remote(metric_a{job="api-server"}[exclude()]) [0001-01-01 00:00:00 +0000 UTC]
+)`,
+		},
+		{
+			name: "aggregation selector",
+			expr: `sum by (pod) (metric_a{job="api-server"})`,
+			expected: `
+sum by (pod) (dedup(
+	remote(sum by (pod, region) (metric_a{job="api-server"}[project(pod, region)])) [0001-01-01 00:00:00 +0000 UTC], 
+	remote(sum by (pod, region) (metric_a{job="api-server"}[project(pod, region)])) [0001-01-01 00:00:00 +0000 UTC])
+)`,
+		},
+		{
+			name: "binary expression with aggregation and label replace",
+			expr: `
+count by (cluster) (
+    label_replace(up, "region", "$0", "region", ".*")
+    * on(k8s_cluster, region) group_left(project) label_replace(k8s_cluster_info, "k8s_cluster", "$0", "cluster", ".*"))`,
+			expected: `
+count by (cluster) (label_replace(dedup(
+	remote(up[project(cluster, k8s_cluster, region)]) [0001-01-01 00:00:00 +0000 UTC], 
+	remote(up[project(cluster, k8s_cluster, region)]) [0001-01-01 00:00:00 +0000 UTC]
+), "region", "$0", "region", ".*") * on (k8s_cluster, region) group_left (project) dedup(
+	remote(label_replace(k8s_cluster_info[project(__series__id, cluster, k8s_cluster, project, region)], "k8s_cluster", "$0", "cluster", ".*")) [0001-01-01 00:00:00 +0000 UTC], 
+	remote(label_replace(k8s_cluster_info[project(__series__id, cluster, k8s_cluster, project, region)], "k8s_cluster", "$0", "cluster", ".*")) [0001-01-01 00:00:00 +0000 UTC])
+)`,
+		},
+		{
+			name: "binary expression with aggregation and label replace before aggregation",
+			expr: `
+count by (cluster) (
+    label_replace(up, "region", "$0", "region", ".*")
+    * on(cluster, region) group_left(project) label_replace(max by(project, region, cluster)(k8s_cluster_info), "k8s_cluster", "$0", "cluster", ".*")
+)`,
+			expected: `
+count by (cluster) (label_replace(
+	dedup(
+		remote(up[project(cluster, region)]) [0001-01-01 00:00:00 +0000 UTC], 
+		remote(up[project(cluster, region)]) [0001-01-01 00:00:00 +0000 UTC]), "region", "$0", "region", ".*"
+) * on (cluster, region) group_left (project) label_replace(max by (project, region, cluster) (
+	dedup(
+		remote(max by (cluster, project, region) (k8s_cluster_info[project(cluster, project, region)])) [0001-01-01 00:00:00 +0000 UTC], 
+		remote(max by (cluster, project, region) (k8s_cluster_info[project(cluster, project, region)])) [0001-01-01 00:00:00 +0000 UTC])), "k8s_cluster", "$0", "cluster", ".*")
+)`,
+		},
+		{
+			name: "binary expression with matching on all labels",
+			expr: `sum by (k8s_cluster) (metric_a - metric_b)`,
+			expected: `
+sum by (k8s_cluster) (dedup(
+	remote(sum by (k8s_cluster, region) (metric_a[exclude()] - metric_b[exclude()])) [0001-01-01 00:00:00 +0000 UTC], 
+	remote(sum by (k8s_cluster, region) (metric_a[exclude()] - metric_b[exclude()])) [0001-01-01 00:00:00 +0000 UTC])
+)`,
+		},
+		{
+			name: "binary expression with matching on a single label",
+			expr: `sum by (k8s_cluster) (metric_a - on (lbl_a) metric_b)`,
+			expected: `
+sum by (k8s_cluster) (dedup(
+	remote(metric_a[project(k8s_cluster, lbl_a)]) [0001-01-01 00:00:00 +0000 UTC], 
+	remote(metric_a[project(k8s_cluster, lbl_a)]) [0001-01-01 00:00:00 +0000 UTC]
+) - on (lbl_a) dedup(
+	remote(metric_b[project(__series__id, lbl_a)]) [0001-01-01 00:00:00 +0000 UTC], 
+	remote(metric_b[project(__series__id, lbl_a)]) [0001-01-01 00:00:00 +0000 UTC])
+)`,
+		},
+		{
+			name: "binary expression with group left and matching on a single label",
+			expr: `sum by (k8s_cluster) (metric_a - on (lbl_a) group_left(lbl_b) metric_b)`,
+			expected: `
+sum by (k8s_cluster) (dedup(
+	remote(metric_a[project(k8s_cluster, lbl_a)]) [0001-01-01 00:00:00 +0000 UTC], 
+	remote(metric_a[project(k8s_cluster, lbl_a)]) [0001-01-01 00:00:00 +0000 UTC]
+) - on (lbl_a) group_left (lbl_b) dedup(
+	remote(metric_b[project(__series__id, lbl_a, lbl_b)]) [0001-01-01 00:00:00 +0000 UTC], 
+	remote(metric_b[project(__series__id, lbl_a, lbl_b)]) [0001-01-01 00:00:00 +0000 UTC])
+)`,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.expr, func(t *testing.T) {
+			expr, err := parser.ParseExpr(c.expr)
+			require.NoError(t, err)
+			plan := logicalplan.NewFromAST(expr, &query.Options{}, logicalplan.PlanOptions{})
+			optimized, _ := plan.Optimize(
+				[]logicalplan.Optimizer{
+					logicalplan.DistributedExecutionOptimizer{
+						Endpoints: api.NewStaticEndpoints([]api.RemoteEngine{
+							newStubEngine([]labels.Labels{labels.FromStrings("region", "us-east")}),
+							newStubEngine([]labels.Labels{labels.FromStrings("region", "us-west")}),
+						}),
+					},
+					SetProjectionLabels{},
+					// This is a dummy optimizer that replaces VectorSelectors with a custom struct
+					// which has a custom String() method.
+					swapVectorSelectors{},
+				})
+
+			require.Equal(t, reSpaces.Replace(c.expected), reSpaces.Replace(optimized.Root().String()))
+		})
+	}
+}
+
+type stubEngine struct {
+	labels []labels.Labels
+}
+
+func (s stubEngine) MinT() int64 { return math.MinInt64 }
+
+func (s stubEngine) MaxT() int64 { return math.MaxInt64 }
+
+func (s stubEngine) LabelSets() []labels.Labels { return s.labels }
+
+func (s stubEngine) NewRangeQuery(ctx context.Context, opts promql.QueryOpts, plan api.RemoteQuery, start, end time.Time, interval time.Duration) (promql.Query, error) {
+	return nil, nil
+}
+
+func newStubEngine(labels []labels.Labels) *stubEngine {
+	return &stubEngine{labels: labels}
+}
+
 type swapVectorSelectors struct{}
 
 func (s swapVectorSelectors) Optimize(plan logicalplan.Node, _ *query.Options) (logicalplan.Node, annotations.Annotations) {
 	logicalplan.TraverseBottomUp(nil, &plan, func(_, expr *logicalplan.Node) bool {
 		switch v := (*expr).(type) {
+		case logicalplan.Deduplicate:
+			for i := range v.Expressions {
+				v.Expressions[i].Query, _ = s.Optimize(v.Expressions[i].Query, nil)
+			}
+			return true
 		case *logicalplan.VectorSelector:
 			*expr = newVectorOutput(v)
 			return true

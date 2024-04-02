@@ -45,6 +45,14 @@ func (s SetProjectionLabels) optimize(expr logicalplan.Node, projection logicalp
 			return
 		}
 		switch e := (*current).(type) {
+		case logicalplan.Deduplicate:
+			for i := range e.Expressions {
+				e.Expressions[i].Query, _ = s.optimize(e.Expressions[i].Query, logicalplan.Projection{
+					Include: projection.Include,
+					Labels:  append([]string{}, projection.Labels...),
+				})
+			}
+			return
 		case *logicalplan.Aggregation:
 			switch e.Op {
 			case parser.TOPK, parser.BOTTOMK:
@@ -127,32 +135,6 @@ func extendProjection(projection logicalplan.Projection, lbls []string) logicalp
 	}
 }
 
-func reduceProjection(projection logicalplan.Projection, by bool, lbls []string) logicalplan.Projection {
-	if projection.Include && by {
-		return logicalplan.Projection{
-			Include: by,
-			Labels:  intersect(projection.Labels, lbls),
-		}
-	}
-	if !projection.Include && !by {
-		return logicalplan.Projection{
-			Include: by,
-			Labels:  union(projection.Labels, lbls),
-		}
-	}
-
-	// If we are projecting by and without at the same time,
-	// keep the labels that are not in the without labels set.
-	labelsBy, labelsWithout := projection.Labels, lbls
-	if !projection.Include {
-		labelsBy, labelsWithout = labelsWithout, labelsBy
-	}
-	return logicalplan.Projection{
-		Include: true,
-		Labels:  without(labelsBy, labelsWithout),
-	}
-}
-
 // union returns the union of two string slices.
 func union(l1 []string, l2 []string) []string {
 	m := make(map[string]struct{})
@@ -178,15 +160,4 @@ func intersect(l1 []string, l2 []string) []string {
 		}
 	}
 	return result
-}
-
-func without(by []string, without []string) []string {
-	m := make(map[string]struct{})
-	for _, s := range by {
-		m[s] = struct{}{}
-	}
-	for _, s := range without {
-		delete(m, s)
-	}
-	return maps.Keys(m)
 }
