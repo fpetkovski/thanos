@@ -250,6 +250,27 @@ count by (cluster) (label_replace(
 		remote(max by (cluster, project, region) (k8s_cluster_info[project(cluster, project, region)])) [0001-01-01 00:00:00 +0000 UTC])), "k8s_cluster", "$0", "cluster", ".*")
 )`,
 		},
+		{
+			name: "binary expression with matching on all labels",
+			expr: `sum by (k8s_cluster) (metric_a - metric_b)`,
+			expected: `
+sum by (k8s_cluster) (dedup(
+	remote(sum by (k8s_cluster, region) (metric_a[exclude()] - metric_b[exclude()])) [0001-01-01 00:00:00 +0000 UTC], 
+	remote(sum by (k8s_cluster, region) (metric_a[exclude()] - metric_b[exclude()])) [0001-01-01 00:00:00 +0000 UTC])
+)`,
+		},
+		{
+			name: "binary expression with matching on a single label",
+			expr: `sum by (k8s_cluster) (metric_a - on (lbl_a) metric_b)`,
+			expected: `
+sum by (k8s_cluster) (dedup(
+	remote(metric_a[project(k8s_cluster, lbl_a)]) [0001-01-01 00:00:00 +0000 UTC], 
+	remote(metric_a[project(k8s_cluster, lbl_a)]) [0001-01-01 00:00:00 +0000 UTC]
+) - on (lbl_a) dedup(
+	remote(metric_b[project(__series__id, lbl_a)]) [0001-01-01 00:00:00 +0000 UTC], 
+	remote(metric_b[project(__series__id, lbl_a)]) [0001-01-01 00:00:00 +0000 UTC])
+)`,
+		},
 	}
 
 	for _, c := range cases {
