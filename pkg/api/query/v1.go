@@ -141,10 +141,10 @@ func (f *QueryEngineFactory) GetThanosEngine() promql.QueryEngine {
 				Engine:         f.GetPrometheusEngine(),
 				EnableAnalysis: true,
 				LogicalOptimizers: []logicalplan.Optimizer{
-					query.SetProjectionLabels{},
 					logicalplan.PassthroughOptimizer{Endpoints: f.remoteEngineEndpoints},
 					logicalplan.DistributeAvgOptimizer{},
 					logicalplan.DistributedExecutionOptimizer{Endpoints: f.remoteEngineEndpoints},
+					query.SetProjectionLabels{},
 				},
 				EnableXFunctions: true,
 			},
