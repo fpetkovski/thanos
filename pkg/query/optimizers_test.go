@@ -240,11 +240,11 @@ count by (cluster) (
     * on(k8s_cluster, region) group_left(project) label_replace(k8s_cluster_info, "k8s_cluster", "$0", "cluster", ".*"))`,
 			expected: `
 count by (cluster) (label_replace(dedup(
-	remote(up[project(cluster, region)]) [0001-01-01 00:00:00 +0000 UTC],
-	remote(up[project(cluster, region)]) [0001-01-01 00:00:00 +0000 UTC]
+	remote(up[project(cluster, k8s_cluster, region)]) [0001-01-01 00:00:00 +0000 UTC], 
+	remote(up[project(cluster, k8s_cluster, region)]) [0001-01-01 00:00:00 +0000 UTC]
 ), "region", "$0", "region", ".*") * on (k8s_cluster, region) group_left (project) dedup(
-	remote(label_replace(k8s_cluster_info[project(__series__id, cluster, project, region)], "k8s_cluster", "$0", "cluster", ".*")) [0001-01-01 00:00:00 +0000 UTC], 
-	remote(label_replace(k8s_cluster_info[project(__series__id, cluster, project, region)], "k8s_cluster", "$0", "cluster", ".*")) [0001-01-01 00:00:00 +0000 UTC])
+	remote(label_replace(k8s_cluster_info[project(__series__id, cluster, k8s_cluster, project, region)], "k8s_cluster", "$0", "cluster", ".*")) [0001-01-01 00:00:00 +0000 UTC], 
+	remote(label_replace(k8s_cluster_info[project(__series__id, cluster, k8s_cluster, project, region)], "k8s_cluster", "$0", "cluster", ".*")) [0001-01-01 00:00:00 +0000 UTC])
 )`,
 		},
 		{
@@ -270,7 +270,7 @@ count by (cluster) (label_replace(
 			expr: `sum by (k8s_cluster) (metric_a - metric_b)`,
 			expected: `
 sum by (k8s_cluster) (dedup(
-	remote(sum by (k8s_cluster, region) (metric_a[exclude()] - metric_b[exclude()])) [0001-01-01 00:00:00 +0000 UTC],
+	remote(sum by (k8s_cluster, region) (metric_a[exclude()] - metric_b[exclude()])) [0001-01-01 00:00:00 +0000 UTC], 
 	remote(sum by (k8s_cluster, region) (metric_a[exclude()] - metric_b[exclude()])) [0001-01-01 00:00:00 +0000 UTC])
 )`,
 		},
@@ -279,7 +279,7 @@ sum by (k8s_cluster) (dedup(
 			expr: `sum by (k8s_cluster) (metric_a - on (lbl_a) metric_b)`,
 			expected: `
 sum by (k8s_cluster) (dedup(
-	remote(metric_a[project(k8s_cluster, lbl_a)]) [0001-01-01 00:00:00 +0000 UTC],
+	remote(metric_a[project(k8s_cluster, lbl_a)]) [0001-01-01 00:00:00 +0000 UTC], 
 	remote(metric_a[project(k8s_cluster, lbl_a)]) [0001-01-01 00:00:00 +0000 UTC]
 ) - on (lbl_a) dedup(
 	remote(metric_b[project(__series__id, lbl_a)]) [0001-01-01 00:00:00 +0000 UTC], 
@@ -291,7 +291,7 @@ sum by (k8s_cluster) (dedup(
 			expr: `sum by (k8s_cluster) (metric_a - on (lbl_a) group_left(lbl_b) metric_b)`,
 			expected: `
 sum by (k8s_cluster) (dedup(
-	remote(metric_a[project(k8s_cluster, lbl_a)]) [0001-01-01 00:00:00 +0000 UTC],
+	remote(metric_a[project(k8s_cluster, lbl_a)]) [0001-01-01 00:00:00 +0000 UTC], 
 	remote(metric_a[project(k8s_cluster, lbl_a)]) [0001-01-01 00:00:00 +0000 UTC]
 ) - on (lbl_a) group_left (lbl_b) dedup(
 	remote(metric_b[project(__series__id, lbl_a, lbl_b)]) [0001-01-01 00:00:00 +0000 UTC], 
