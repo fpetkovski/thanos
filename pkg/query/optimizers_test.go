@@ -105,7 +105,23 @@ sum by (instance, node, region) (
 		{
 			name:     "aggregation with binary expression",
 			expr:     `sum without (pod) (metric_a * on (node) metric_b)`,
-			expected: `sum without (pod) (metric_a[exclude()] * on (node) metric_b[project(__series__id, node)])`,
+			expected: `sum without (pod) (metric_a[exclude(pod)] * on (node) metric_b[project(__series__id, node)])`,
+		},
+		{
+			name: "aggregation with binary expression ignoring labels",
+			expr: `
+max by (pod, k8s_cluster, remote_name) (
+	max_over_time(prometheus_remote_storage_highest_timestamp_in_seconds[5m0s]) 
+	- ignoring (remote_name, url) group_right () 
+	max_over_time(prometheus_remote_storage_queue_highest_sent_timestamp_seconds[5m0s])
+)
+`,
+			expected: `
+max by (pod, k8s_cluster, remote_name) (
+	max_over_time(prometheus_remote_storage_highest_timestamp_in_seconds[exclude(remote_name, url)][5m0s]) 
+	- ignoring (remote_name, url) group_right () 
+	max_over_time(prometheus_remote_storage_queue_highest_sent_timestamp_seconds[exclude(url)][5m0s])
+)`,
 		},
 		{
 			name:     "binary expression with vector and constant",
@@ -199,7 +215,7 @@ count by (cluster) (
 					SetProjectionLabels{},
 					// This is a dummy optimizer that replaces VectorSelectors with a custom struct
 					// which has a custom String() method.
-					swapVectorSelectors{},
+					swapSelectors{},
 				})
 
 			require.Equal(t, annotations.Annotations{}, annos)
@@ -316,7 +332,7 @@ sum by (k8s_cluster) (dedup(
 					SetProjectionLabels{},
 					// This is a dummy optimizer that replaces VectorSelectors with a custom struct
 					// which has a custom String() method.
-					swapVectorSelectors{},
+					swapSelectors{},
 				})
 
 			require.Equal(t, reSpaces.Replace(c.expected), reSpaces.Replace(optimized.Root().String()))
@@ -342,19 +358,19 @@ func newStubEngine(labels []labels.Labels) *stubEngine {
 	return &stubEngine{labels: labels}
 }
 
-type swapVectorSelectors struct{}
+type swapSelectors struct{}
 
-func (s swapVectorSelectors) Optimize(plan logicalplan.Node, _ *query.Options) (logicalplan.Node, annotations.Annotations) {
+func (s swapSelectors) Optimize(plan logicalplan.Node, _ *query.Options) (logicalplan.Node, annotations.Annotations) {
 	logicalplan.TraverseBottomUp(nil, &plan, func(_, expr *logicalplan.Node) bool {
 		switch v := (*expr).(type) {
 		case logicalplan.Deduplicate:
 			for i := range v.Expressions {
 				v.Expressions[i].Query, _ = s.Optimize(v.Expressions[i].Query, nil)
 			}
-			return true
+		case *logicalplan.MatrixSelector:
+			*expr = newMatrixOutput(v)
 		case *logicalplan.VectorSelector:
 			*expr = newVectorOutput(v)
-			return true
 		}
 		return false
 	})
@@ -379,6 +395,21 @@ func (vs vectorOutput) String() string {
 		projectionType = "exclude"
 	}
 	return fmt.Sprintf("%s[%s(%s)]", vs.VectorSelector.String(), projectionType, strings.Join(vs.Projection.Labels, ", "))
+}
+
+type matrixOutput struct {
+	*logicalplan.MatrixSelector
+}
+
+func newMatrixOutput(matrixSelector *logicalplan.MatrixSelector) *matrixOutput {
+	return &matrixOutput{
+		MatrixSelector: matrixSelector,
+	}
+}
+
+func (m *matrixOutput) String() string {
+	vsString := newVectorOutput(m.MatrixSelector.VectorSelector).String()
+	return fmt.Sprintf("%s[%s]", vsString, m.MatrixSelector.Range)
 }
 
 var queryFunctions = map[string]*parser.Function{}

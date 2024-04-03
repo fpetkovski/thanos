@@ -103,12 +103,20 @@ func (s SetProjectionLabels) optimize(expr logicalplan.Node, projection logicalp
 				highCard, lowCard = lowCard, highCard
 			}
 
-			hcProjection := extendProjection(projection, e.VectorMatching.MatchingLabels)
-			s.optimize(highCard, hcProjection)
-			lcProjection := extendProjection(logicalplan.Projection{
+			hcProjection := extendProjection(logicalplan.Projection{
+				Labels:  e.VectorMatching.MatchingLabels,
 				Include: e.VectorMatching.On,
-				Labels:  append([]string{SeriesIDColumn}, e.VectorMatching.MatchingLabels...),
-			}, e.VectorMatching.Include)
+			}, projection)
+			s.optimize(highCard, hcProjection)
+			lcProjection := extendProjection(
+				logicalplan.Projection{
+					Include: e.VectorMatching.On,
+					Labels:  e.VectorMatching.MatchingLabels,
+				},
+				logicalplan.Projection{
+					Labels:  append([]string{SeriesIDColumn}, e.VectorMatching.Include...),
+					Include: true,
+				})
 			s.optimize(lowCard, lcProjection)
 			stop = true
 		case *logicalplan.VectorSelector:
@@ -122,16 +130,28 @@ func (s SetProjectionLabels) optimize(expr logicalplan.Node, projection logicalp
 	return expr, annotations.Annotations{}
 }
 
-func extendProjection(projection logicalplan.Projection, lbls []string) logicalplan.Projection {
-	var extendedLabels []string
-	if projection.Include {
-		extendedLabels = union(projection.Labels, lbls)
-	} else {
-		extendedLabels = intersect(projection.Labels, lbls)
+func extendProjection(inner, outer logicalplan.Projection) logicalplan.Projection {
+	if inner.Include && outer.Include {
+		return logicalplan.Projection{
+			Include: true,
+			Labels:  union(inner.Labels, outer.Labels),
+		}
+	}
+	if !inner.Include && outer.Include {
+		return logicalplan.Projection{
+			Include: false,
+			Labels:  difference(inner.Labels, outer.Labels),
+		}
+	}
+	if inner.Include && !outer.Include {
+		return logicalplan.Projection{
+			Include: false,
+			Labels:  difference(outer.Labels, inner.Labels),
+		}
 	}
 	return logicalplan.Projection{
-		Include: projection.Include,
-		Labels:  extendedLabels,
+		Include: false,
+		Labels:  intersect(inner.Labels, outer.Labels),
 	}
 }
 
@@ -145,6 +165,22 @@ func union(l1 []string, l2 []string) []string {
 		m[s] = struct{}{}
 	}
 	return maps.Keys(m)
+}
+
+// difference returns the set difference of two string slices.
+func difference(l1 []string, l2 []string) []string {
+	s2 := make(map[string]struct{})
+	for _, s := range l2 {
+		s2[s] = struct{}{}
+	}
+	result := make([]string, 0)
+	for _, s := range l1 {
+		if _, ok := s2[s]; !ok {
+			result = append(result, s)
+		}
+	}
+
+	return result
 }
 
 // intersect returns the intersection of two string slices.
