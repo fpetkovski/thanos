@@ -154,7 +154,7 @@ func runReceive(
 		dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.UseCompressor(conf.compression)))
 	}
 
-	var insBucket objstore.Bucket
+	var bkt objstore.Bucket
 	confContentYaml, err := conf.objStoreConfig.Content()
 	if err != nil {
 		return err
@@ -175,7 +175,7 @@ func runReceive(
 			}
 			// The background shipper continuously scans the data directory and uploads
 			// new blocks to object storage service.
-			bkt, err := client.NewBucket(logger, confContentYaml, comp.String())
+			bkt, err = client.NewBucket(logger, confContentYaml, comp.String())
 			if err != nil {
 				return err
 			}
@@ -207,7 +207,7 @@ func runReceive(
 		tsdbOpts,
 		lset,
 		conf.tenantLabelName,
-		insBucket,
+		bkt,
 		conf.allowOutOfOrderUpload,
 		hashFunc,
 	)
@@ -275,7 +275,7 @@ func runReceive(
 
 		level.Debug(logger).Log("msg", "setting up TSDB")
 		{
-			if err := startTSDBAndUpload(g, logger, reg, dbs, uploadC, hashringChangedChan, upload, uploadDone, statusProber, insBucket, receive.HashringAlgorithm(conf.hashringsAlgorithm)); err != nil {
+			if err := startTSDBAndUpload(g, logger, reg, dbs, uploadC, hashringChangedChan, upload, uploadDone, statusProber, bkt, receive.HashringAlgorithm(conf.hashringsAlgorithm)); err != nil {
 				return err
 			}
 		}
