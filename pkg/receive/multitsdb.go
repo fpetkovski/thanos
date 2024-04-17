@@ -362,7 +362,7 @@ func (t *MultiTSDB) Prune(ctx context.Context) error {
 		prunedTenants []string
 		pmtx          sync.Mutex
 	)
-
+	level.Info(t.logger).Log("msg", "Running Pruning Job")
 	t.mtx.RLock()
 	for tenantID, tenantInstance := range t.tenants {
 		wg.Add(1)

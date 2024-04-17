@@ -415,7 +415,12 @@ func runReceive(
 	{
 		ctx, cancel := context.WithCancel(context.Background())
 		g.Add(func() error {
-			return runutil.Repeat(2*time.Hour, ctx.Done(), func() error {
+			return runutil.Repeat(1*time.Minute, ctx.Done(), func() error {
+				currentTime := time.Now()
+				currentTotalMinutes := currentTime.Hour()*60 + currentTime.Minute()
+				if currentTotalMinutes%int(conf.tsdbPruneInterval.Minutes()) != 0 {
+					return nil
+				}
 				if err := dbs.Prune(ctx); err != nil {
 					level.Error(logger).Log("err", err)
 				}
@@ -813,6 +818,7 @@ type receiveConfig struct {
 	tsdbWriteQueueSize           int64
 	tsdbMemorySnapshotOnShutdown bool
 	tsdbEnableNativeHistograms   bool
+	tsdbPruneInterval            time.Duration
 
 	walCompression  bool
 	noLockFile      bool
@@ -939,6 +945,7 @@ func (rc *receiveConfig) registerFlag(cmd extkingpin.FlagClause) {
 		"[EXPERIMENTAL] Enables the ingestion of native histograms.").
 		Default("false").Hidden().BoolVar(&rc.tsdbEnableNativeHistograms)
 
+	cmd.Flag("tsdb.prune-interval", "Run prune operation every specified interval. This operation removes TSDB that are not active.").Default("2h").DurationVar(&rc.tsdbPruneInterval)
 	cmd.Flag("writer.intern",
 		"[EXPERIMENTAL] Enables string interning in receive writer, for more optimized memory usage.").
 		Default("false").Hidden().BoolVar(&rc.writerInterning)
