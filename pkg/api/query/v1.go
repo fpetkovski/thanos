@@ -324,14 +324,6 @@ type queryData struct {
 	Warnings         []error                   `json:"warnings,omitempty"`
 }
 
-type queryTelemetry struct {
-	// TODO(saswatamcode): Replace with engine.TrackedTelemetry once it has exported fields.
-	// TODO(saswatamcode): Add aggregate fields to enrich data.
-	OperatorName string           `json:"name,omitempty"`
-	Execution    string           `json:"executionTime,omitempty"`
-	Children     []queryTelemetry `json:"children,omitempty"`
-}
-
 func (qapi *QueryAPI) parseEnableDedupParam(r *http.Request) (enableDeduplication bool, _ *api.ApiError) {
 	enableDeduplication = true
 
@@ -474,26 +466,6 @@ func (qapi *QueryAPI) parseShardInfo(r *http.Request) (*storepb.ShardInfo, *api.
 	}
 
 	return &info, nil
-}
-
-func (qapi *QueryAPI) parseQueryAnalyzeParam(r *http.Request, query promql.Query) (queryTelemetry, error) {
-	if r.FormValue(QueryAnalyzeParam) == "true" || r.FormValue(QueryAnalyzeParam) == "1" {
-		if eq, ok := query.(engine.ExplainableQuery); ok {
-			return processAnalysis(eq.Analyze()), nil
-		}
-		return queryTelemetry{}, errors.Errorf("Query not analyzable; change engine to 'thanos'")
-	}
-	return queryTelemetry{}, nil
-}
-
-func processAnalysis(a *engine.AnalyzeOutputNode) queryTelemetry {
-	var analysis queryTelemetry
-	analysis.OperatorName = a.OperatorTelemetry.String()
-	analysis.Execution = a.OperatorTelemetry.ExecutionTimeTaken().String()
-	for _, c := range a.Children {
-		analysis.Children = append(analysis.Children, processAnalysis(&c))
-	}
-	return analysis
 }
 
 func (qapi *QueryAPI) parseQueryExplainParam(r *http.Request, query promql.Query) (*engine.ExplainOutputNode, *api.ApiError) {

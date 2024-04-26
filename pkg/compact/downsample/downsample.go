@@ -456,7 +456,7 @@ func newAggrChunkBuilder() *aggrChunkBuilder {
 	return b
 }
 
-func newHistogramAggrChunkBuilder(counterIsGauge bool) *aggrChunkBuilder {
+func newHistogramAggrChunkBuilder() *aggrChunkBuilder {
 	b := &aggrChunkBuilder{
 		mint: math.MaxInt64,
 		maxt: math.MinInt64,
@@ -624,7 +624,7 @@ func downsampleHistogramBatch(batch []sample, resolution int64) chunks.Meta {
 	// We need to know the smallest schema in advanced otherwise we might end
 	// up with a non appendable histogram if histogram.schema < chunk.schema.
 	schema := minSchema(batch)
-	ab := newHistogramAggrChunkBuilder(isGaugeSamples(batch))
+	ab := newHistogramAggrChunkBuilder()
 	downsampleBatch(batch, resolution, newHistogramAggregator(schema), ab.addHistogram)
 	return ab.encode()
 }
@@ -637,13 +637,6 @@ func minSchema(samples []sample) int32 {
 		}
 	}
 	return schema
-}
-
-func isGaugeSamples(samples []sample) bool {
-	if len(samples) == 0 {
-		return false
-	}
-	return samples[0].fh.CounterResetHint == histogram.GaugeType
 }
 
 // downsampleBatch aggregates the data over the given resolution and calls add each time
@@ -969,7 +962,7 @@ func downsampleHistogramAggrBatch(chks []*AggrChunk, buf *[]sample, resolution i
 		}
 	}
 
-	ab := newHistogramAggrChunkBuilder(isGaugeSamples(*buf))
+	ab := newHistogramAggrChunkBuilder()
 
 	schema := minSchema(*buf)
 	downsampleBatch(*buf, resolution, newHistogramAggregator(schema), func(t int64, a sampleAggregator) {

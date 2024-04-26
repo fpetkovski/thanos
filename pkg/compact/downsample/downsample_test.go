@@ -475,7 +475,7 @@ func TestDownsample(t *testing.T) {
 				fakeMeta.Thanos.Downsample.Resolution = tcase.resolution - 1
 			}
 
-			id, err := Downsample(nil, logger, fakeMeta, mb, dir, tcase.resolution, nil)
+			id, err := Downsample(context.Background(), logger, fakeMeta, mb, dir, tcase.resolution, nil)
 			if tcase.expectedDownsamplingErr != nil {
 				testutil.NotOk(t, err)
 				testutil.Equals(t, tcase.expectedDownsamplingErr(ser.chunks).Error(), err.Error())
@@ -563,7 +563,7 @@ func TestDownsampleAggrAndEmptyXORChunks(t *testing.T) {
 
 	fakeMeta := &metadata.Meta{}
 	fakeMeta.Thanos.Downsample.Resolution = 300_000
-	id, err := Downsample(nil, logger, fakeMeta, mb, dir, 3_600_000, nil)
+	id, err := Downsample(context.Background(), logger, fakeMeta, mb, dir, 3_600_000, nil)
 	_ = id
 	testutil.Ok(t, err)
 }
@@ -597,7 +597,7 @@ func TestDownsampleAggrAndNonEmptyXORChunks(t *testing.T) {
 
 	fakeMeta := &metadata.Meta{}
 	fakeMeta.Thanos.Downsample.Resolution = 300_000
-	id, err := Downsample(nil, logger, fakeMeta, mb, dir, 3_600_000, nil)
+	id, err := Downsample(context.Background(), logger, fakeMeta, mb, dir, 3_600_000, nil)
 	_ = id
 	testutil.Ok(t, err)
 
@@ -853,7 +853,7 @@ func TestDownSampleNativeHistogram(t *testing.T) {
 					MaxTime: maxt,
 				},
 			}
-			idResLevel1, err := Downsample(nil, logger, fakeMeta, mb, dir, ResLevel1, nil)
+			idResLevel1, err := Downsample(context.Background(), logger, fakeMeta, mb, dir, ResLevel1, nil)
 			testutil.Ok(t, err)
 
 			meta, lbls, chks := GetMetaLabelsAndChunks(t, dir, idResLevel1)
@@ -867,7 +867,7 @@ func TestDownSampleNativeHistogram(t *testing.T) {
 
 			blk, err := tsdb.OpenBlock(logger, filepath.Join(dir, idResLevel1.String()), NewPool())
 			testutil.Ok(t, err)
-			idResLevel2, err := Downsample(nil, logger, meta, blk, dir, ResLevel2, nil)
+			idResLevel2, err := Downsample(context.Background(), logger, meta, blk, dir, ResLevel2, nil)
 			testutil.Ok(t, err)
 
 			_, lbls, chks = GetMetaLabelsAndChunks(t, dir, idResLevel2)
@@ -938,7 +938,7 @@ func TestDropMixedChunkTypes(t *testing.T) {
 		droppedSeriesCount++
 	}
 
-	idResLevel1, err := Downsample(nil, logger, fakeMeta, mb, dir, ResLevel1, incDroppedSeriesCount)
+	idResLevel1, err := Downsample(context.Background(), logger, fakeMeta, mb, dir, ResLevel1, incDroppedSeriesCount)
 	testutil.Ok(t, err)
 	testutil.Equals(t, 2, droppedSeriesCount)
 
@@ -968,7 +968,7 @@ func TestDropMixedChunkTypes(t *testing.T) {
 	}, chks[0])
 }
 
-func newChunk(t *testing.T, counterResetHint histogram.CounterResetHint) (*chunkenc.FloatHistogramChunk, chunkenc.Appender) {
+func newChunk(t *testing.T, _ histogram.CounterResetHint) (*chunkenc.FloatHistogramChunk, chunkenc.Appender) {
 	raw := chunkenc.NewFloatHistogramChunk()
 	app, err := raw.Appender()
 	//if counterResetHint == histogram.GaugeType {
@@ -1097,7 +1097,7 @@ func chunksToSeriesIteratable(t *testing.T, inRaw [][]sample, inAggr []map[AggrT
 
 			for _, s := range samples {
 				if isHistogramSamples(samples) {
-					app.AppendFloatHistogram(nil, s.t, s.fh, false)
+					_, _, _, _ = app.AppendFloatHistogram(nil, s.t, s.fh, false)
 				} else {
 					app.Append(s.t, s.v)
 				}

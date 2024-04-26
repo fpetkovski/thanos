@@ -84,7 +84,7 @@ Explain the full overview of the proposed solution. Some guidelines:
 
 ## Alternatives
 
-The section stating potential alternatives. Highlight the objections reader should have towards your proposal as they read it. Tell them why you still think you should take this path [[ref](https://twitter.com/whereistanya/status/1353853753439490049)]
+The section stating potential alternatives. Highlight the objections reader should have towards your proposal as they read it. Tell them why you still think you should take this path.
 
 1. This is why not solution Z...
 

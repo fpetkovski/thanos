@@ -31,7 +31,7 @@ If they choose to accept, the following steps are taken:
 * Maintainer is added to the [GitHub organization](https://github.com/thanos-io) as *Owner*.
 * Maintainer is added to the [thanos-io](https://groups.google.com/forum/#!forum/thanos-io).
 * Maintainer is added to the list of team members [here](../MAINTAINERS.md)
-* New maintainer is announced on the [Thanos Twitter](https://twitter.com/ThanosMetrics) by an existing team member.
+* New maintainer is announced on the Thanos Twitter by an existing team member.
 
 Team members may retire at any time by emailing [thanos-io@googlegroups.com](https://groups.google.com/forum/#!forum/thanos-io).
 
@@ -52,7 +52,7 @@ If they choose to accept, the following steps are taken:
 * Triage member is added to the [Thanos project](http://github.com/thanos-io/thanos) with `Triage` access.
 * Triage member is added to the [thanos-io](https://groups.google.com/forum/#!forum/thanos-io).
 * Triage member is added to the list of Triage members [here](../MAINTAINERS.md#triage).
-* New team Triage member are announced on the [Thanos Twitter](https://twitter.com/ThanosMetrics) by an existing team member.
+* New team Triage member are announced on the Thanos Twitter by an existing team member.
 
 Triage member may retire at any time by emailing [thanos-io@googlegroups.com](https://groups.google.com/forum/#!forum/thanos-io). It can be proposed to step up as Maintainer in any time as well.
 
@@ -151,7 +151,7 @@ See [Contributor doc](../CONTRIBUTING.md#adding-new-features--components)
 
 To become an official member of Maintainers Team, you should make ongoing contributions to one or more project(s) for at least three months. At that point, a team member (typically a maintainer of the project) may propose you for membership. The discussion about this will be held in private, and you will be informed privately when a decision has been made. A possible, but not required, graduation path is to become a maintainer first.
 
-Should the decision be in favor, your new membership will also be announced on the [Thanos Twitter](https://twitter.com/ThanosMetrics)
+Should the decision be in favor, your new membership will also be announced on the Thanos Twitter
 
 ### How do I add a project?
 

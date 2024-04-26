@@ -15,6 +15,24 @@ type: GCS
 config:
   bucket: ""
   service_account: ""
+  use_grpc: false
+  grpc_conn_pool_size: 0
+  http_config:
+    idle_conn_timeout: 0s
+    response_header_timeout: 0s
+    insecure_skip_verify: false
+    tls_handshake_timeout: 0s
+    expect_continue_timeout: 0s
+    max_idle_conns: 0
+    max_idle_conns_per_host: 0
+    max_conns_per_host: 0
+    tls_config:
+      ca_file: ""
+      cert_file: ""
+      key_file: ""
+      server_name: ""
+      insecure_skip_verify: false
+    disable_compression: false
 prefix: ""
 ```
 
@@ -292,6 +310,8 @@ All the settings are **optional**:
 
 - `max_size`: overall maximum number of bytes cache can contain. The value should be specified with a bytes unit (ie. `250MB`).
 - `max_item_size`: maximum size of single item, in bytes. The value should be specified with a bytes unit (ie. `125MB`).
+- `enabled_items`: selectively choose what types of items to cache. Supported values are `Postings`, `Series` and `ExpandedPostings`. By default, all items are cached.
+- `ttl`: this field doesn't do anything for inmemory cache.
 
 ### Memcached index cache
 
@@ -327,6 +347,15 @@ While the remaining settings are **optional**:
 - `max_item_size`: maximum size of an item to be stored in memcached. This option should be set to the same value of memcached `-I` flag (defaults to 1MB) in order to avoid wasting network round trips to store items larger than the max item size allowed in memcached. If set to `0`, the item size is unlimited.
 - `dns_provider_update_interval`: the DNS discovery update interval.
 - `auto_discovery`: whether to use the auto-discovery mechanism for memcached.
+- `set_async_circuit_breaker_config`: the configuration for the circuit breaker for asynchronous set operations.
+  - `enabled`: `true` to enable circuite breaker for asynchronous operations. The circuit breaker consists of three states: closed, half-open, and open. It begins in the closed state. When the total requests exceed `min_requests`, and either consecutive failures occur or the failure percentage is excessively high according to the configured values, the circuit breaker transitions to the open state. This results in the rejection of all asynchronous operations. After `open_duration`, the circuit breaker transitions to the half-open state, where it allows `half_open_max_requests` asynchronous operations to be processed in order to test if the conditions have improved. If they have not, the state transitions back to open; if they have, it transitions to the closed state. Following each 10 seconds interval in the closed state, the circuit breaker resets its metrics and repeats this cycle.
+  - `half_open_max_requests`: maximum number of requests allowed to pass through when the circuit breaker is half-open. If set to 0, the circuit breaker allows only 1 request.
+  - `open_duration`: the period of the open state after which the state of the circuit breaker becomes half-open. If set to 0, the circuit breaker utilizes the default value of 60 seconds.
+  - `min_requests`: minimal requests to trigger the circuit breaker, 0 signifies no requirements.
+  - `consecutive_failures`: consecutive failures based on `min_requests` to determine if the circuit breaker should open.
+  - `failure_percent`: the failure percentage, which is based on `min_requests`, to determine if the circuit breaker should open.
+- `enabled_items`: selectively choose what types of items to cache. Supported values are `Postings`, `Series` and `ExpandedPostings`. By default, all items are cached.
+- `ttl`: ttl to store index cache items in memcached.
 
 ### Redis index cache
 
@@ -374,6 +403,8 @@ While the remaining settings are **optional**:
 - `read_timeout`: the redis read timeout.
 - `write_timeout`: the redis write timeout.
 - `cache_size` size of the in-memory cache used for client-side caching. Client-side caching is enabled when this value is not zero. See [official documentation](https://redis.io/docs/manual/client-side-caching/) for more. It is highly recommended to enable this so that Thanos Store would not need to continuously retrieve data from Redis for repeated requests of the same key(-s).
+- `enabled_items`: selectively choose what types of items to cache. Supported values are `Postings`, `Series` and `ExpandedPostings`. By default, all items are cached.
+- `ttl`: ttl to store index cache items in redis.
 
 Here is an example of what effect client-side caching could have:
 

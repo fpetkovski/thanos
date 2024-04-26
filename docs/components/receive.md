@@ -76,6 +76,24 @@ type: GCS
 config:
   bucket: ""
   service_account: ""
+  use_grpc: false
+  grpc_conn_pool_size: 0
+  http_config:
+    idle_conn_timeout: 0s
+    response_header_timeout: 0s
+    insecure_skip_verify: false
+    tls_handshake_timeout: 0s
+    expect_continue_timeout: 0s
+    max_idle_conns: 0
+    max_idle_conns_per_host: 0
+    max_conns_per_host: 0
+    tls_config:
+      ca_file: ""
+      cert_file: ""
+      key_file: ""
+      server_name: ""
+      insecure_skip_verify: false
+    disable_compression: false
 prefix: ""
 ```
 
@@ -94,6 +112,39 @@ The example content of `hashring.json`:
 ```
 
 With such configuration any receive listens for remote write on `<ip>10908/api/v1/receive` and will forward to correct one in hashring if needed for tenancy and replication.
+
+It is possible to only match certain `tenant`s inside of a hashring file. For example:
+
+```json
+[
+    {
+       "tenants": ["foobar"],
+       "endpoints": [
+            "127.0.0.1:1234",
+            "127.0.0.1:12345",
+            "127.0.0.1:1235"
+        ]
+    }
+]
+```
+
+The specified endpoints will be used if the tenant is set to `foobar`. It is possible to use glob matching through the parameter `tenant_matcher_type`. It can have the value `glob`. In this case, the strings inside the array are taken as glob patterns and matched against the `tenant` inside of a remote-write request. For instance:
+
+```json
+[
+    {
+       "tenants": ["foo*"],
+       "tenant_matcher_type": "glob",
+       "endpoints": [
+            "127.0.0.1:1234",
+            "127.0.0.1:12345",
+            "127.0.0.1:1235"
+        ]
+    }
+]
+```
+
+This will still match the tenant `foobar` and any other tenant which begins with the letters `foo`.
 
 ### AZ-aware Ketama hashring (experimental)
 
@@ -148,7 +199,7 @@ To configure the gates and limits you can use one of the two options:
 - `--receive.limits-config-file=<file-path>`: where `<file-path>` is the path to the YAML file. Any modification to the indicated file will trigger a configuration reload. If the updated configuration is invalid an error will be logged and it won't replace the previous valid configuration.
 - `--receive.limits-config=<content>`: where `<content>` is the content of YAML file.
 
-By default all the limits and gates are **disabled**.
+By default all the limits and gates are **disabled**. These options should be added to the routing-receivers when using the [Routing Receive and Ingesting Receive](https://thanos.io/tip/proposals-accepted/202012-receive-split.md/).
 
 ### Understanding the configuration file
 
@@ -247,6 +298,14 @@ NOTE:
 - It is possible that Receive ingests more active series than the specified limit, as it relies on meta-monitoring, which may not have the latest data for current number of active series of a tenant at all times.
 - Thanos Receive performs best-effort limiting. In case meta-monitoring is down/unreachable, Thanos Receive will not impose limits and only log errors for meta-monitoring being unreachable. Similarly to when one receiver cannot be scraped.
 - Support for different limit configuration for different tenants is planned for the future.
+
+## Asynchronous workers
+
+Instead of spawning a new goroutine each time the Receiver forwards a request to another node, it spawns a fixed number of goroutines (workers) that perform the work. This allows avoiding spawning potentially tens or even hundred thousand goroutines if someone starts sending a lot of small requests.
+
+This number of workers is controlled by `--receive.forward.async-workers=`.
+
+Please see the metric `thanos_receive_forward_delay_seconds` to see if you need to increase the number of forwarding workers.
 
 ## Flags
 
@@ -429,6 +488,9 @@ Flags:
                                  In any case, the lockfiles will be deleted on
                                  next startup.
       --tsdb.path="./data"       Data directory of TSDB.
+      --tsdb.prune-interval=2h   Run prune operation every specified interval.
+                                 This operation removes TSDB that are not
+                                 active.
       --tsdb.retention=15d       How long to retain raw samples on local
                                  storage. 0d - disables the retention
                                  policy (i.e. infinite retention).

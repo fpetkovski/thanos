@@ -2631,7 +2631,7 @@ func prepareBucket(b testing.TB, resolutionLevel compact.ResolutionLevel, sample
 
 	if resolutionLevel > 0 {
 		// Downsample newly-created block.
-		blockID, err = downsample.Downsample(nil, logger, blockMeta, head, tmpDir, int64(resolutionLevel), nil)
+		blockID, err = downsample.Downsample(context.Background(), logger, blockMeta, head, tmpDir, int64(resolutionLevel), nil)
 		testutil.Ok(b, err)
 		blockMeta, err = metadata.ReadFromDir(filepath.Join(tmpDir, blockID.String()))
 		testutil.Ok(b, err)

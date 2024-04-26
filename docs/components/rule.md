@@ -111,6 +111,10 @@ expr: <string>
 # Alerts which have not yet fired for long enough are considered pending.
 [ for: <duration> | default = 0s ]
 
+# How long an alert will continue firing after the condition that triggered it
+# has cleared.
+[ keep_firing_for: <duration> | default = 0s ]
+
 # Labels to add or overwrite for each alert.
 labels:
   [ <labelname>: <tmpl_string> ]
@@ -164,7 +168,7 @@ The most important metrics to alert on are:
 
 Those metrics are important for vanilla Prometheus as well, but even more important when we rely on (sometimes WAN) network.
 
-// TODO(bwplotka): Rereview them after recent changes in metrics.
+ <!-- TODO(bwplotka): Rereview them after recent changes in metrics. -->
 
 See [alerts](https://github.com/thanos-io/thanos/blob/e3b0baf7de9dde1887253b1bb19d78ae71a01bf8/examples/alerts/alerts.md#ruler) for more example alerts for ruler.
 
@@ -403,6 +407,10 @@ Flags:
       --query.default-step=1s    Default range query step to use. This is
                                  only used in stateless Ruler and alert state
                                  restoration.
+      --query.enable-x-functions
+                                 Whether to enable extended rate functions
+                                 (xrate, xincrease and xdelta). Only has effect
+                                 when used with Thanos engine.
       --query.http-method=POST   HTTP method to use when sending queries.
                                  Possible options: [GET, POST]
       --query.sd-dns-interval=30s
@@ -556,7 +564,9 @@ Supported values for `api_version` are `v1` or `v2`.
 
 ### Query API
 
-The `--query.config` and `--query.config-file` flags allow specifying multiple query endpoints. Those entries are treated as a single HA group. This means that query failure is claimed only if the Ruler fails to query all instances.
+The `--query.config` and `--query.config-file` flags allow specifying multiple query endpoints. Those entries are treated as a single HA group, where HTTP endpoints are given priority over gRPC Query API endpoints. This means that query failure is claimed only if the Ruler fails to query all instances.
+
+Rules that produce native histograms (experimental feature) are exclusively supported through the gRPC Query API. However, for all other rules, there is no difference in functionality between HTTP and gRPC.
 
 The configuration format is the following:
 

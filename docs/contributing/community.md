@@ -4,7 +4,7 @@ Thanos is an open source project from the very first commit. We always value and
 
 ### Social Media and Announcements
 
-Follow and interact with us on Twitter: [@ThanosMetrics](https://twitter.com/ThanosMetrics)
+Follow and interact with us on Twitter: @ThanosMetrics
 
 ### Thanos Community Office Hours
 
