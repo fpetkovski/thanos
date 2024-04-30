@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/thanos-io/thanos/pkg/tracing/migration"
 
 	"github.com/go-kit/log"
@@ -67,23 +69,33 @@ func NewTracerProvider(ctx context.Context, logger log.Logger, conf []byte) (*tr
 	if err != nil {
 		logger.Log(err)
 	}
-	tp := newTraceProvider(ctx, processor, logger, config.ServiceName, sampler)
+	tp := newTraceProvider(ctx, processor, logger, config.ServiceName, config.ResourceAttributes, sampler)
 
 	return tp, nil
 }
 
-func newTraceProvider(ctx context.Context, processor tracesdk.SpanProcessor, logger log.Logger, serviceName string, sampler tracesdk.Sampler) *tracesdk.TracerProvider {
-	resource, err := resource.New(
-		ctx,
-		resource.WithAttributes(semconv.ServiceNameKey.String(serviceName)),
-	)
+func newTraceProvider(
+	ctx context.Context,
+	processor tracesdk.SpanProcessor,
+	logger log.Logger,
+	serviceName string,
+	attrs map[string]string,
+	sampler tracesdk.Sampler,
+) *tracesdk.TracerProvider {
+	resourceAttrs := make([]attribute.KeyValue, 0, len(attrs)+1)
+	if serviceName != "" {
+		resourceAttrs = append(resourceAttrs, semconv.ServiceNameKey.String(serviceName))
+	}
+	for k, v := range attrs {
+		resourceAttrs = append(resourceAttrs, attribute.String(k, v))
+	}
+	r, err := resource.New(ctx, resource.WithAttributes(resourceAttrs...))
 	if err != nil {
 		level.Warn(logger).Log("msg", "jaeger: detecting resources for tracing provider failed", "err", err)
 	}
-
 	tp := tracesdk.NewTracerProvider(
 		tracesdk.WithSpanProcessor(processor),
-		tracesdk.WithResource(resource),
+		tracesdk.WithResource(r),
 		tracesdk.WithSampler(
 			migration.SamplerWithOverride(
 				sampler, migration.ForceTracingAttributeKey,
