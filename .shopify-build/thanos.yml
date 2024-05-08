@@ -2,6 +2,7 @@ containers:
   thanos:
     dockerfile:
       path: Dockerfile.shopify
+      platform: linux/arm64,linux/amd64
   thanos-ci:
     docker: cimg/go:1.19-node
 
