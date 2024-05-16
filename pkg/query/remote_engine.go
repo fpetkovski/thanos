@@ -7,6 +7,7 @@ import (
 	"context"
 	"io"
 	"math"
+	"strings"
 	"sync"
 	"time"
 
@@ -220,11 +221,25 @@ type remoteQuery struct {
 	interval   time.Duration
 	remoteAddr string
 
+	samplesStats *stats.QuerySamples
+
 	cancel context.CancelFunc
 }
 
 func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 	start := time.Now()
+	defer func() {
+		keys := []any{
+			"msg", "Executed remote query",
+			"query", r.plan.String(),
+			"time", time.Since(start),
+		}
+		if r.samplesStats != nil {
+			keys = append(keys, "remote_peak_samples", r.samplesStats.PeakSamples)
+			keys = append(keys, "remote_total_samples", r.samplesStats.TotalSamples)
+		}
+		level.Debug(r.logger).Log(keys...)
+	}()
 
 	qctx, cancel := context.WithCancel(ctx)
 	r.cancel = cancel
@@ -251,6 +266,8 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 		level.Warn(r.logger).Log("msg", "Failed to encode query plan", "err", err)
 	}
 
+	r.samplesStats = stats.NewQuerySamples(false)
+
 	// Instant query.
 	if r.start == r.end {
 		request := &querypb.QueryRequest{
@@ -273,6 +290,8 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 		var (
 			result   = make(promql.Vector, 0)
 			warnings annotations.Annotations
+			builder  = labels.NewScratchBuilder(8)
+			qryStats *querypb.QueryStats
 		)
 
 		for {
@@ -288,17 +307,31 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 				warnings.Add(errors.New(warn))
 				continue
 			}
+			if s := msg.GetStats(); s != nil {
+				qryStats = s
+				continue
+			}
 
 			ts := msg.GetTimeseries()
-
+			if ts == nil {
+				continue
+			}
+			builder.Reset()
+			for _, l := range ts.Labels {
+				builder.Add(strings.Clone(l.Name), strings.Clone(l.Value))
+			}
 			// Point might have a different timestamp, force it to the evaluation
 			// timestamp as that is when we ran the evaluation.
 			// See https://github.com/prometheus/prometheus/blob/b727e69b7601b069ded5c34348dca41b80988f4b/promql/engine.go#L693-L699
 			if len(ts.Histograms) > 0 {
-				result = append(result, promql.Sample{Metric: labelpb.ZLabelsToPromLabels(ts.Labels), H: fromProtoHistogram(ts.Histograms[0]), T: r.start.UnixMilli()})
+				result = append(result, promql.Sample{Metric: builder.Labels(), H: fromProtoHistogram(ts.Histograms[0]), T: r.start.UnixMilli()})
 			} else {
-				result = append(result, promql.Sample{Metric: labelpb.ZLabelsToPromLabels(ts.Labels), F: ts.Samples[0].Value, T: r.start.UnixMilli()})
+				result = append(result, promql.Sample{Metric: builder.Labels(), F: ts.Samples[0].Value, T: r.start.UnixMilli()})
 			}
+		}
+		if qryStats != nil {
+			r.samplesStats.UpdatePeak(int(qryStats.PeakSamples))
+			r.samplesStats.TotalSamples = qryStats.SamplesTotal
 		}
 
 		return &promql.Result{Value: result, Warnings: warnings}
@@ -326,6 +359,8 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 	var (
 		result   = make(promql.Matrix, 0)
 		warnings annotations.Annotations
+		builder  = labels.NewScratchBuilder(8)
+		qryStats *querypb.QueryStats
 	)
 
 	for {
@@ -341,13 +376,21 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 			warnings.Add(errors.New(warn))
 			continue
 		}
+		if s := msg.GetStats(); s != nil {
+			qryStats = s
+			continue
+		}
 
 		ts := msg.GetTimeseries()
 		if ts == nil {
 			continue
 		}
+		builder.Reset()
+		for _, l := range ts.Labels {
+			builder.Add(strings.Clone(l.Name), strings.Clone(l.Value))
+		}
 		series := promql.Series{
-			Metric:     labelpb.ZLabelsToPromLabels(ts.Labels),
+			Metric:     builder.Labels(),
 			Floats:     make([]promql.FPoint, 0, len(ts.Samples)),
 			Histograms: make([]promql.HPoint, 0, len(ts.Histograms)),
 		}
@@ -360,12 +403,15 @@ func (r *remoteQuery) Exec(ctx context.Context) *promql.Result {
 		for _, hp := range ts.Histograms {
 			series.Histograms = append(series.Histograms, promql.HPoint{
 				T: hp.Timestamp,
-				H: fromProtoHistogram(hp),
+				H: prompb.FloatHistogramProtoToFloatHistogram(hp),
 			})
 		}
 		result = append(result, series)
 	}
-	level.Debug(r.logger).Log("msg", "Executed query", "query", r.plan.String(), "time", time.Since(start), "client", r.client.GetAddress())
+	if qryStats != nil {
+		r.samplesStats.UpdatePeak(int(qryStats.PeakSamples))
+		r.samplesStats.TotalSamples = qryStats.SamplesTotal
+	}
 
 	return &promql.Result{Value: result, Warnings: warnings}
 }
@@ -374,7 +420,11 @@ func (r *remoteQuery) Close() { r.Cancel() }
 
 func (r *remoteQuery) Statement() parser.Statement { return nil }
 
-func (r *remoteQuery) Stats() *stats.Statistics { return nil }
+func (r *remoteQuery) Stats() *stats.Statistics {
+	return &stats.Statistics{
+		Samples: r.samplesStats,
+	}
+}
 
 func (r *remoteQuery) Cancel() {
 	if r.cancel != nil {

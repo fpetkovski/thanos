@@ -2,9 +2,9 @@ containers:
   thanos:
     dockerfile:
       path: Dockerfile.shopify
-      platform: linux/arm64,linux/amd64
   thanos-ci:
     docker: cimg/go:1.19-node
 
 steps:
   - build: thanos
+    architectures: [x86_64, arm64]
