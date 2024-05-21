@@ -137,13 +137,13 @@ func (f *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Check whether we should parse the query string.
 	shouldReportSlowQuery := f.cfg.LogQueriesLongerThan != 0 && queryResponseTime > f.cfg.LogQueriesLongerThan
-	if shouldReportSlowQuery || f.cfg.QueryStatsEnabled {
+	if shouldReportSlowQuery || f.cfg.QueryStatsEnabled || err != nil {
 		queryString = f.parseRequestQueryString(r, buf)
 	}
 
 	if err != nil {
 		writeError(w, err)
-		f.reportQueryWithError(r, queryString, err)
+		f.reportFailedQuery(r, queryString, err)
 		return
 	}
 
@@ -176,8 +176,8 @@ func (f *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// reportQueryWithError reports querie with error.
-func (f *Handler) reportQueryWithError(r *http.Request, queryString url.Values, err error) {
+// reportFailedQuery reports querie with error.
+func (f *Handler) reportFailedQuery(r *http.Request, queryString url.Values, err error) {
 	if !isQueryPath(r.URL.Path) {
 		return
 	}
