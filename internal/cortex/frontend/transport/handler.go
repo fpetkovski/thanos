@@ -136,8 +136,7 @@ func (f *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	f.reportQueryLatency(r, w.Header(), queryResponseTime, err)
 
 	// Check whether we should parse the query string.
-	shouldReportSlowQuery := f.cfg.LogQueriesLongerThan != 0 && queryResponseTime > f.cfg.LogQueriesLongerThan
-	if shouldReportSlowQuery || f.cfg.QueryStatsEnabled || err != nil {
+	if f.reportQueryAsSlow(queryResponseTime) || f.cfg.QueryStatsEnabled || err != nil {
 		queryString = f.parseRequestQueryString(r, buf)
 	}
 
@@ -163,12 +162,7 @@ func (f *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		level.Error(util_log.WithContext(r.Context(), f.log)).Log("msg", "write response body error", "bytesCopied", bytesCopied, "err", err)
 	}
 
-	// Check whether we should parse the query string.
-	if shouldReportSlowQuery || f.cfg.QueryStatsEnabled {
-		queryString = f.parseRequestQueryString(r, buf)
-	}
-
-	if shouldReportSlowQuery {
+	if f.reportQueryAsSlow(queryResponseTime) {
 		f.reportSlowQuery(r, hs, queryString, queryResponseTime)
 	}
 	if f.cfg.QueryStatsEnabled {
@@ -231,7 +225,7 @@ func (f *Handler) reportSlowQuery(r *http.Request, responseHeaders http.Header, 
 	var (
 		headers          = f.getHeaderInfo(r)
 		remoteUser, _, _ = r.BasicAuth()
-		thanosTraceID    = getTraceId(responseHeaders)
+		thanosTraceID, _ = getTraceId(responseHeaders)
 	)
 	logMessage := append(append([]interface{}{
 		"msg", "slow query detected",
@@ -252,12 +246,13 @@ func (f *Handler) reportSlowQuery(r *http.Request, responseHeaders http.Header, 
 	level.Info(util_log.WithContext(r.Context(), f.log)).Log(logMessage...)
 }
 
-func getTraceId(responseHeaders http.Header) string {
-	thanosTraceID := "-"
-	if traceID := responseHeaders.Get("X-Thanos-Trace-Id"); traceID != "" {
-		thanosTraceID = traceID
-	}
-	return thanosTraceID
+func (f *Handler) reportQueryAsSlow(duration time.Duration) bool {
+	return f.cfg.LogQueriesLongerThan > 0 && duration > f.cfg.LogQueriesLongerThan
+}
+
+func getTraceId(responseHeaders http.Header) (string, bool) {
+	traceID := responseHeaders.Get("X-Thanos-Trace-Id")
+	return traceID, traceID != ""
 }
 
 func (f *Handler) getHeaderInfo(r *http.Request) (fields []interface{}) {
@@ -272,7 +267,6 @@ func (f *Handler) getHeaderInfo(r *http.Request) (fields []interface{}) {
 	}
 	fields = append(fields, "grafana_dashboard_uid", grafanaDashboardUID)
 	fields = append(fields, "grafana_panel_id", grafanaPanelID)
-	fields = append(fields, "user", grafanaPanelID)
 	return fields
 }
 
@@ -325,25 +319,24 @@ func (f *Handler) parseRequestQueryString(r *http.Request, bodyBuf bytes.Buffer)
 }
 
 func (f *Handler) reportQueryLatency(r *http.Request, resHeaders http.Header, responseTime time.Duration, err error) {
-
 	status := "success"
 	if err != nil {
 		status = "error"
 	}
-	user, _, _ := r.BasicAuth()
 
-	exemplar := prometheus.Labels{}
-	traceId := getTraceId(resHeaders)
-	if traceId != "-" {
-		exemplar["traceID"] = traceId
-	}
-
-	headerInfo := f.getHeaderInfo(r)
-	for i := 0; i < len(headerInfo); i += 2 {
-		exemplar[headerInfo[i].(string)] = headerInfo[i+1].(string)
-	}
-
-	if traceId != "-" {
+	var (
+		user, _, _        = r.BasicAuth()
+		traceId, hasTrace = getTraceId(resHeaders)
+		emitExemplar      = hasTrace && (f.reportQueryAsSlow(responseTime) || status != "success")
+	)
+	if emitExemplar {
+		var (
+			headerInfo = f.getHeaderInfo(r)
+			exemplar   = prometheus.Labels{"traceID": traceId}
+		)
+		for i := 0; i < len(headerInfo); i += 2 {
+			exemplar[headerInfo[i].(string)] = headerInfo[i+1].(string)
+		}
 		f.queryLatency.WithLabelValues(status, user).(prometheus.ExemplarObserver).ObserveWithExemplar(responseTime.Seconds(), exemplar)
 		return
 	}
