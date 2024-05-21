@@ -181,22 +181,25 @@ func (f *Handler) reportFailedQuery(r *http.Request, queryString url.Values, err
 	if !isQueryPath(r.URL.Path) {
 		return
 	}
-	headers := f.getHeaderInfo(r)
-	logMessage := append([]interface{}{
+	var (
+		headers          = f.getHeaderInfo(r)
+		remoteUser, _, _ = r.BasicAuth()
+	)
+	logMessage := append(append([]interface{}{
 		"msg", "failed query detected",
 		"error", err,
 		"method", r.Method,
 		"host", r.Host,
 		"path", r.URL.Path,
-	}, headers...)
+		"remote_user", remoteUser,
+		"remote_addr", r.RemoteAddr,
+	}, headers...), formatQueryString(queryString)...)
 
 	queryRange := extractQueryRange(queryString)
 	if queryRange != time.Duration(0) {
 		logMessage = append(logMessage, "query_range_hours", int(queryRange.Hours()))
 		logMessage = append(logMessage, "query_range_human", queryRange.String())
 	}
-
-	logMessage = append(logMessage, formatQueryString(queryString)...)
 	level.Info(util_log.WithContext(r.Context(), f.log)).Log(logMessage...)
 }
 
@@ -225,20 +228,12 @@ func (f *Handler) reportSlowQuery(r *http.Request, responseHeaders http.Header, 
 	if !isQueryPath(r.URL.Path) {
 		return
 	}
-	// NOTE(GiedriusS): see https://github.com/grafana/grafana/pull/60301 for more info.
-	grafanaDashboardUID := "-"
-	if dashboardUID := r.Header.Get("X-Dashboard-Uid"); dashboardUID != "" {
-		grafanaDashboardUID = dashboardUID
-	}
-	grafanaPanelID := "-"
-	if panelID := r.Header.Get("X-Panel-Id"); panelID != "" {
-		grafanaPanelID = panelID
-	}
-	thanosTraceID := getTraceId(responseHeaders)
-
-	remoteUser, _, _ := r.BasicAuth()
-
-	logMessage := append([]interface{}{
+	var (
+		headers          = f.getHeaderInfo(r)
+		remoteUser, _, _ = r.BasicAuth()
+		thanosTraceID    = getTraceId(responseHeaders)
+	)
+	logMessage := append(append([]interface{}{
 		"msg", "slow query detected",
 		"method", r.Method,
 		"host", r.Host,
@@ -246,16 +241,14 @@ func (f *Handler) reportSlowQuery(r *http.Request, responseHeaders http.Header, 
 		"remote_user", remoteUser,
 		"remote_addr", r.RemoteAddr,
 		"time_taken", queryResponseTime.String(),
-		"grafana_dashboard_uid", grafanaDashboardUID,
-		"grafana_panel_id", grafanaPanelID,
 		"trace_id", thanosTraceID,
-	}, formatQueryString(queryString)...)
+	}, headers...), formatQueryString(queryString)...)
+
 	queryRange := extractQueryRange(queryString)
 	if queryRange != time.Duration(0) {
 		logMessage = append(logMessage, "query_range_hours", int(queryRange.Hours()))
 		logMessage = append(logMessage, "query_range_human", queryRange.String())
 	}
-
 	level.Info(util_log.WithContext(r.Context(), f.log)).Log(logMessage...)
 }
 
@@ -279,6 +272,7 @@ func (f *Handler) getHeaderInfo(r *http.Request) (fields []interface{}) {
 	}
 	fields = append(fields, "grafana_dashboard_uid", grafanaDashboardUID)
 	fields = append(fields, "grafana_panel_id", grafanaPanelID)
+	fields = append(fields, "user", grafanaPanelID)
 	return fields
 }
 
