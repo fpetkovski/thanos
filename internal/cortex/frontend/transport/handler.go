@@ -136,7 +136,7 @@ func (f *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	f.reportQueryLatency(r, w.Header(), queryResponseTime, err)
 
 	// Check whether we should parse the query string.
-	if f.reportQueryAsSlow(queryResponseTime) || f.cfg.QueryStatsEnabled || err != nil {
+	if f.shouldReportQueryAsSlow(queryResponseTime) || f.cfg.QueryStatsEnabled || err != nil {
 		queryString = f.parseRequestQueryString(r, buf)
 	}
 
@@ -162,7 +162,7 @@ func (f *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		level.Error(util_log.WithContext(r.Context(), f.log)).Log("msg", "write response body error", "bytesCopied", bytesCopied, "err", err)
 	}
 
-	if f.reportQueryAsSlow(queryResponseTime) {
+	if f.shouldReportQueryAsSlow(queryResponseTime) {
 		f.reportSlowQuery(r, hs, queryString, queryResponseTime)
 	}
 	if f.cfg.QueryStatsEnabled {
@@ -178,6 +178,7 @@ func (f *Handler) reportFailedQuery(r *http.Request, queryString url.Values, err
 	var (
 		headers          = f.getHeaderInfo(r)
 		remoteUser, _, _ = r.BasicAuth()
+		requestId, _     = getRequestId(r)
 	)
 	logMessage := append(append([]interface{}{
 		"msg", "failed query detected",
@@ -187,6 +188,7 @@ func (f *Handler) reportFailedQuery(r *http.Request, queryString url.Values, err
 		"path", r.URL.Path,
 		"remote_user", remoteUser,
 		"remote_addr", r.RemoteAddr,
+		"request_id", requestId,
 	}, headers...), formatQueryString(queryString)...)
 
 	queryRange := extractQueryRange(queryString)
@@ -226,6 +228,7 @@ func (f *Handler) reportSlowQuery(r *http.Request, responseHeaders http.Header, 
 		headers          = f.getHeaderInfo(r)
 		remoteUser, _, _ = r.BasicAuth()
 		thanosTraceID, _ = getTraceId(responseHeaders)
+		requestId, _     = getRequestId(r)
 	)
 	logMessage := append(append([]interface{}{
 		"msg", "slow query detected",
@@ -236,6 +239,7 @@ func (f *Handler) reportSlowQuery(r *http.Request, responseHeaders http.Header, 
 		"remote_addr", r.RemoteAddr,
 		"time_taken", queryResponseTime.String(),
 		"trace_id", thanosTraceID,
+		"request_id", requestId,
 	}, headers...), formatQueryString(queryString)...)
 
 	queryRange := extractQueryRange(queryString)
@@ -246,13 +250,18 @@ func (f *Handler) reportSlowQuery(r *http.Request, responseHeaders http.Header, 
 	level.Info(util_log.WithContext(r.Context(), f.log)).Log(logMessage...)
 }
 
-func (f *Handler) reportQueryAsSlow(duration time.Duration) bool {
+func (f *Handler) shouldReportQueryAsSlow(duration time.Duration) bool {
 	return f.cfg.LogQueriesLongerThan > 0 && duration > f.cfg.LogQueriesLongerThan
 }
 
 func getTraceId(responseHeaders http.Header) (string, bool) {
 	traceID := responseHeaders.Get("X-Thanos-Trace-Id")
 	return traceID, traceID != ""
+}
+
+func getRequestId(r *http.Request) (string, bool) {
+	requestID := r.Header.Get("X-Request-ID")
+	return requestID, requestID != ""
 }
 
 func (f *Handler) getHeaderInfo(r *http.Request) (fields []interface{}) {
@@ -327,7 +336,7 @@ func (f *Handler) reportQueryLatency(r *http.Request, resHeaders http.Header, re
 	var (
 		user, _, _        = r.BasicAuth()
 		traceId, hasTrace = getTraceId(resHeaders)
-		emitExemplar      = hasTrace && (f.reportQueryAsSlow(responseTime) || status != "success")
+		emitExemplar      = hasTrace && (f.shouldReportQueryAsSlow(responseTime) || status != "success")
 	)
 	if emitExemplar {
 		var (
