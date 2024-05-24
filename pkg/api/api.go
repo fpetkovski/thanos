@@ -25,18 +25,14 @@ import (
 	"net/http"
 	"os"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/klauspost/compress/gzhttp"
 	"github.com/opentracing/opentracing-go"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/route"
 	"github.com/prometheus/common/version"
-	"github.com/prometheus/prometheus/model/labels"
-	"github.com/prometheus/prometheus/promql/parser"
 
 	extpromhttp "github.com/thanos-io/thanos/pkg/extprom/http"
 	"github.com/thanos-io/thanos/pkg/logging"
@@ -279,38 +275,4 @@ func RespondError(w http.ResponseWriter, apiErr *ApiError, data interface{}) {
 		Error:     apiErr.Err.Error(),
 		Data:      data,
 	})
-}
-
-func LogOGHistograms(logger log.Logger, queries prometheus.Counter) func(ApiFunc) ApiFunc {
-	return func(next ApiFunc) ApiFunc {
-		return func(request *http.Request) (interface{}, []error, *ApiError, func()) {
-			query := request.FormValue("query")
-			expr, err := parser.ParseExpr(query)
-			if err != nil {
-				return next(request)
-			}
-
-			selectors := parser.ExtractSelectors(expr)
-			for _, matchers := range selectors {
-				for _, matcher := range matchers {
-					if isOGHistogramMatcher(matcher) {
-						queries.Inc()
-						level.Info(logger).Log("msg", "Found conventional histogram query", "metric", matcher.Value)
-					}
-				}
-			}
-			return next(request)
-		}
-	}
-}
-
-// isOGHistogramMatcher returns true if the matcher is a conventional histogram matcher.
-// We exclude _count as a prefix since it is typical to have it on counter metrics.
-func isOGHistogramMatcher(matcher *labels.Matcher) bool {
-	if matcher.Name != labels.MetricName {
-		return false
-	}
-
-	return strings.HasSuffix(matcher.Value, "_bucket") ||
-		strings.HasSuffix(matcher.Value, "_sum")
 }

@@ -27,6 +27,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-kit/log"
@@ -78,8 +79,10 @@ const (
 	ShardInfoParam           = "shard_info"
 	LookbackDeltaParam       = "lookback_delta"
 	EngineParam              = "engine"
-	QueryAnalyzeParam        = "analyze"
 	QueryExplainParam        = "explain"
+
+	QueryRangeMethodName   = "query_range"
+	InstantQueryMethodName = "query"
 )
 
 type PromqlEngineType string
@@ -89,67 +92,53 @@ const (
 	PromqlEngineThanos     PromqlEngineType = "thanos"
 )
 
+type ThanosEngine interface {
+	promql.QueryEngine
+	NewInstantQueryFromPlan(ctx context.Context, q storage.Queryable, opts promql.QueryOpts, plan logicalplan.Node, ts time.Time) (promql.Query, error)
+	NewRangeQueryFromPlan(ctx context.Context, q storage.Queryable, opts promql.QueryOpts, root logicalplan.Node, start, end time.Time, step time.Duration) (promql.Query, error)
+}
+
 type QueryEngineFactory struct {
 	engineOpts            promql.EngineOpts
 	remoteEngineEndpoints promqlapi.RemoteEndpoints
 
-	prometheusEngine promql.QueryEngine
-	thanosEngine     promql.QueryEngine
+	createPrometheusEngine sync.Once
+	prometheusEngine       promql.QueryEngine
+
+	createThanosEngine sync.Once
+	thanosEngine       ThanosEngine
 }
 
 func (f *QueryEngineFactory) GetPrometheusEngine() promql.QueryEngine {
-	if f.prometheusEngine != nil {
-		return f.prometheusEngine
-	}
+	f.createPrometheusEngine.Do(func() {
+		if f.prometheusEngine != nil {
+			return
+		}
 
-	f.prometheusEngine = promql.NewEngine(f.engineOpts)
+		f.prometheusEngine = promql.NewEngine(f.engineOpts)
+	})
+
 	return f.prometheusEngine
 }
 
-type secondPrecisionEngine struct {
-	ng promql.QueryEngine
-}
-
-func newSecondPrecisionEngine(ng promql.QueryEngine) *secondPrecisionEngine {
-	return &secondPrecisionEngine{ng: ng}
-}
-
-func (s secondPrecisionEngine) SetQueryLogger(l promql.QueryLogger) {}
-
-func (s secondPrecisionEngine) NewInstantQuery(ctx context.Context, q storage.Queryable, opts promql.QueryOpts, qs string, ts time.Time) (promql.Query, error) {
-	ts = ts.Truncate(time.Second)
-	return s.ng.NewInstantQuery(ctx, q, opts, qs, ts)
-}
-
-func (s secondPrecisionEngine) NewRangeQuery(ctx context.Context, q storage.Queryable, opts promql.QueryOpts, qs string, start, end time.Time, interval time.Duration) (promql.Query, error) {
-	start = start.Truncate(time.Second)
-	end = end.Truncate(time.Second)
-	interval = interval.Truncate(time.Second)
-	return s.ng.NewRangeQuery(ctx, q, opts, qs, start, end, interval)
-}
-
 func (f *QueryEngineFactory) GetThanosEngine() promql.QueryEngine {
-	if f.thanosEngine != nil {
-		return f.thanosEngine
-	}
-	if f.remoteEngineEndpoints == nil {
-		f.thanosEngine = engine.New(engine.Opts{EngineOpts: f.engineOpts, Engine: f.GetPrometheusEngine(), EnableAnalysis: true, EnableXFunctions: true})
-	} else {
-		f.thanosEngine = newSecondPrecisionEngine(engine.New(
-			engine.Opts{
-				EngineOpts:     f.engineOpts,
-				Engine:         f.GetPrometheusEngine(),
-				EnableAnalysis: true,
-				LogicalOptimizers: []logicalplan.Optimizer{
-					logicalplan.PassthroughOptimizer{Endpoints: f.remoteEngineEndpoints},
-					logicalplan.DistributeAvgOptimizer{},
-					logicalplan.DistributedExecutionOptimizer{Endpoints: f.remoteEngineEndpoints},
-					query.SetProjectionLabels{},
-				},
-				EnableXFunctions: true,
-			},
-		))
-	}
+	f.createThanosEngine.Do(func() {
+		if f.thanosEngine != nil {
+			return
+		}
+
+		opts := engine.Opts{EngineOpts: f.engineOpts, Engine: f.GetPrometheusEngine(), EnableAnalysis: true, EnableXFunctions: true}
+		if f.remoteEngineEndpoints != nil {
+			opts.LogicalOptimizers = []logicalplan.Optimizer{
+				logicalplan.PassthroughOptimizer{Endpoints: f.remoteEngineEndpoints},
+				logicalplan.DistributeAvgOptimizer{},
+				logicalplan.DistributedExecutionOptimizer{Endpoints: f.remoteEngineEndpoints},
+				query.SetProjectionLabels{},
+			}
+		}
+
+		f.thanosEngine = engine.New(opts)
+	})
 
 	return f.thanosEngine
 }
@@ -195,8 +184,9 @@ type QueryAPI struct {
 	defaultInstantQueryMaxSourceResolution time.Duration
 	defaultMetadataTimeRange               time.Duration
 
-	queryRangeHist               prometheus.Histogram
-	conventionalHistogramQueries prometheus.Counter
+	queryRangeHist     prometheus.Histogram
+	querySamplesLoaded *prometheus.HistogramVec
+	queryPeakSamples   *prometheus.HistogramVec
 
 	seriesStatsAggregator seriesQueryPerformanceMetricsAggregator
 }
@@ -272,12 +262,20 @@ func NewQueryAPI(
 			NativeHistogramBucketFactor:    1.1,
 			NativeHistogramMaxBucketNumber: 100,
 		}),
-
-		//nolint:promlinter
-		conventionalHistogramQueries: promauto.With(reg).NewCounter(prometheus.CounterOpts{
-			Name: "thanos_query_conventional_histogram_queries_total",
-			Help: "Total number of conventional histogram queries.",
-		}),
+		querySamplesLoaded: promauto.With(reg).NewHistogramVec(prometheus.HistogramOpts{
+			Name:                           "thanos_query_total_samples_loaded",
+			Help:                           "A histogram of the number of samples loaded in a single query request",
+			Buckets:                        prometheus.ExponentialBuckets(10, 2, 10),
+			NativeHistogramBucketFactor:    1.1,
+			NativeHistogramMaxBucketNumber: 256,
+		}, []string{"method"}),
+		queryPeakSamples: promauto.With(reg).NewHistogramVec(prometheus.HistogramOpts{
+			Name:                           "thanos_query_peak_samples",
+			Help:                           "A histogram of the peak number of samples loaded in a single query request",
+			Buckets:                        prometheus.ExponentialBuckets(1, 2, 10),
+			NativeHistogramBucketFactor:    1.1,
+			NativeHistogramMaxBucketNumber: 256,
+		}, []string{"method"}),
 	}
 }
 
@@ -286,13 +284,12 @@ func (qapi *QueryAPI) Register(r *route.Router, tracer opentracing.Tracer, logge
 	qapi.baseAPI.Register(r, tracer, logger, ins, logMiddleware)
 
 	instr := api.GetInstr(tracer, logger, ins, logMiddleware, qapi.disableCORS)
-	inspectHistograms := api.LogOGHistograms(qapi.logger, qapi.conventionalHistogramQueries)
 
-	r.Get("/query", instr("query", inspectHistograms(qapi.query)))
-	r.Post("/query", instr("query", inspectHistograms(qapi.query)))
+	r.Get("/query", instr(InstantQueryMethodName, qapi.query))
+	r.Post("/query", instr(InstantQueryMethodName, qapi.query))
 
-	r.Get("/query_range", instr("query_range", qapi.queryRange))
-	r.Post("/query_range", instr("query_range", qapi.queryRange))
+	r.Get("/query_range", instr(QueryRangeMethodName, qapi.queryRange))
+	r.Post("/query_range", instr(QueryRangeMethodName, qapi.queryRange))
 
 	r.Get("/label/:name/values", instr("label_values", qapi.labelValues))
 
@@ -553,7 +550,10 @@ func (qapi *QueryAPI) query(r *http.Request) (interface{}, []error, *api.ApiErro
 	}
 
 	// We are starting promQL tracing span here, because we have no control over promQL code.
-	span, ctx := tracing.StartSpan(ctx, "promql_instant_query")
+	span, ctx := tracing.StartSpan(ctx, "promql_instant_query", opentracing.Tags{
+		"query": r.FormValue("query"),
+		"time":  ts,
+	})
 	defer span.Finish()
 
 	var seriesStats []storepb.SeriesStatsCounter
@@ -583,6 +583,8 @@ func (qapi *QueryAPI) query(r *http.Request) (interface{}, []error, *api.ApiErro
 	if apiErr != nil {
 		return nil, nil, apiErr, func() {}
 	}
+
+	qapi.reportSampleMetricsAndAttachTags(InstantQueryMethodName, qry, span)
 
 	tracing.DoInSpan(ctx, "query_gate_ismyturn", func(ctx context.Context) {
 		err = qapi.gate.Start(ctx)
@@ -716,7 +718,11 @@ func (qapi *QueryAPI) queryRange(r *http.Request) (interface{}, []error, *api.Ap
 	qapi.queryRangeHist.Observe(end.Sub(start).Seconds())
 
 	// We are starting promQL tracing span here, because we have no control over promQL code.
-	span, ctx := tracing.StartSpan(ctx, "promql_range_query")
+	span, ctx := tracing.StartSpan(ctx, "promql_range_query", opentracing.Tags{
+		"start": start,
+		"end":   end,
+		"query": r.FormValue("query"),
+	})
 	defer span.Finish()
 
 	var seriesStats []storepb.SeriesStatsCounter
@@ -742,6 +748,8 @@ func (qapi *QueryAPI) queryRange(r *http.Request) (interface{}, []error, *api.Ap
 	if err != nil {
 		return nil, nil, &api.ApiError{Typ: api.ErrorBadData, Err: err}, func() {}
 	}
+
+	qapi.reportSampleMetricsAndAttachTags(QueryRangeMethodName, qry, span)
 
 	explanation, apiErr := qapi.parseQueryExplainParam(r, qry)
 	if apiErr != nil {
@@ -1037,6 +1045,19 @@ func (qapi *QueryAPI) stores(_ *http.Request) (interface{}, []error, *api.ApiErr
 		statuses[status.ComponentType.String()] = append(statuses[status.ComponentType.String()], status)
 	}
 	return statuses, nil, nil, func() {}
+}
+
+func (qapi *QueryAPI) reportSampleMetricsAndAttachTags(name string, qry promql.Query, span tracing.Span) {
+	if explQry, ok := qry.(engine.ExplainableQuery); ok {
+		analyzeInfo := explQry.Analyze()
+		qapi.querySamplesLoaded.WithLabelValues(name).Observe(float64(analyzeInfo.TotalSamples()))
+		qapi.queryPeakSamples.WithLabelValues(name).Observe(float64(analyzeInfo.PeakSamples()))
+
+		if span != nil {
+			span.SetTag("samples_loaded", analyzeInfo.TotalSamples())
+			span.SetTag("peak_samples", analyzeInfo.PeakSamples())
+		}
+	}
 }
 
 // NewTargetsHandler created handler compatible with HTTP /api/v1/targets https://prometheus.io/docs/prometheus/latest/querying/api/#targets
