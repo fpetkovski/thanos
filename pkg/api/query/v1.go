@@ -749,8 +749,6 @@ func (qapi *QueryAPI) queryRange(r *http.Request) (interface{}, []error, *api.Ap
 		return nil, nil, &api.ApiError{Typ: api.ErrorBadData, Err: err}, func() {}
 	}
 
-	qapi.reportSampleMetricsAndAttachTags(QueryRangeMethodName, qry, span)
-
 	explanation, apiErr := qapi.parseQueryExplainParam(r, qry)
 	if apiErr != nil {
 		return nil, nil, apiErr, func() {}
@@ -779,6 +777,8 @@ func (qapi *QueryAPI) queryRange(r *http.Request) (interface{}, []error, *api.Ap
 		qapi.seriesStatsAggregator.Aggregate(seriesStats[i])
 	}
 	qapi.seriesStatsAggregator.Observe(time.Since(beforeRange).Seconds())
+
+	qapi.reportSampleMetricsAndAttachTags(QueryRangeMethodName, qry, span)
 
 	// Optional stats field in response if parameter "stats" is not empty.
 	var qs stats.QueryStats
