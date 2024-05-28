@@ -190,7 +190,7 @@ func TestQueryEndpoints(t *testing.T) {
 		Reg:        nil,
 		MaxSamples: 10000,
 		Timeout:    timeout,
-	}, nil)
+	}, nil, false)
 	api := &QueryAPI{
 		baseAPI: &baseAPI.BaseAPI{
 			Now: func() time.Time { return now },
@@ -732,7 +732,7 @@ func TestMetadataEndpoints(t *testing.T) {
 		Reg:        nil,
 		MaxSamples: 10000,
 		Timeout:    timeout,
-	}, nil)
+	}, nil, false)
 	api := &QueryAPI{
 		baseAPI: &baseAPI.BaseAPI{
 			Now: func() time.Time { return now },

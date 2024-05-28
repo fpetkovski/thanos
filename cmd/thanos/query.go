@@ -106,7 +106,7 @@ func registerQuery(app *extkingpin.App) {
 
 	defaultEngine := cmd.Flag("query.promql-engine", "Default PromQL engine to use.").Default(string(apiv1.PromqlEnginePrometheus)).
 		Enum(string(apiv1.PromqlEnginePrometheus), string(apiv1.PromqlEngineThanos))
-
+	extendedFunctionsEnabled := cmd.Flag("query.enable-x-functions", "Whether to enable extended rate functions (xrate, xincrease and xdelta). Only has effect when used with Thanos engine.").Default("true").Bool()
 	promqlQueryMode := cmd.Flag("query.mode", "PromQL query mode. One of: local, distributed.").
 		Hidden().
 		Default(string(queryModeLocal)).
@@ -346,6 +346,7 @@ func registerQuery(app *extkingpin.App) {
 			storeRateLimits,
 			storeSelectorRelabelConf,
 			queryMode(*promqlQueryMode),
+			*extendedFunctionsEnabled,
 		)
 	})
 }
@@ -423,6 +424,7 @@ func runQuery(
 	storeRateLimits store.SeriesSelectLimits,
 	storeSelectorRelabelConf extflag.PathOrContent,
 	queryMode queryMode,
+	enableExtendedFunctions bool,
 ) error {
 	if alertQueryURL == "" {
 		lastColon := strings.LastIndex(httpBindAddr, ":")
@@ -701,6 +703,7 @@ func runQuery(
 	engineFactory := apiv1.NewQueryEngineFactory(
 		engineOpts,
 		remoteEngineEndpoints,
+		enableExtendedFunctions,
 	)
 
 	lookbackDeltaCreator := LookbackDeltaFactory(engineOpts, dynamicLookbackDelta)
