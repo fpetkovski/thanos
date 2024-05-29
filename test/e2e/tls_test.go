@@ -25,6 +25,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	"github.com/efficientgo/core/testutil"
+
 	"github.com/thanos-io/thanos/pkg/testutil/e2eutil"
 
 	pb "google.golang.org/grpc/examples/features/proto/echo"
@@ -74,7 +75,7 @@ func TestGRPCServerCertAutoRotate(t *testing.T) {
 	// Setup the connection and the client.
 	configClt, err := thTLS.NewClientConfig(logger, certClt, keyClt, caClt, serverName, false)
 	testutil.Ok(t, err)
-	conn, err := grpc.Dial(addr, grpc.WithConnectParams(grpc.ConnectParams{MinConnectTimeout: 1 * time.Minute}), grpc.WithTransportCredentials(credentials.NewTLS(configClt)))
+	conn, err := grpc.NewClient(addr, grpc.WithConnectParams(grpc.ConnectParams{MinConnectTimeout: 1 * time.Minute}), grpc.WithTransportCredentials(credentials.NewTLS(configClt)))
 	testutil.Ok(t, err)
 	defer func() {
 		testutil.Ok(t, conn.Close())

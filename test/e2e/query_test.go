@@ -1983,7 +1983,7 @@ func TestGrpcInstantQuery(t *testing.T) {
 	ctx := context.Background()
 	testutil.Ok(t, synthesizeFakeMetricSamples(ctx, prom, samples))
 
-	grpcConn, err := grpc.Dial(querier.Endpoint("grpc"), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	grpcConn, err := grpc.NewClient(querier.Endpoint("grpc"), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	testutil.Ok(t, err)
 	queryClient := querypb.NewQueryClient(grpcConn)
 
@@ -2105,7 +2105,7 @@ func TestGrpcQueryRange(t *testing.T) {
 	ctx := context.Background()
 	testutil.Ok(t, synthesizeFakeMetricSamples(ctx, prom, samples))
 
-	grpcConn, err := grpc.Dial(querier.Endpoint("grpc"), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	grpcConn, err := grpc.NewClient(querier.Endpoint("grpc"), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	testutil.Ok(t, err)
 	queryClient := querypb.NewQueryClient(grpcConn)
 
