@@ -337,6 +337,7 @@ func (s *StoreSet) getHealthyStores(ctx context.Context) map[string]*storeRef {
 				store.Update(labelSets, minTime, maxTime)
 			} else {
 				// New store or was unhealthy and was removed in the past - create new one.
+				//nolint:staticcheck
 				conn, err := grpc.DialContext(ctx, addr, s.dialOpts...)
 				if err != nil {
 					s.updateStoreStatus(&storeRef{addr: addr}, err)

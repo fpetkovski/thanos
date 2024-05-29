@@ -646,6 +646,7 @@ func (e *EndpointSet) newEndpointRef(ctx context.Context, spec *GRPCEndpointSpec
 	// failure won't be reported/logged. Instead block until the connection is
 	// successfully established and return the details of the connection error
 	// if any.
+	//nolint:staticcheck
 	conn, err := grpc.DialContext(ctx, spec.Addr(), dialOpts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "dialing connection")

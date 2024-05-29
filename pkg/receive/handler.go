@@ -1164,7 +1164,8 @@ func newPeerGroup(dialOpts ...grpc.DialOption) *peerGroup {
 		dialOpts: dialOpts,
 		cache:    map[string]storepb.WriteableStoreClient{},
 		m:        sync.RWMutex{},
-		dialer:   grpc.DialContext,
+		//nolint:staticcheck
+		dialer: grpc.DialContext,
 	}
 }
 
