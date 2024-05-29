@@ -131,6 +131,7 @@ func (f *QueryEngineFactory) GetThanosEngine() promql.QueryEngine {
 		opts := engine.Opts{EngineOpts: f.engineOpts, Engine: f.GetPrometheusEngine(), EnableAnalysis: true, EnableXFunctions: f.enableXFunctions}
 		if f.remoteEngineEndpoints != nil {
 			opts.LogicalOptimizers = []logicalplan.Optimizer{
+				logicalplan.DetectHistogramStatsOptimizer{},
 				logicalplan.PassthroughOptimizer{Endpoints: f.remoteEngineEndpoints},
 				logicalplan.DistributeAvgOptimizer{},
 				logicalplan.DistributedExecutionOptimizer{Endpoints: f.remoteEngineEndpoints},
