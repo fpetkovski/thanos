@@ -110,6 +110,38 @@ type QueryEngineFactory struct {
 	enableXFunctions   bool
 }
 
+type secondPrecisionEngine struct {
+	engine ThanosEngine
+}
+
+func newSecondPrecisionEngine(engine ThanosEngine) *secondPrecisionEngine {
+	return &secondPrecisionEngine{engine: engine}
+}
+
+func (s secondPrecisionEngine) NewInstantQuery(ctx context.Context, q storage.Queryable, opts promql.QueryOpts, qs string, ts time.Time) (promql.Query, error) {
+	ts = ts.Truncate(time.Second)
+	return s.engine.NewInstantQuery(ctx, q, opts, qs, ts)
+}
+
+func (s secondPrecisionEngine) NewRangeQuery(ctx context.Context, q storage.Queryable, opts promql.QueryOpts, qs string, start, end time.Time, interval time.Duration) (promql.Query, error) {
+	start = start.Truncate(time.Second)
+	end = end.Truncate(time.Second)
+	interval = interval.Truncate(time.Second)
+	return s.engine.NewRangeQuery(ctx, q, opts, qs, start, end, interval)
+}
+
+func (s secondPrecisionEngine) NewInstantQueryFromPlan(ctx context.Context, q storage.Queryable, opts promql.QueryOpts, plan logicalplan.Node, ts time.Time) (promql.Query, error) {
+	ts = ts.Truncate(time.Second)
+	return s.engine.NewInstantQueryFromPlan(ctx, q, opts, plan, ts)
+}
+
+func (s secondPrecisionEngine) NewRangeQueryFromPlan(ctx context.Context, q storage.Queryable, opts promql.QueryOpts, root logicalplan.Node, start, end time.Time, step time.Duration) (promql.Query, error) {
+	start = start.Truncate(time.Second)
+	end = end.Truncate(time.Second)
+	step = step.Truncate(time.Second)
+	return s.engine.NewRangeQueryFromPlan(ctx, q, opts, root, start, end, step)
+}
+
 func (f *QueryEngineFactory) GetPrometheusEngine() promql.QueryEngine {
 	f.createPrometheusEngine.Do(func() {
 		if f.prometheusEngine != nil {
@@ -139,7 +171,7 @@ func (f *QueryEngineFactory) GetThanosEngine() promql.QueryEngine {
 			}
 		}
 
-		f.thanosEngine = engine.New(opts)
+		f.thanosEngine = newSecondPrecisionEngine(engine.New(opts))
 	})
 
 	return f.thanosEngine
