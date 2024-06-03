@@ -593,6 +593,7 @@ func (qapi *QueryAPI) query(r *http.Request) (interface{}, []error, *api.ApiErro
 	defer span.Finish()
 
 	var seriesStats []storepb.SeriesStatsCounter
+	newQrySpan, ctx := tracing.StartSpan(ctx, "new_instant_query")
 	qry, err := engine.NewInstantQuery(
 		ctx,
 		qapi.queryableCreate(
@@ -610,6 +611,7 @@ func (qapi *QueryAPI) query(r *http.Request) (interface{}, []error, *api.ApiErro
 		r.FormValue("query"),
 		ts,
 	)
+	newQrySpan.Finish()
 
 	if err != nil {
 		return nil, nil, &api.ApiError{Typ: api.ErrorBadData, Err: err}, func() {}
@@ -620,8 +622,6 @@ func (qapi *QueryAPI) query(r *http.Request) (interface{}, []error, *api.ApiErro
 		return nil, nil, apiErr, func() {}
 	}
 
-	qapi.reportSampleMetricsAndAttachTags(InstantQueryMethodName, qry, span)
-
 	tracing.DoInSpan(ctx, "query_gate_ismyturn", func(ctx context.Context) {
 		err = qapi.gate.Start(ctx)
 	})
@@ -631,7 +631,10 @@ func (qapi *QueryAPI) query(r *http.Request) (interface{}, []error, *api.ApiErro
 	defer qapi.gate.Done()
 
 	beforeRange := time.Now()
-	res := qry.Exec(ctx)
+	var res *promql.Result
+	tracing.DoInSpan(ctx, "query_exec", func(ctx context.Context) {
+		res = qry.Exec(ctx)
+	})
 	if res.Err != nil {
 		switch res.Err.(type) {
 		case promql.ErrQueryCanceled:
@@ -647,6 +650,7 @@ func (qapi *QueryAPI) query(r *http.Request) (interface{}, []error, *api.ApiErro
 		qapi.seriesStatsAggregator.Aggregate(seriesStats[i])
 	}
 	qapi.seriesStatsAggregator.Observe(time.Since(beforeRange).Seconds())
+	qapi.reportSampleMetricsAndAttachTags(InstantQueryMethodName, qry, span)
 
 	// Optional stats field in response if parameter "stats" is not empty.
 	var qs stats.QueryStats
@@ -762,6 +766,7 @@ func (qapi *QueryAPI) queryRange(r *http.Request) (interface{}, []error, *api.Ap
 	defer span.Finish()
 
 	var seriesStats []storepb.SeriesStatsCounter
+	newQrySpan, ctx := tracing.StartSpan(ctx, "new_range_query")
 	qry, err := engine.NewRangeQuery(
 		ctx,
 		qapi.queryableCreate(
@@ -781,6 +786,7 @@ func (qapi *QueryAPI) queryRange(r *http.Request) (interface{}, []error, *api.Ap
 		end,
 		step,
 	)
+	newQrySpan.Finish()
 	if err != nil {
 		return nil, nil, &api.ApiError{Typ: api.ErrorBadData, Err: err}, func() {}
 	}
@@ -799,7 +805,10 @@ func (qapi *QueryAPI) queryRange(r *http.Request) (interface{}, []error, *api.Ap
 	defer qapi.gate.Done()
 
 	beforeRange := time.Now()
-	res := qry.Exec(ctx)
+	var res *promql.Result
+	tracing.DoInSpan(ctx, "query_exec", func(ctx context.Context) {
+		res = qry.Exec(ctx)
+	})
 	if res.Err != nil {
 		switch res.Err.(type) {
 		case promql.ErrQueryCanceled:
