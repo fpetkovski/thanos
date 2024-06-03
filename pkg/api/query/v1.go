@@ -585,33 +585,27 @@ func (qapi *QueryAPI) query(r *http.Request) (interface{}, []error, *api.ApiErro
 		lookbackDelta = lookbackDeltaFromReq
 	}
 
-	// We are starting promQL tracing span here, because we have no control over promQL code.
-	span, ctx := tracing.StartSpan(ctx, "promql_instant_query", opentracing.Tags{
-		"query": r.FormValue("query"),
-		"time":  ts,
-	})
-	defer span.Finish()
-
 	var seriesStats []storepb.SeriesStatsCounter
-	newQrySpan, ctx := tracing.StartSpan(ctx, "new_instant_query")
-	qry, err := engine.NewInstantQuery(
-		ctx,
-		qapi.queryableCreate(
-			enableDedup,
-			replicaLabels,
-			storeDebugMatchers,
-			maxSourceResolution,
-			enablePartialResponse,
-			qapi.enableQueryPushdown,
-			false,
-			shardInfo,
-			query.NewAggregateStatsReporter(&seriesStats),
-		),
-		promql.NewPrometheusQueryOpts(false, lookbackDelta),
-		r.FormValue("query"),
-		ts,
-	)
-	newQrySpan.Finish()
+	var qry promql.Query
+	tracing.DoInSpan(ctx, "new_instant_query", func(ctx context.Context) {
+		qry, err = engine.NewInstantQuery(
+			ctx,
+			qapi.queryableCreate(
+				enableDedup,
+				replicaLabels,
+				storeDebugMatchers,
+				maxSourceResolution,
+				enablePartialResponse,
+				qapi.enableQueryPushdown,
+				false,
+				shardInfo,
+				query.NewAggregateStatsReporter(&seriesStats),
+			),
+			promql.NewPrometheusQueryOpts(false, lookbackDelta),
+			r.FormValue("query"),
+			ts,
+		)
+	})
 
 	if err != nil {
 		return nil, nil, &api.ApiError{Typ: api.ErrorBadData, Err: err}, func() {}
@@ -631,10 +625,13 @@ func (qapi *QueryAPI) query(r *http.Request) (interface{}, []error, *api.ApiErro
 	defer qapi.gate.Done()
 
 	beforeRange := time.Now()
-	var res *promql.Result
-	tracing.DoInSpan(ctx, "query_exec", func(ctx context.Context) {
-		res = qry.Exec(ctx)
+	span, spanCtx := tracing.StartSpan(ctx, "query_exec", opentracing.Tags{
+		"query": r.FormValue("query"),
+		"ts":    ts,
 	})
+	defer span.Finish()
+	res := qry.Exec(spanCtx)
+
 	if res.Err != nil {
 		switch res.Err.(type) {
 		case promql.ErrQueryCanceled:
@@ -757,36 +754,34 @@ func (qapi *QueryAPI) queryRange(r *http.Request) (interface{}, []error, *api.Ap
 	// Record the query range requested.
 	qapi.queryRangeHist.Observe(end.Sub(start).Seconds())
 
-	// We are starting promQL tracing span here, because we have no control over promQL code.
-	span, ctx := tracing.StartSpan(ctx, "promql_range_query", opentracing.Tags{
+	var seriesStats []storepb.SeriesStatsCounter
+	var qry promql.Query
+	tracing.DoInSpan(ctx, "new_range_query", func(ctx context.Context) {
+		qry, err = engine.NewRangeQuery(
+			ctx,
+			qapi.queryableCreate(
+				enableDedup,
+				replicaLabels,
+				storeDebugMatchers,
+				maxSourceResolution,
+				enablePartialResponse,
+				qapi.enableQueryPushdown,
+				false,
+				shardInfo,
+				query.NewAggregateStatsReporter(&seriesStats),
+			),
+			promql.NewPrometheusQueryOpts(false, lookbackDelta),
+			r.FormValue("query"),
+			start,
+			end,
+			step,
+		)
+	}, opentracing.Tags{
 		"start": start,
 		"end":   end,
 		"query": r.FormValue("query"),
 	})
-	defer span.Finish()
 
-	var seriesStats []storepb.SeriesStatsCounter
-	newQrySpan, ctx := tracing.StartSpan(ctx, "new_range_query")
-	qry, err := engine.NewRangeQuery(
-		ctx,
-		qapi.queryableCreate(
-			enableDedup,
-			replicaLabels,
-			storeDebugMatchers,
-			maxSourceResolution,
-			enablePartialResponse,
-			qapi.enableQueryPushdown,
-			false,
-			shardInfo,
-			query.NewAggregateStatsReporter(&seriesStats),
-		),
-		promql.NewPrometheusQueryOpts(false, lookbackDelta),
-		r.FormValue("query"),
-		start,
-		end,
-		step,
-	)
-	newQrySpan.Finish()
 	if err != nil {
 		return nil, nil, &api.ApiError{Typ: api.ErrorBadData, Err: err}, func() {}
 	}
@@ -805,10 +800,13 @@ func (qapi *QueryAPI) queryRange(r *http.Request) (interface{}, []error, *api.Ap
 	defer qapi.gate.Done()
 
 	beforeRange := time.Now()
-	var res *promql.Result
-	tracing.DoInSpan(ctx, "query_exec", func(ctx context.Context) {
-		res = qry.Exec(ctx)
+	span, execCtx := tracing.StartSpan(ctx, "promql_range_query_exec", opentracing.Tags{
+		"start": start,
+		"end":   end,
+		"query": r.FormValue("query"),
 	})
+	defer span.Finish()
+	res := qry.Exec(execCtx)
 	if res.Err != nil {
 		switch res.Err.(type) {
 		case promql.ErrQueryCanceled:
