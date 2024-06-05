@@ -21,6 +21,7 @@ import (
 	"github.com/prometheus/prometheus/model/timestamp"
 
 	"github.com/efficientgo/core/testutil"
+
 	"github.com/thanos-io/thanos/pkg/block/metadata"
 	"github.com/thanos-io/thanos/pkg/cacheutil"
 	"github.com/thanos-io/thanos/pkg/promclient"
@@ -700,6 +701,9 @@ func TestRangeQueryShardingWithRandomData(t *testing.T) {
 		return nil
 	})
 
+	if resultWithoutSharding.Len() == 0 {
+		testutil.Equals(t, 0, resultWithSharding.Len())
+	}
 	testutil.Equals(t, resultWithoutSharding, resultWithSharding)
 }
 

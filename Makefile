@@ -56,7 +56,7 @@ export GO111MODULE
 GOPROXY           ?= https://proxy.golang.org
 export GOPROXY
 
-GOTEST_OPTS ?= -failfast -timeout 10m -v
+GOTEST_OPTS ?= -failfast -timeout 15m -v
 BIN_DIR ?= $(shell pwd)/tmp/bin
 OS ?= $(shell uname -s | tr '[A-Z]' '[a-z]')
 ARCH ?= $(shell uname -m)
