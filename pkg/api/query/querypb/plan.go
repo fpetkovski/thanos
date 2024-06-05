@@ -12,7 +12,7 @@ import (
 func NewJSONEncodedPlan(plan api.RemoteQuery) (*QueryPlan, error) {
 	node, ok := plan.(logicalplan.Node)
 	if !ok {
-		return nil, errors.New("plan is not a logicalplan.Node")
+		return nil, errors.Errorf("plan is not a logicalplan.Node, got %T", plan)
 	}
 	bytes, err := logicalplan.Marshal(node)
 	if err != nil {

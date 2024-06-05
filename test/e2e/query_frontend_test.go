@@ -703,7 +703,9 @@ func TestRangeQueryShardingWithRandomData(t *testing.T) {
 
 	if resultWithoutSharding.Len() == 0 {
 		testutil.Equals(t, 0, resultWithSharding.Len())
+		return
 	}
+
 	testutil.Equals(t, resultWithoutSharding, resultWithSharding)
 }
 

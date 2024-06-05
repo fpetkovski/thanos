@@ -154,7 +154,7 @@ func (f *QueryEngineFactory) GetPrometheusEngine() promql.QueryEngine {
 	return f.prometheusEngine
 }
 
-func (f *QueryEngineFactory) GetThanosEngine() promql.QueryEngine {
+func (f *QueryEngineFactory) GetThanosEngine() ThanosEngine {
 	f.createThanosEngine.Do(func() {
 		if f.thanosEngine != nil {
 			return

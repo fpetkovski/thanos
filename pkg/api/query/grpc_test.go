@@ -50,7 +50,7 @@ func TestGRPCQueryAPIErrorHandling(t *testing.T) {
 		engineFactory := &QueryEngineFactory{
 			prometheusEngine: test.engine,
 		}
-		api := NewGRPCAPI(time.Now, nil, queryableCreator, engineFactory, querypb.EngineType_prometheus, lookbackDeltaFunc, 0)
+		api := NewGRPCAPI(time.Now, nil, queryableCreator, engineFactory, querypb.EngineType_prometheus, lookbackDeltaFunc, 0, log.NewNopLogger())
 		t.Run("range_query", func(t *testing.T) {
 			rangeRequest := &querypb.QueryRangeRequest{
 				Query:            "metric",

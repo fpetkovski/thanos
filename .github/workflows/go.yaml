@@ -76,20 +76,14 @@ jobs:
       THANOS_TEST_OBJSTORE_SKIP: GCS,S3,AZURE,SWIFT,COS,ALIYUNOSS,BOS,OCI,OBS
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install Go.
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.21.x
-
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/.cache/golangci-lint
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          go-version: 1.21
+          check-latest: true
+          cache-dependency-path: "**/*.sum"
 
       - name: Run unit tests (without e2e tests against all real store buckets)
         run: make test
