@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/efficientgo/core/backoff"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tracing"
@@ -193,7 +192,7 @@ func (r *remoteEngine) NewRangeQuery(_ context.Context, _ promql.QueryOpts, quer
 		remoteAddr: r.client.GetAddress(),
 	}
 
-	return newRetriableQuery(qry), nil
+	return qry, nil
 }
 
 func (r *remoteEngine) NewInstantQuery(_ context.Context, _ promql.QueryOpts, query api.RemoteQuery, ts time.Time) (promql.Query, error) {
@@ -209,7 +208,7 @@ func (r *remoteEngine) NewInstantQuery(_ context.Context, _ promql.QueryOpts, qu
 		remoteAddr: r.client.GetAddress(),
 	}
 
-	return newRetriableQuery(qry), nil
+	return qry, nil
 }
 
 type remoteQuery struct {
@@ -438,33 +437,6 @@ func (r *remoteQuery) Cancel() {
 }
 
 func (r *remoteQuery) String() string { return r.plan.String() }
-
-type retriableQuery struct {
-	*remoteQuery
-}
-
-func newRetriableQuery(remoteQuery *remoteQuery) *retriableQuery {
-	return &retriableQuery{remoteQuery: remoteQuery}
-}
-
-func (q *retriableQuery) Exec(ctx context.Context) *promql.Result {
-	retries := backoff.New(ctx, backoff.Config{
-		Min:        100 * time.Millisecond,
-		Max:        1 * time.Second,
-		MaxRetries: 3,
-	})
-
-	var result *promql.Result
-	for retries.Ongoing() {
-		result = q.remoteQuery.Exec(ctx)
-		if result.Err == nil {
-			return result
-		}
-		retries.Wait()
-	}
-
-	return result
-}
 
 func fromProtoHistogram(hp prompb.Histogram) *histogram.FloatHistogram {
 	if hp.IsFloatHistogram() {
