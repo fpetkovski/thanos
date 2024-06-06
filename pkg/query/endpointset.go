@@ -393,7 +393,7 @@ func (e *EndpointSet) Update(ctx context.Context) {
 			ctx, cancel := context.WithTimeout(ctx, e.endpointInfoTimeout)
 			defer cancel()
 
-			newRef, err := e.newEndpointRef(ctx, spec)
+			newRef, err := e.newEndpointRef(spec)
 			if err != nil {
 				level.Warn(e.logger).Log("msg", "new endpoint creation failed", "err", err, "address", spec.Addr())
 				return
@@ -647,14 +647,9 @@ type endpointRef struct {
 
 // newEndpointRef creates a new endpointRef with a gRPC channel to the given the IP address.
 // The call to newEndpointRef will return an error if establishing the channel fails.
-func (e *EndpointSet) newEndpointRef(ctx context.Context, spec *GRPCEndpointSpec) (*endpointRef, error) {
+func (e *EndpointSet) newEndpointRef(spec *GRPCEndpointSpec) (*endpointRef, error) {
 	dialOpts := append(e.dialOpts, spec.dialOpts...)
-	// By default DialContext is non-blocking which means that any connection
-	// failure won't be reported/logged. Instead block until the connection is
-	// successfully established and return the details of the connection error
-	// if any.
-	//nolint:staticcheck
-	conn, err := grpc.DialContext(ctx, spec.Addr(), dialOpts...)
+	conn, err := grpc.NewClient(spec.Addr(), dialOpts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "dialing connection")
 	}
