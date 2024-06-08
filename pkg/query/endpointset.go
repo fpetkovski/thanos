@@ -522,6 +522,7 @@ func (e *EndpointSet) GetStoreClients() []store.Client {
 				StoreClient: storepb.NewStoreClient(er.cc),
 				addr:        er.addr,
 				metadata:    er.metadata,
+				status:      er.status,
 			})
 		}
 	}
@@ -665,8 +666,8 @@ func (e *EndpointSet) newEndpointRef(spec *GRPCEndpointSpec) (*endpointRef, erro
 
 // update sets the metadata and status of the endpoint ref based on the info response value and error.
 func (er *endpointRef) update(now nowFunc, metadata *endpointMetadata, err error) {
-	er.mtx.RLock()
-	defer er.mtx.RUnlock()
+	er.mtx.Lock()
+	defer er.mtx.Unlock()
 
 	er.updateMetadata(metadata, err)
 	er.updateStatus(now, err)
@@ -780,7 +781,7 @@ func (er *endpointRef) LabelSets() []labels.Labels {
 	er.mtx.RLock()
 	defer er.mtx.RUnlock()
 
-	return er.labelSets()
+	return er.status.LabelSets
 }
 
 func (er *endpointRef) labelSets() []labels.Labels {
