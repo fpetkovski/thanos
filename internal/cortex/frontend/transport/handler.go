@@ -177,9 +177,9 @@ func (f *Handler) reportFailedQuery(r *http.Request, queryString url.Values, err
 		return
 	}
 	var (
-		headers          = f.getHeaderInfo(r)
-		remoteUser, _, _ = r.BasicAuth()
-		requestId, _     = getRequestId(r)
+		headers      = f.getHeaderInfo(r)
+		remoteUser   = f.remoteUser(r)
+		requestId, _ = getRequestId(r)
 	)
 	logMessage := append(append([]interface{}{
 		"msg", "failed query detected",
@@ -227,7 +227,7 @@ func (f *Handler) reportSlowQuery(r *http.Request, responseHeaders http.Header, 
 	}
 	var (
 		headers          = f.getHeaderInfo(r)
-		remoteUser, _, _ = r.BasicAuth()
+		remoteUser       = f.remoteUser(r)
 		thanosTraceID, _ = getTraceId(responseHeaders)
 		requestId, _     = getRequestId(r)
 	)
@@ -279,15 +279,16 @@ func (f *Handler) getHeaderInfo(r *http.Request) (fields []interface{}) {
 	}
 	fields = append(fields, "grafana_panel_id", grafanaPanelID)
 
-	remoteUser := "-"
+	return fields
+}
+
+func (f *Handler) remoteUser(r *http.Request) string {
 	// Prefer reading remote user from header. Fall back to the value of basic authentication.
 	if f.cfg.SlowQueryLogsUserHeader != "" {
-		remoteUser = r.Header.Get(f.cfg.SlowQueryLogsUserHeader)
-	} else {
-		remoteUser, _, _ = r.BasicAuth()
+		return r.Header.Get(f.cfg.SlowQueryLogsUserHeader)
 	}
-	fields = append(fields, "user", remoteUser)
-	return fields
+	remoteUser, _, _ := r.BasicAuth()
+	return remoteUser
 }
 
 func (f *Handler) reportQueryStats(r *http.Request, queryString url.Values, queryResponseTime time.Duration, stats *querier_stats.Stats) {
