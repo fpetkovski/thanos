@@ -43,9 +43,10 @@ var (
 
 // Config for a Handler.
 type HandlerConfig struct {
-	LogQueriesLongerThan time.Duration `yaml:"log_queries_longer_than"`
-	MaxBodySize          int64         `yaml:"max_body_size"`
-	QueryStatsEnabled    bool          `yaml:"query_stats_enabled"`
+	LogQueriesLongerThan    time.Duration `yaml:"log_queries_longer_than"`
+	MaxBodySize             int64         `yaml:"max_body_size"`
+	QueryStatsEnabled       bool          `yaml:"query_stats_enabled"`
+	SlowQueryLogsUserHeader string        `yaml:"slow_query_logs_user_header"`
 }
 
 // Handler accepts queries and forwards them to RoundTripper. It can log slow queries,
@@ -176,9 +177,9 @@ func (f *Handler) reportFailedQuery(r *http.Request, queryString url.Values, err
 		return
 	}
 	var (
-		headers          = f.getHeaderInfo(r)
-		remoteUser, _, _ = r.BasicAuth()
-		requestId, _     = getRequestId(r)
+		headers      = f.getHeaderInfo(r)
+		remoteUser   = f.remoteUser(r)
+		requestId, _ = getRequestId(r)
 	)
 	logMessage := append(append([]interface{}{
 		"msg", "failed query detected",
@@ -226,7 +227,7 @@ func (f *Handler) reportSlowQuery(r *http.Request, responseHeaders http.Header, 
 	}
 	var (
 		headers          = f.getHeaderInfo(r)
-		remoteUser, _, _ = r.BasicAuth()
+		remoteUser       = f.remoteUser(r)
 		thanosTraceID, _ = getTraceId(responseHeaders)
 		requestId, _     = getRequestId(r)
 	)
@@ -270,13 +271,24 @@ func (f *Handler) getHeaderInfo(r *http.Request) (fields []interface{}) {
 	if dashboardUID := r.Header.Get("X-Dashboard-Uid"); dashboardUID != "" {
 		grafanaDashboardUID = dashboardUID
 	}
+	fields = append(fields, "grafana_dashboard_uid", grafanaDashboardUID)
+
 	grafanaPanelID := "-"
 	if panelID := r.Header.Get("X-Panel-Id"); panelID != "" {
 		grafanaPanelID = panelID
 	}
-	fields = append(fields, "grafana_dashboard_uid", grafanaDashboardUID)
 	fields = append(fields, "grafana_panel_id", grafanaPanelID)
+
 	return fields
+}
+
+func (f *Handler) remoteUser(r *http.Request) string {
+	// Prefer reading remote user from header. Fall back to the value of basic authentication.
+	if f.cfg.SlowQueryLogsUserHeader != "" {
+		return r.Header.Get(f.cfg.SlowQueryLogsUserHeader)
+	}
+	remoteUser, _, _ := r.BasicAuth()
+	return remoteUser
 }
 
 func (f *Handler) reportQueryStats(r *http.Request, queryString url.Values, queryResponseTime time.Duration, stats *querier_stats.Stats) {
