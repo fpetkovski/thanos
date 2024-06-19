@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/cespare/xxhash"
+	"golang.org/x/exp/slices"
 
 	"github.com/go-kit/log"
 	"github.com/gogo/protobuf/proto"
@@ -673,8 +674,7 @@ func TestBucketStore_TSDBInfo(t *testing.T) {
 		testutil.Ok(t, block.Upload(ctx, logger, bkt, filepath.Join(dir, id1.String()), metadata.NoneFunc))
 	}
 
-	baseBlockIDsFetcher := block.NewConcurrentLister(logger, bkt)
-	metaFetcher, err := block.NewMetaFetcher(logger, 20, bkt, baseBlockIDsFetcher, dir, nil, []block.MetadataFilter{
+	metaFetcher, err := block.NewMetaFetcher(logger, 20, bkt, dir, nil, []block.MetadataFilter{
 		block.NewTimePartitionMetaFilter(allowAllFilterConf.MinTime, allowAllFilterConf.MaxTime),
 	})
 	testutil.Ok(t, err)
@@ -703,7 +703,18 @@ func TestBucketStore_TSDBInfo(t *testing.T) {
 	defer func() { testutil.Ok(t, bucketStore.Close()) }()
 
 	testutil.Ok(t, bucketStore.SyncBlocks(ctx))
-	testutil.Equals(t, bucketStore.TSDBInfos(), []infopb.TSDBInfo{
+	infos := bucketStore.TSDBInfos()
+	slices.SortFunc(infos, func(a, b infopb.TSDBInfo) int {
+		if c := labels.Compare(labelpb.ZLabelsToPromLabels(a.Labels.Labels), labelpb.ZLabelsToPromLabels(b.Labels.Labels)); c != 0 {
+			return c
+		}
+		if a.MinTime != b.MinTime {
+			return int(a.MinTime - b.MinTime)
+		}
+		return int(a.MaxTime - b.MaxTime)
+	})
+
+	testutil.Equals(t, infos, []infopb.TSDBInfo{
 		{
 			Labels:  labelpb.ZLabelSet{Labels: []labelpb.ZLabel{{Name: "a", Value: "b"}}},
 			MinTime: 0,
