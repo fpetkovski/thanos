@@ -8,7 +8,7 @@ import (
 	"context"
 	stdjson "encoding/json"
 	"fmt"
-	io "io"
+	"io"
 	"math"
 	"net/http"
 	"net/url"
@@ -665,6 +665,8 @@ func (s *PrometheusInstantQueryData) MarshalJSON() ([]byte, error) {
 func StatsMerge(resps []Response) *PrometheusResponseStats {
 	output := map[int64]*PrometheusResponseQueryableSamplesStatsPerStep{}
 	hasStats := false
+	peakSamples := int32(0)
+	totalSamples := int64(0)
 	for _, resp := range resps {
 		stats := resp.GetStats()
 		if stats == nil {
@@ -679,6 +681,11 @@ func StatsMerge(resps []Response) *PrometheusResponseStats {
 		for _, s := range stats.Samples.TotalQueryableSamplesPerStep {
 			output[s.GetTimestampMs()] = s
 		}
+
+		if stats.Samples.PeakSamples > peakSamples {
+			peakSamples = stats.Samples.PeakSamples
+		}
+		totalSamples += stats.Samples.TotalQueryableSamples
 	}
 
 	if !hasStats {
@@ -692,10 +699,12 @@ func StatsMerge(resps []Response) *PrometheusResponseStats {
 
 	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
 
-	result := &PrometheusResponseStats{Samples: &PrometheusResponseSamplesStats{}}
+	result := &PrometheusResponseStats{Samples: &PrometheusResponseSamplesStats{
+		PeakSamples:           peakSamples,
+		TotalQueryableSamples: totalSamples,
+	}}
 	for _, key := range keys {
 		result.Samples.TotalQueryableSamplesPerStep = append(result.Samples.TotalQueryableSamplesPerStep, output[key])
-		result.Samples.TotalQueryableSamples += output[key].Value
 	}
 
 	return result

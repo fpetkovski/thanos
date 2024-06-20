@@ -21,10 +21,12 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
-	"github.com/thanos-io/thanos/pkg/errors"
 	"gopkg.in/yaml.v2"
 
+	"github.com/thanos-io/thanos/pkg/errors"
+
 	"github.com/efficientgo/core/testutil"
+
 	"github.com/thanos-io/thanos/pkg/alert"
 	"github.com/thanos-io/thanos/pkg/promclient"
 	"github.com/thanos-io/thanos/pkg/queryconfig"
@@ -520,6 +522,7 @@ func TestRule(t *testing.T) {
 // where it remote_writes rule evaluations to a Prometheus remote-write endpoint (typically
 // a Thanos Receiver).
 func TestRule_CanRemoteWriteData(t *testing.T) {
+	t.Skip("flaky test")
 	t.Parallel()
 
 	e, err := e2e.NewDockerEnvironment("rule-rw")

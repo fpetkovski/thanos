@@ -21,6 +21,7 @@ import (
 
 	"github.com/prometheus/prometheus/promql/parser"
 	promqlparser "github.com/prometheus/prometheus/promql/parser"
+
 	"github.com/thanos-io/thanos/internal/cortex/cortexpb"
 	"github.com/thanos-io/thanos/internal/cortex/querier/queryrange"
 	cortexutil "github.com/thanos-io/thanos/internal/cortex/util"
@@ -156,6 +157,7 @@ func (c queryInstantCodec) DecodeRequest(_ context.Context, r *http.Request, for
 	result.Path = r.URL.Path
 	result.Explain = r.FormValue("explain")
 	result.Engine = r.FormValue("engine")
+	result.Stats = r.FormValue(queryv1.Stats)
 
 	for _, header := range forwardHeaders {
 		for h, hv := range r.Header {

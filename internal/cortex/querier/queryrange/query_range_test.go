@@ -6,7 +6,7 @@ package queryrange
 import (
 	"bytes"
 	"context"
-	io "io"
+	"io"
 	"net/http"
 	"strconv"
 	"testing"
@@ -128,7 +128,7 @@ func TestResponseWithStats(t *testing.T) {
 		expected *PrometheusResponse
 	}{
 		{
-			body: `{"status":"success","data":{"resultType":"matrix","result":[{"metric":{"foo":"bar"},"values":[[1536673680,"137"],[1536673780,"137"]]}],"stats":{"samples":{"totalQueryableSamples":10,"totalQueryableSamplesPerStep":[[1536673680,5],[1536673780,5]]}},"explanation":null}}`,
+			body: `{"status":"success","data":{"resultType":"matrix","result":[{"metric":{"foo":"bar"},"values":[[1536673680,"137"],[1536673780,"137"]]}],"stats":{"samples":{"peakSamples":0,"totalQueryableSamples":10,"totalQueryableSamplesPerStep":[[1536673680,5],[1536673780,5]]}},"explanation":null}}`,
 			expected: &PrometheusResponse{
 				Status: "success",
 				Data: PrometheusData{
@@ -177,9 +177,26 @@ func TestResponseWithStats(t *testing.T) {
 			}
 			resp2, err := PrometheusCodec.EncodeResponse(context.Background(), resp)
 			require.NoError(t, err)
-			assert.Equal(t, response, resp2)
+			require.EqualValues(t, prettyPrintJsonBody(t, response.Body), prettyPrintJsonBody(t, resp2.Body))
+			require.Equal(t, response, resp2)
 		})
 	}
+}
+
+func prettyPrintJsonBody(t *testing.T, body io.ReadCloser) string {
+	t.Helper()
+
+	bodyContent, err := io.ReadAll(body)
+	require.NoError(t, err)
+
+	var jsonData interface{}
+	err = json.Unmarshal(bodyContent, &jsonData)
+	require.NoError(t, err)
+
+	prettyBytes, err := json.MarshalIndent(jsonData, "", "  ")
+	require.NoError(t, err)
+
+	return string(prettyBytes)
 }
 
 func TestMergeAPIResponses(t *testing.T) {
@@ -535,7 +552,7 @@ func TestMergeAPIResponses(t *testing.T) {
 						},
 					},
 					Stats: &PrometheusResponseStats{Samples: &PrometheusResponseSamplesStats{
-						TotalQueryableSamples: 25,
+						TotalQueryableSamples: 30,
 						TotalQueryableSamplesPerStep: []*PrometheusResponseQueryableSamplesStatsPerStep{
 							{Value: 5, TimestampMs: 1000},
 							{Value: 5, TimestampMs: 2000},
@@ -571,7 +588,7 @@ func TestMergeAPIResponses(t *testing.T) {
 						},
 					},
 					Stats: &PrometheusResponseStats{Samples: &PrometheusResponseSamplesStats{
-						TotalQueryableSamples: 28,
+						TotalQueryableSamples: 36,
 						TotalQueryableSamplesPerStep: []*PrometheusResponseQueryableSamplesStatsPerStep{
 							{Value: 1, TimestampMs: 1000},
 							{Value: 2, TimestampMs: 2000},
@@ -608,7 +625,7 @@ func TestMergeAPIResponses(t *testing.T) {
 						},
 					},
 					Stats: &PrometheusResponseStats{Samples: &PrometheusResponseSamplesStats{
-						TotalQueryableSamples: 15,
+						TotalQueryableSamples: 26,
 						TotalQueryableSamplesPerStep: []*PrometheusResponseQueryableSamplesStatsPerStep{
 							{Value: 1, TimestampMs: 1000},
 							{Value: 2, TimestampMs: 2000},
@@ -642,7 +659,7 @@ func TestMergeAPIResponses(t *testing.T) {
 						},
 					},
 					Stats: &PrometheusResponseStats{Samples: &PrometheusResponseSamplesStats{
-						TotalQueryableSamples: 14,
+						TotalQueryableSamples: 40,
 						TotalQueryableSamplesPerStep: []*PrometheusResponseQueryableSamplesStatsPerStep{
 							{Value: 2, TimestampMs: 2000},
 							{Value: 3, TimestampMs: 3000},
