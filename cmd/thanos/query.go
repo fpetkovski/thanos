@@ -586,7 +586,6 @@ func runQuery(
 			})
 		}, func(error) {
 			cancel()
-			endpoints.Close()
 		})
 	}
 
@@ -846,6 +845,7 @@ func runQuery(
 		}, func(error) {
 			statusProber.NotReady(err)
 			s.Shutdown(err)
+			endpoints.Close()
 		})
 	}
 
