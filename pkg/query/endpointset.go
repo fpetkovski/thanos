@@ -401,7 +401,8 @@ func (e *EndpointSet) Update(ctx context.Context) {
 
 			e.updateEndpoint(ctx, spec, newRef)
 			if !newRef.isQueryable() {
-				newRef.Close()
+				// Close connections in the background due to https://github.com/grpc/grpc-go/issues/7314.
+				go newRef.Close()
 				return
 			}
 
@@ -433,7 +434,8 @@ func (e *EndpointSet) Update(ctx context.Context) {
 	}
 	for addr, er := range staleRefs {
 		level.Info(er.logger).Log("msg", unhealthyEndpointMessage, "address", er.addr, "extLset", labelpb.PromLabelSetsToString(er.LabelSets()))
-		er.Close()
+		// Close connections in the background due to https://github.com/grpc/grpc-go/issues/7314.
+		go er.Close()
 		delete(e.endpoints, addr)
 	}
 	level.Debug(e.logger).Log("msg", "updated endpoints", "activeEndpoints", len(e.endpoints))
