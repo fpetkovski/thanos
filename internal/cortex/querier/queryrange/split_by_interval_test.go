@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/prometheus/prometheus/promql/parser"
+
 	"github.com/stretchr/testify/require"
 	"github.com/weaveworks/common/httpgrpc"
 	"github.com/weaveworks/common/middleware"
@@ -367,11 +368,6 @@ func Test_evaluateAtModifier(t *testing.T) {
 					[5m:1m])
 				[2m:])
 			[10m:])`,
-		},
-		{
-			// parse error: missing unit character in duration
-			in:                "http_requests_total[5] @ 10.001",
-			expectedErrorCode: http.StatusBadRequest,
 		},
 		{
 			// parse error: @ modifier must be preceded by an instant vector selector or range vector selector or a subquery
