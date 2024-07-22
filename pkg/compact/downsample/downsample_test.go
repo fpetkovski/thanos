@@ -1012,7 +1012,7 @@ func expectedFloatHistogramsSum(floatHistograms []*histogram.FloatHistogram, fro
 	adjustedFloatHistograms := counterResetAdjustFloatHistograms(floatHistograms)
 	sum := adjustedFloatHistograms[fromIndex]
 	for _, s := range adjustedFloatHistograms[fromIndex+1:] {
-		sum.Add(s)
+		_, _ = sum.Add(s)
 	}
 	sum.CounterResetHint = histogram.GaugeType
 	return sum
@@ -1032,10 +1032,10 @@ func counterResetAdjustFloatHistograms(floatHistograms []*histogram.FloatHistogr
 			counter = fh.Copy()
 		} else {
 			if fh.DetectReset(previous) {
-				counter.Add(fh)
+				_, _ = counter.Add(fh)
 			} else {
 				h, _ := fh.Copy().Sub(previous)
-				counter.Add(h)
+				_, _ = counter.Add(h)
 			}
 		}
 		previous = fh
