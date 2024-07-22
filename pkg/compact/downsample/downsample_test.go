@@ -1034,7 +1034,8 @@ func counterResetAdjustFloatHistograms(floatHistograms []*histogram.FloatHistogr
 			if fh.DetectReset(previous) {
 				counter.Add(fh)
 			} else {
-				counter.Add(fh.Copy().Sub(previous))
+				h, _ := fh.Copy().Sub(previous)
+				counter.Add(h)
 			}
 		}
 		previous = fh
