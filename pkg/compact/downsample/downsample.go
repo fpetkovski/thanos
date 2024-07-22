@@ -394,7 +394,8 @@ func (h *histogramAggregator) add(s sample) {
 			h.resetDetected = true
 		} else {
 			// Add delta with previous value to the counter.
-			h.counter.Add(fh.Copy().Sub(h.previous))
+			c, _ := fh.Copy().Sub(h.previous)
+			h.counter.Add(c)
 		}
 	} else {
 		// First sample sets the counter.

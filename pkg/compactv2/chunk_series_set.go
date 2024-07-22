@@ -85,6 +85,8 @@ type lazyPopulatableChunk struct {
 	populated chunkenc.Chunk
 }
 
+func (l *lazyPopulatableChunk) Reset(stream []byte) { l.populated.Reset(stream) }
+
 type errChunkIterator struct{ err error }
 
 func (e errChunkIterator) Seek(int64) chunkenc.ValueType { return chunkenc.ValNone }
@@ -109,6 +111,7 @@ func (e errChunk) Appender() (chunkenc.Appender, error)         { return nil, e.
 func (e errChunk) Iterator(chunkenc.Iterator) chunkenc.Iterator { return e.err }
 func (e errChunk) NumSamples() int                              { return 0 }
 func (e errChunk) Compact()                                     {}
+func (e errChunk) Reset([]byte)                                 {}
 
 func (l *lazyPopulatableChunk) populate() {
 	// TODO(bwplotka): In most cases we don't need to parse anything, just copy. Extend reader/writer for this.

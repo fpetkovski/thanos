@@ -18,6 +18,8 @@ const ChunkEncAggr = chunkenc.Encoding(0xff)
 // Not all aggregates must be present.
 type AggrChunk []byte
 
+func (c *AggrChunk) Reset(stream []byte) { *c = stream }
+
 // EncodeAggrChunk encodes a new aggregate chunk from the array of chunks for each aggregate.
 // Each array entry corresponds to the respective AggrType number.
 func EncodeAggrChunk(chks [5]chunkenc.Chunk) *AggrChunk {
