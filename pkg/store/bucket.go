@@ -45,6 +45,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/thanos-io/objstore"
+
 	"github.com/thanos-io/thanos/pkg/block"
 	"github.com/thanos-io/thanos/pkg/block/indexheader"
 	"github.com/thanos-io/thanos/pkg/block/metadata"
@@ -3102,7 +3103,8 @@ func (r *bucketChunkReader) loadChunks(ctx context.Context, res []seriesEntry, a
 		// There is also crc32 after the chunk, but we ignore that.
 		chunkLen = n + 1 + int(chunkDataLen)
 		if chunkLen <= len(cb) {
-			err = populateChunk(&(res[pIdx.seriesEntry].chks[pIdx.chunk]), rawChunk(cb[n:chunkLen]), aggrs, r.save, calculateChunkChecksum)
+			chk := rawChunk(cb[n:chunkLen])
+			err = populateChunk(&(res[pIdx.seriesEntry].chks[pIdx.chunk]), &chk, aggrs, r.save, calculateChunkChecksum)
 			if err != nil {
 				return errors.Wrap(err, "populate chunk")
 			}
@@ -3136,7 +3138,8 @@ func (r *bucketChunkReader) loadChunks(ctx context.Context, res []seriesEntry, a
 
 		r.stats.chunksFetchCount++
 		r.stats.ChunksFetchedSizeSum += units.Base2Bytes(len(*nb))
-		err = populateChunk(&(res[pIdx.seriesEntry].chks[pIdx.chunk]), rawChunk((*nb)[n:]), aggrs, r.save, calculateChunkChecksum)
+		chk := rawChunk((*nb)[n:])
+		err = populateChunk(&(res[pIdx.seriesEntry].chks[pIdx.chunk]), &chk, aggrs, r.save, calculateChunkChecksum)
 		if err != nil {
 			r.block.chunkPool.Put(nb)
 			return errors.Wrap(err, "populate chunk")
@@ -3178,8 +3181,8 @@ func (b rawChunk) Encoding() chunkenc.Encoding {
 func (b rawChunk) Bytes() []byte {
 	return b[1:]
 }
-func (b rawChunk) Compact() {}
 
+func (b rawChunk) Compact() {}
 func (b rawChunk) Iterator(_ chunkenc.Iterator) chunkenc.Iterator {
 	panic("invalid call")
 }
@@ -3191,6 +3194,8 @@ func (b rawChunk) Appender() (chunkenc.Appender, error) {
 func (b rawChunk) NumSamples() int {
 	panic("invalid call")
 }
+
+func (b *rawChunk) Reset(stream []byte) { *b = stream }
 
 type queryStats struct {
 	blocksQueried int

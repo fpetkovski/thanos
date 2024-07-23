@@ -75,7 +75,7 @@ func createBlockFromHead(t testing.TB, dir string, head *tsdb.Head) ulid.ULID {
 	// Because of this block intervals are always +1 than the total samples it includes.
 	ulid, err := compactor.Write(dir, head, head.MinTime(), head.MaxTime()+1, nil)
 	testutil.Ok(t, err)
-	return ulid
+	return ulid[0]
 }
 
 func TestBucketBlock_Property(t *testing.T) {

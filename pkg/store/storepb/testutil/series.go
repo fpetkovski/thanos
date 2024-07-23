@@ -175,9 +175,9 @@ func CreateBlockFromHead(t testing.TB, dir string, head *tsdb.Head) ulid.ULID {
 
 	// Add +1 millisecond to block maxt because block intervals are half-open: [b.MinTime, b.MaxTime).
 	// Because of this block intervals are always +1 than the total samples it includes.
-	ulid, err := compactor.Write(dir, head, head.MinTime(), head.MaxTime()+1, nil)
+	ulids, err := compactor.Write(dir, head, head.MinTime(), head.MaxTime()+1, nil)
 	testutil.Ok(t, err)
-	return ulid
+	return ulids[0]
 }
 
 func appendFloatSamples(t testing.TB, app storage.Appender, tsLabel int, opts HeadGenOptions) {

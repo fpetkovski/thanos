@@ -363,7 +363,7 @@ func TestTSDBStore_SeriesAccessWithDelegateClosing(t *testing.T) {
 	})
 	testutil.Ok(t, head.Close())
 
-	db, err := tsdb.OpenDBReadOnly(tmpDir, logger)
+	db, err := tsdb.OpenDBReadOnly(tmpDir, "", logger)
 	testutil.Ok(t, err)
 
 	dbToClose := make(chan *tsdb.DBReadOnly, 1)
@@ -532,7 +532,7 @@ func TestTSDBStore_SeriesAccessWithoutDelegateClosing(t *testing.T) {
 	})
 	testutil.Ok(t, head.Close())
 
-	db, err := tsdb.OpenDBReadOnly(tmpDir, logger)
+	db, err := tsdb.OpenDBReadOnly(tmpDir, "", logger)
 	testutil.Ok(t, err)
 	t.Cleanup(func() {
 		if db != nil {
@@ -676,7 +676,7 @@ func benchTSDBStoreSeries(t testutil.TB, totalSamples, totalSeries int) {
 		resps[3] = append(resps[3], storepb.NewSeriesResponse(created[i]))
 	}
 
-	db, err := tsdb.OpenDBReadOnly(tmpDir, logger)
+	db, err := tsdb.OpenDBReadOnly(tmpDir, "", logger)
 	testutil.Ok(t, err)
 
 	defer func() { testutil.Ok(t, db.Close()) }()

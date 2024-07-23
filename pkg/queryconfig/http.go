@@ -8,6 +8,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"path"
@@ -32,13 +33,17 @@ import (
 	"github.com/thanos-io/thanos/pkg/discovery/cache"
 )
 
-// Config is a structure that allows pointing to various HTTP endpoint, e.g ruler connecting to queriers.
+// HTTPConfig is a structure that allows pointing to various HTTP endpoint, e.g ruler connecting to queriers.
 type HTTPConfig struct {
 	HTTPClientConfig HTTPClientConfig    `yaml:"http_config"`
 	EndpointsConfig  HTTPEndpointsConfig `yaml:",inline"`
 }
 
-// ClientConfig configures an HTTP client.
+func (c *HTTPConfig) NotEmpty() bool {
+	return len(c.EndpointsConfig.FileSDConfigs) > 0 || len(c.EndpointsConfig.StaticAddresses) > 0
+}
+
+// HTTPClientConfig configures an HTTP client.
 type HTTPClientConfig struct {
 	// The HTTP basic authentication credentials for the targets.
 	BasicAuth BasicAuth `yaml:"basic_auth"`
@@ -83,7 +88,7 @@ func (b BasicAuth) IsZero() bool {
 	return b.Username == "" && b.Password == "" && b.PasswordFile == ""
 }
 
-// Transport configures client's transport properties.
+// TransportConfig configures client's transport properties.
 type TransportConfig struct {
 	MaxIdleConns          int   `yaml:"max_idle_conns"`
 	MaxIdleConnsPerHost   int   `yaml:"max_idle_conns_per_host"`
@@ -93,6 +98,7 @@ type TransportConfig struct {
 	MaxConnsPerHost       int   `yaml:"max_conns_per_host"`
 	DisableCompression    bool  `yaml:"disable_compression"`
 	TLSHandshakeTimeout   int64 `yaml:"tls_handshake_timeout"`
+	DialerTimeout         int64 `yaml:"dialer_timeout"`
 }
 
 var defaultTransportConfig TransportConfig = TransportConfig{
@@ -104,6 +110,7 @@ var defaultTransportConfig TransportConfig = TransportConfig{
 	ExpectContinueTimeout: int64(10 * time.Second),
 	DisableCompression:    false,
 	TLSHandshakeTimeout:   int64(10 * time.Second),
+	DialerTimeout:         int64(5 * time.Second),
 }
 
 func NewDefaultHTTPClientConfig() HTTPClientConfig {
@@ -134,6 +141,9 @@ func NewRoundTripperFromConfig(cfg config_util.HTTPClientConfig, transportConfig
 			ExpectContinueTimeout: time.Duration(transportConfig.ExpectContinueTimeout),
 			TLSHandshakeTimeout:   time.Duration(transportConfig.TLSHandshakeTimeout),
 			DialContext: conntrack.NewDialContextFunc(
+				conntrack.DialWithDialer(&net.Dialer{
+					Timeout: time.Duration(transportConfig.DialerTimeout),
+				}),
 				conntrack.DialWithTracing(),
 				conntrack.DialWithName(name)),
 		}
@@ -153,20 +163,28 @@ func NewRoundTripperFromConfig(cfg config_util.HTTPClientConfig, transportConfig
 		// If an authorization_credentials is provided, create a round tripper that will set the
 		// Authorization header correctly on each request.
 		if cfg.Authorization != nil && len(cfg.Authorization.Credentials) > 0 {
-			rt = config_util.NewAuthorizationCredentialsRoundTripper(cfg.Authorization.Type, cfg.Authorization.Credentials, rt)
+			rt = config_util.NewAuthorizationCredentialsRoundTripper(cfg.Authorization.Type, config_util.NewInlineSecret(string(cfg.Authorization.Credentials)), rt)
 		} else if cfg.Authorization != nil && len(cfg.Authorization.CredentialsFile) > 0 {
-			rt = config_util.NewAuthorizationCredentialsFileRoundTripper(cfg.Authorization.Type, cfg.Authorization.CredentialsFile, rt)
+			rt = config_util.NewAuthorizationCredentialsRoundTripper(cfg.Authorization.Type, config_util.NewFileSecret(cfg.Authorization.CredentialsFile), rt)
 		}
 		// Backwards compatibility, be nice with importers who would not have
 		// called Validate().
 		if len(cfg.BearerToken) > 0 {
-			rt = config_util.NewAuthorizationCredentialsRoundTripper("Bearer", cfg.BearerToken, rt)
+			rt = config_util.NewAuthorizationCredentialsRoundTripper("Bearer", config_util.NewInlineSecret(string(cfg.BearerToken)), rt)
 		} else if len(cfg.BearerTokenFile) > 0 {
-			rt = config_util.NewAuthorizationCredentialsFileRoundTripper("Bearer", cfg.BearerTokenFile, rt)
+			rt = config_util.NewAuthorizationCredentialsRoundTripper("Bearer", config_util.NewFileSecret(cfg.BearerTokenFile), rt)
 		}
 
 		if cfg.BasicAuth != nil {
-			rt = config_util.NewBasicAuthRoundTripper(cfg.BasicAuth.Username, cfg.BasicAuth.Password, cfg.BasicAuth.UsernameFile, cfg.BasicAuth.PasswordFile, rt)
+			// TODO(yeya24): expose UsernameFile as a config.
+			username := config_util.NewInlineSecret(cfg.BasicAuth.Username)
+			var password config_util.SecretReader
+			if len(cfg.BasicAuth.PasswordFile) > 0 {
+				password = config_util.NewFileSecret(cfg.BasicAuth.PasswordFile)
+			} else {
+				password = config_util.NewInlineSecret(string(cfg.BasicAuth.Password))
+			}
+			rt = config_util.NewBasicAuthRoundTripper(username, password, rt)
 		}
 		// Return a new configured RoundTripper.
 		return rt, nil
@@ -183,9 +201,9 @@ func NewRoundTripperFromConfig(cfg config_util.HTTPClientConfig, transportConfig
 	}
 
 	return config_util.NewTLSRoundTripper(tlsConfig, config_util.TLSRoundTripperSettings{
-		CAFile:   cfg.TLSConfig.CAFile,
-		CertFile: cfg.TLSConfig.CertFile,
-		KeyFile:  cfg.TLSConfig.KeyFile,
+		CA:   config_util.NewFileSecret(cfg.TLSConfig.CAFile),
+		Cert: config_util.NewFileSecret(cfg.TLSConfig.CertFile),
+		Key:  config_util.NewFileSecret(cfg.TLSConfig.KeyFile),
 	}, newRT)
 }
 
@@ -274,7 +292,7 @@ func (u userAgentRoundTripper) RoundTrip(r *http.Request) (*http.Response, error
 	return u.rt.RoundTrip(r)
 }
 
-// EndpointsConfig configures a cluster of HTTP endpoints from static addresses and
+// HTTPEndpointsConfig configures a cluster of HTTP endpoints from static addresses and
 // file service discovery.
 type HTTPEndpointsConfig struct {
 	// List of addresses with DNS prefixes.
@@ -289,7 +307,7 @@ type HTTPEndpointsConfig struct {
 	PathPrefix string `yaml:"path_prefix"`
 }
 
-// FileSDConfig represents a file service discovery configuration.
+// HTTPFileSDConfig represents a file service discovery configuration.
 type HTTPFileSDConfig struct {
 	Files           []string       `yaml:"files"`
 	RefreshInterval model.Duration `yaml:"refresh_interval"`
@@ -310,7 +328,7 @@ type AddressProvider interface {
 	Addresses() []string
 }
 
-// Client represents a client that can send requests to a cluster of HTTP-based endpoints.
+// HTTPClient represents a client that can send requests to a cluster of HTTP-based endpoints.
 type HTTPClient struct {
 	logger log.Logger
 

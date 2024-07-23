@@ -389,12 +389,13 @@ func (h *histogramAggregator) add(s sample) {
 	if h.total > 0 {
 		if fh.DetectReset(h.previous) {
 			// Counter reset, correct the value.
-			h.counter.Add(fh)
+			_, _ = h.counter.Add(fh)
 			h.resets++
 			h.resetDetected = true
 		} else {
 			// Add delta with previous value to the counter.
-			h.counter.Add(fh.Copy().Sub(h.previous))
+			c, _ := fh.Copy().Sub(h.previous)
+			_, _ = h.counter.Add(c)
 		}
 	} else {
 		// First sample sets the counter.
@@ -412,9 +413,9 @@ func (h *histogramAggregator) add(s sample) {
 		h.sum.CounterResetHint = histogram.GaugeType
 	} else {
 		if h.resetDetected {
-			h.sum.Add(h.counter)
+			_, _ = h.sum.Add(h.counter)
 		} else {
-			h.sum.Add(fh)
+			_, _ = h.sum.Add(fh)
 		}
 	}
 
