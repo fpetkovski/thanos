@@ -56,10 +56,10 @@ func (c queryInstantCodec) MergeResponse(req queryrange.Request, responses ...qu
 		promResponses = append(promResponses, resp.(*queryrange.PrometheusInstantQueryResponse))
 	}
 
-	var explanation *queryrange.Explanation
+	var analysis *queryrange.Analysis
 	for i := range promResponses {
-		if promResponses[i].Data.GetExplanation() != nil {
-			explanation = promResponses[i].Data.GetExplanation()
+		if promResponses[i].Data.GetAnalysis() != nil {
+			analysis = promResponses[i].Data.GetAnalysis()
 			break
 		}
 	}
@@ -76,8 +76,8 @@ func (c queryInstantCodec) MergeResponse(req queryrange.Request, responses ...qu
 						Matrix: matrixMerge(promResponses),
 					},
 				},
-				Stats:       queryrange.StatsMerge(responses),
-				Explanation: explanation,
+				Stats:    queryrange.StatsMerge(responses),
+				Analysis: analysis,
 			},
 		}
 	default:
@@ -94,8 +94,8 @@ func (c queryInstantCodec) MergeResponse(req queryrange.Request, responses ...qu
 						Vector: v,
 					},
 				},
-				Stats:       queryrange.StatsMerge(responses),
-				Explanation: explanation,
+				Stats:    queryrange.StatsMerge(responses),
+				Analysis: analysis,
 			},
 		}
 	}
@@ -155,7 +155,13 @@ func (c queryInstantCodec) DecodeRequest(_ context.Context, r *http.Request, for
 
 	result.Query = r.FormValue("query")
 	result.Path = r.URL.Path
-	result.Explain = r.FormValue("explain")
+	if len(r.FormValue("analyze")) > 0 {
+		analyze, err := strconv.ParseBool(r.FormValue("analyze"))
+		if err != nil {
+			return nil, err
+		}
+		result.Analyze = analyze
+	}
 	result.Engine = r.FormValue("engine")
 	result.Stats = r.FormValue(queryv1.Stats)
 
@@ -179,7 +185,7 @@ func (c queryInstantCodec) EncodeRequest(ctx context.Context, r queryrange.Reque
 		"query":                      []string{thanosReq.Query},
 		queryv1.DedupParam:           []string{strconv.FormatBool(thanosReq.Dedup)},
 		queryv1.PartialResponseParam: []string{strconv.FormatBool(thanosReq.PartialResponse)},
-		queryv1.QueryExplainParam:    []string{thanosReq.Explain},
+		queryv1.QueryAnalyzeParam:    []string{strconv.FormatBool(thanosReq.Analyze)},
 		queryv1.EngineParam:          []string{thanosReq.Engine},
 		queryv1.ReplicaLabelsParam:   thanosReq.ReplicaLabels,
 	}

@@ -15,6 +15,7 @@ import (
 	"github.com/weaveworks/common/httpgrpc"
 
 	"github.com/efficientgo/core/testutil"
+
 	"github.com/thanos-io/thanos/internal/cortex/cortexpb"
 	"github.com/thanos-io/thanos/internal/cortex/querier/queryrange"
 	queryv1 "github.com/thanos-io/thanos/pkg/api/query"
@@ -913,15 +914,6 @@ func TestDecodeResponse(t *testing.T) {
 				Status:  queryrange.StatusSuccess,
 				Headers: headers,
 				Data: queryrange.PrometheusInstantQueryData{
-					Explanation: &queryrange.Explanation{
-						Name: "[*concurrencyOperator(buff=2)]",
-						Children: []*queryrange.Explanation{
-							{
-								Name:     "[*aggregate] sum by ([])",
-								Children: []*queryrange.Explanation{},
-							},
-						},
-					},
 					ResultType: model.ValVector.String(),
 					Result: queryrange.PrometheusInstantQueryResult{
 						Result: &queryrange.PrometheusInstantQueryResult_Vector{

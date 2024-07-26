@@ -16,12 +16,15 @@ export interface Block {
     numSeries: number;
   };
   thanos: {
-    vertical_shard_id: string | null;
     downsample: {
       resolution: number;
     };
     labels: LabelSet;
     source: string;
+    files?: {
+      rel_path: string;
+      size_bytes?: number;
+    }[];
   };
   ulid: string;
   version: number;
@@ -33,4 +36,10 @@ export interface LabelSet {
 
 export interface BlocksPool {
   [key: string]: Block[][];
+}
+
+export interface BlockSizeStats {
+  chunkBytes: number;
+  indexBytes: number;
+  totalBytes: number;
 }

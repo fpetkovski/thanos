@@ -1,4 +1,5 @@
-import { getFilteredBlockPools, isOverlapping, sortBlocks } from './helpers';
+import { getBlockSizeStats, getFilteredBlockPools, humanizeBytes, isOverlapping, sortBlocks } from './helpers';
+import { sizeBlock } from './__testdata__/testdata';
 
 // Number of blocks in data: 8.
 const overlapCaseData = {
@@ -16,7 +17,6 @@ const overlapCaseData = {
         numChunks: 51057,
       },
       thanos: {
-        vertical_shard_id: '2',
         downsample: {
           resolution: 0,
         },
@@ -42,7 +42,6 @@ const overlapCaseData = {
         numChunks: 51057,
       },
       thanos: {
-        vertical_shard_id: '2',
         downsample: {
           resolution: 0,
         },
@@ -67,7 +66,6 @@ const overlapCaseData = {
         numChunks: 58325,
       },
       thanos: {
-        vertical_shard_id: '2',
         downsample: {
           resolution: 0,
         },
@@ -92,7 +90,6 @@ const overlapCaseData = {
         numChunks: 58325,
       },
       thanos: {
-        vertical_shard_id: '2',
         downsample: {
           resolution: 0,
         },
@@ -117,7 +114,6 @@ const overlapCaseData = {
         numChunks: 58325,
       },
       thanos: {
-        vertical_shard_id: '2',
         downsample: {
           resolution: 0,
         },
@@ -142,7 +138,6 @@ const overlapCaseData = {
         numChunks: 58325,
       },
       thanos: {
-        vertical_shard_id: '2',
         downsample: {
           resolution: 0,
         },
@@ -167,7 +162,6 @@ const overlapCaseData = {
         numChunks: 58325,
       },
       thanos: {
-        vertical_shard_id: '2',
         downsample: {
           resolution: 0,
         },
@@ -192,7 +186,6 @@ const overlapCaseData = {
         numChunks: 58325,
       },
       thanos: {
-        vertical_shard_id: '2',
         downsample: {
           resolution: 0,
         },
@@ -231,7 +224,6 @@ const blockPools = {
             labels: {
               prometheus: 'prom-1',
             },
-            vertical_shard_id: '2',
             downsample: {
               resolution: 0,
             },
@@ -270,7 +262,6 @@ const blockPools = {
             labels: {
               prometheus: 'prom-1',
             },
-            vertical_shard_id: '2',
             downsample: {
               resolution: 0,
             },
@@ -315,7 +306,6 @@ const blockPools = {
             labels: {
               prometheus: 'prom-2',
             },
-            vertical_shard_id: '2',
             downsample: {
               resolution: 0,
             },
@@ -354,7 +344,6 @@ const blockPools = {
             labels: {
               prometheus: 'prom-2',
             },
-            vertical_shard_id: '2',
             downsample: {
               resolution: 0,
             },
@@ -399,7 +388,6 @@ const blockPools = {
             labels: {
               prometheus: 'prom-2 random:2',
             },
-            vertical_shard_id: '2',
             downsample: {
               resolution: 0,
             },
@@ -438,7 +426,6 @@ const blockPools = {
             labels: {
               prometheus: 'prom-2 random:2',
             },
-            vertical_shard_id: '2',
             downsample: {
               resolution: 0,
             },
@@ -483,7 +470,6 @@ const blockPools = {
             labels: {
               prometheus: 'prom-1 random:1',
             },
-            vertical_shard_id: '2',
             downsample: {
               resolution: 0,
             },
@@ -522,7 +508,6 @@ const blockPools = {
             labels: {
               prometheus: 'prom-1 random:1',
             },
-            vertical_shard_id: '2',
             downsample: {
               resolution: 0,
             },
@@ -568,7 +553,6 @@ const filteredBlocks = [
       labels: {
         prometheus: 'prom-2',
       },
-      vertical_shard_id: '2',
       downsample: {
         resolution: 0,
       },
@@ -671,5 +655,50 @@ describe('Filtered block pools', () => {
   });
   it('should contain the first block having exactly the same labels as in filteredBlocks', () => {
     expect(filteredBlockPoolArray[0].thanos.labels).toEqual(filteredBlocks[0].thanos.labels);
+  });
+});
+
+describe('Block Size Stats', () => {
+  it('should return the index size', () => {
+    expect(getBlockSizeStats(sizeBlock)?.indexBytes).toEqual(257574);
+  });
+  it('should return the summed chunk size', () => {
+    expect(getBlockSizeStats(sizeBlock)?.chunkBytes).toEqual(537014552);
+  });
+  it('should return total summed size', () => {
+    expect(getBlockSizeStats(sizeBlock)?.totalBytes).toEqual(537272126);
+  });
+});
+
+describe('humanizeBytes', () => {
+  it('should return Unknown for undefined', () => {
+    expect(humanizeBytes(undefined)).toEqual('Unknown Bytes');
+  });
+  it('should return Unknown for NaN', () => {
+    expect(humanizeBytes(Number.NaN)).toEqual('Unknown Bytes');
+  });
+  it('should return 0 Bytes', () => {
+    expect(humanizeBytes(0)).toEqual('0 Byte');
+  });
+  it('should return Bytes', () => {
+    expect(humanizeBytes(512)).toEqual('512.00 Bytes');
+  });
+  it('should return Kibibytes', () => {
+    expect(humanizeBytes(Math.pow(2, 10) * 1.5)).toEqual('1.50 KiB');
+  });
+  it('should return Mebibytes', () => {
+    expect(humanizeBytes(Math.pow(2, 20) * 1.5)).toEqual('1.50 MiB');
+  });
+  it('should return Gibibytes', () => {
+    expect(humanizeBytes(Math.pow(2, 30) * 1.5)).toEqual('1.50 GiB');
+  });
+  it('should return Tebibytes', () => {
+    expect(humanizeBytes(Math.pow(2, 40) * 1.5)).toEqual('1.50 TiB');
+  });
+  it('should return Pebibytes', () => {
+    expect(humanizeBytes(Math.pow(2, 50) * 1.5)).toEqual('1.50 PiB');
+  });
+  it('should still return Pebibytes for bigger units', () => {
+    expect(humanizeBytes(Math.pow(2, 60) * 2)).toEqual('2048.00 PiB');
   });
 });

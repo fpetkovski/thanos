@@ -6,19 +6,23 @@ package e2e_test
 import (
 	"context"
 	"fmt"
-	"os"
+	"io"
+	"net/http"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/efficientgo/e2e"
 	e2emon "github.com/efficientgo/e2e/monitoring"
 	"github.com/efficientgo/e2e/monitoring/matchers"
+	"github.com/grafana/regexp"
 	"github.com/pkg/errors"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/timestamp"
+	"github.com/stretchr/testify/require"
 
 	"github.com/efficientgo/core/testutil"
 
@@ -26,118 +30,9 @@ import (
 	"github.com/thanos-io/thanos/pkg/cacheutil"
 	"github.com/thanos-io/thanos/pkg/promclient"
 	"github.com/thanos-io/thanos/pkg/queryfrontend"
-	"github.com/thanos-io/thanos/pkg/runutil"
 	"github.com/thanos-io/thanos/pkg/testutil/e2eutil"
 	"github.com/thanos-io/thanos/test/e2e/e2ethanos"
 )
-
-func TestQFEEngineExplanation(t *testing.T) {
-	t.Parallel()
-
-	e, err := e2e.NewDockerEnvironment("qfe-opts")
-	testutil.Ok(t, err)
-	t.Cleanup(e2ethanos.CleanScenario(t, e))
-
-	prom, sidecar := e2ethanos.NewPrometheusWithSidecar(e, "1", e2ethanos.DefaultPromConfig("test", 0, "", "", e2ethanos.LocalPrometheusTarget), "", e2ethanos.DefaultPrometheusImage(), "")
-	testutil.Ok(t, e2e.StartAndWaitReady(prom, sidecar))
-
-	q := e2ethanos.NewQuerierBuilder(e, "1", sidecar.InternalEndpoint("grpc")).Init()
-	testutil.Ok(t, e2e.StartAndWaitReady(q))
-
-	inMemoryCacheConfig := queryfrontend.CacheProviderConfig{
-		Type: queryfrontend.INMEMORY,
-		Config: queryfrontend.InMemoryResponseCacheConfig{
-			MaxSizeItems: 1000,
-			Validity:     time.Hour,
-		},
-	}
-
-	cfg := queryfrontend.Config{}
-	queryFrontend := e2ethanos.NewQueryFrontend(e, "1", "http://"+q.InternalEndpoint("http"), cfg, inMemoryCacheConfig)
-	testutil.Ok(t, e2e.StartAndWaitReady(queryFrontend))
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	t.Cleanup(cancel)
-
-	testutil.Ok(t, q.WaitSumMetricsWithOptions(e2emon.Equals(1), []string{"thanos_store_nodes_grpc_connections"}, e2emon.WaitMissingMetrics()))
-
-	var queriesBeforeUp = 0
-	testutil.Ok(t, runutil.RetryWithLog(e2e.NewLogger(os.Stderr), 5*time.Second, ctx.Done(), func() error {
-		queriesBeforeUp++
-		_, _, err := simpleInstantQuery(t, ctx, queryFrontend.Endpoint("http"), e2ethanos.QueryUpWithoutInstance, time.Now, promclient.QueryOptions{}, 1)
-		return err
-	}))
-
-	t.Logf("queried %d times before prom is up", queriesBeforeUp)
-
-	t.Run("passes query to Thanos engine", func(t *testing.T) {
-		queryAndAssertSeries(t, ctx, queryFrontend.Endpoint("http"), e2ethanos.QueryUpWithoutInstance, time.Now, promclient.QueryOptions{
-			Deduplicate: false,
-			Engine:      "thanos",
-		}, []model.Metric{
-			{
-				"job":        "myself",
-				"prometheus": "test",
-				"replica":    "0",
-			},
-		})
-
-		testutil.Ok(t, q.WaitSumMetricsWithOptions(e2emon.GreaterOrEqual(1), []string{"thanos_engine_queries_total"}, e2emon.WaitMissingMetrics(), e2emon.WithLabelMatchers(matchers.MustNewMatcher(matchers.MatchEqual, "fallback", "false"))))
-
-	})
-
-	now := time.Now()
-	t.Run("passes range query to Thanos engine and returns explanation", func(t *testing.T) {
-		explanation := rangeQuery(t, ctx, queryFrontend.Endpoint("http"), e2ethanos.QueryUpWithoutInstance,
-			timestamp.FromTime(now.Add(-5*time.Minute)),
-			timestamp.FromTime(now), 1, promclient.QueryOptions{
-				Explain: true,
-				Engine:  "thanos",
-			}, func(res model.Matrix) error {
-				if res.Len() == 0 {
-					return fmt.Errorf("expected results")
-				}
-				return nil
-			})
-		testutil.Assert(t, explanation != nil, "expected to have an explanation")
-		testutil.Ok(t, q.WaitSumMetricsWithOptions(e2emon.GreaterOrEqual(2), []string{"thanos_engine_queries_total"}, e2emon.WaitMissingMetrics(), e2emon.WithLabelMatchers(matchers.MustNewMatcher(matchers.MatchEqual, "fallback", "false"))))
-	})
-
-	t.Run("passes query to Prometheus engine", func(t *testing.T) {
-		queryAndAssertSeries(t, ctx, queryFrontend.Endpoint("http"), e2ethanos.QueryUpWithoutInstance, time.Now, promclient.QueryOptions{
-			Deduplicate: false,
-			Engine:      "prometheus",
-		}, []model.Metric{
-			{
-				"job":        "myself",
-				"prometheus": "test",
-				"replica":    "0",
-			},
-		})
-
-		testutil.Ok(t, q.WaitSumMetricsWithOptions(e2emon.GreaterOrEqual(1), []string{"thanos_engine_queries_total"}, e2emon.WaitMissingMetrics(), e2emon.WithLabelMatchers(matchers.MustNewMatcher(matchers.MatchEqual, "fallback", "false"))))
-		testutil.Ok(t, q.WaitSumMetricsWithOptions(e2emon.GreaterOrEqual(float64(queriesBeforeUp)+2), []string{"thanos_query_concurrent_gate_queries_total"}, e2emon.WaitMissingMetrics()))
-
-	})
-
-	t.Run("explanation works with instant query", func(t *testing.T) {
-		_, explanation := instantQuery(t, ctx, queryFrontend.Endpoint("http"), e2ethanos.QueryUpWithoutInstance, time.Now, promclient.QueryOptions{
-			Deduplicate: false,
-			Engine:      "thanos",
-			Explain:     true,
-		}, 1)
-		testutil.Assert(t, explanation != nil, "expected to have an explanation")
-	})
-
-	t.Run("does not return explanation if not needed", func(t *testing.T) {
-		_, explanation := instantQuery(t, ctx, queryFrontend.Endpoint("http"), e2ethanos.QueryUpWithoutInstance, time.Now, promclient.QueryOptions{
-			Deduplicate: false,
-			Engine:      "thanos",
-			Explain:     false,
-		}, 1)
-		testutil.Assert(t, explanation == nil, "expected to have no explanation")
-	})
-}
 
 func TestQueryFrontend(t *testing.T) {
 	t.Parallel()
@@ -917,13 +812,71 @@ func TestInstantQueryShardingWithRandomData(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			resultWithoutSharding, _ := instantQuery(t, ctx, q1.Endpoint("http"), tc.qryFunc, func() time.Time {
+			resultWithoutSharding := instantQuery(t, ctx, q1.Endpoint("http"), tc.qryFunc, func() time.Time {
 				return now.Time()
 			}, queryOpts, tc.expectedSeries)
-			resultWithSharding, _ := instantQuery(t, ctx, qfe.Endpoint("http"), tc.qryFunc, func() time.Time {
+			resultWithSharding := instantQuery(t, ctx, qfe.Endpoint("http"), tc.qryFunc, func() time.Time {
 				return now.Time()
 			}, queryOpts, tc.expectedSeries)
 			testutil.Equals(t, resultWithoutSharding, resultWithSharding)
 		})
 	}
+}
+
+func TestQueryFrontendExplain(t *testing.T) {
+	t.Parallel()
+
+	e, err := e2e.NewDockerEnvironment("qfe-explain")
+	testutil.Ok(t, err)
+	t.Cleanup(e2ethanos.CleanScenario(t, e))
+
+	q := e2ethanos.NewQuerierBuilder(e, "1").Init()
+	testutil.Ok(t, e2e.StartAndWaitReady(q))
+
+	qfe := e2ethanos.NewQueryFrontend(e, "1", "http://"+q.InternalEndpoint("http"), queryfrontend.Config{}, queryfrontend.CacheProviderConfig{
+		Type: queryfrontend.INMEMORY,
+	})
+	testutil.Ok(t, e2e.StartAndWaitReady(qfe))
+
+	resp, err := http.Get(fmt.Sprintf("http://%s/api/v1/query_explain?query=time()&engine=thanos", qfe.Endpoint("http")))
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, resp.Body.Close()) })
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, `{"status":"success","data":{"name":"[duplicateLabelCheck]","children":[{"name":"[noArgFunction]"}]}}`, strings.TrimSpace(string(body)))
+}
+
+func TestQueryFrontendAnalyze(t *testing.T) {
+	t.Parallel()
+
+	e, err := e2e.NewDockerEnvironment("qfe-analyze")
+	testutil.Ok(t, err)
+	t.Cleanup(e2ethanos.CleanScenario(t, e))
+
+	q := e2ethanos.NewQuerierBuilder(e, "1").Init()
+	testutil.Ok(t, e2e.StartAndWaitReady(q))
+
+	qfe := e2ethanos.NewQueryFrontend(e, "1", "http://"+q.InternalEndpoint("http"), queryfrontend.Config{}, queryfrontend.CacheProviderConfig{
+		Type: queryfrontend.INMEMORY,
+	})
+	testutil.Ok(t, e2e.StartAndWaitReady(qfe))
+
+	resp, err := http.Get(fmt.Sprintf("http://%s/api/v1/query?query=time()&engine=thanos&analyze=true", qfe.Endpoint("http")))
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, resp.Body.Close()) })
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	r := regexp.MustCompile(
+		`{"status":"success","data":{"resultType":"scalar","result":\[.+,".+"\],"analysis":{"name":"\[duplicateLabelCheck\]","executionTime":".+","children":\[{"name":"\[noArgFunction\]","executionTime":".+","children":null}\]}}}`,
+	)
+	t.Log(strings.TrimSpace(string(body)))
+
+	require.Equal(t, true, r.MatchString(strings.TrimSpace(string(body))))
 }

@@ -17,8 +17,6 @@ import (
 )
 
 func TestDistributedQueryExecution(t *testing.T) {
-	t.Parallel()
-
 	// Build up.
 	e, err := e2e.New(e2e.WithName("dist-query"))
 	testutil.Ok(t, err)
