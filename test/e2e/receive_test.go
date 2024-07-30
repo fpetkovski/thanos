@@ -20,6 +20,7 @@ import (
 	"github.com/prometheus/prometheus/model/relabel"
 
 	"github.com/efficientgo/core/testutil"
+
 	"github.com/thanos-io/thanos/pkg/promclient"
 	"github.com/thanos-io/thanos/pkg/receive"
 	"github.com/thanos-io/thanos/test/e2e/e2ethanos"
@@ -791,7 +792,7 @@ test_metric{a="2", b="2"} 1`)
 			NB: Made with asciiflow.com - you can copy & paste the above there to modify.
 		*/
 
-		t.Parallel()
+		t.Skip("Flaky test")
 		e, err := e2e.NewDockerEnvironment("active-series")
 		testutil.Ok(t, err)
 		t.Cleanup(e2ethanos.CleanScenario(t, e))

@@ -18,7 +18,6 @@ export const columns = [
   'Announced LabelSets',
   'Min Time (UTC)',
   'Max Time (UTC)',
-  'Guaranteed Min Time (UTC)',
   'Last Successful Health Check',
   'Last Message',
 ];
@@ -56,12 +55,11 @@ export const StorePoolPanel: FC<StorePoolPanelProps> = ({ title, storePool }) =>
           </thead>
           <tbody>
             {storePool.map((store: Store) => {
-              const { name, minTime, maxTime, guaranteedMinTime, labelSets, lastCheck, lastError } = store;
+              const { name, minTime, maxTime, labelSets, lastCheck, lastError } = store;
               const health = lastError ? 'down' : 'up';
               const color = getColor(health);
               const validMinTime = isValidTime(minTime);
               const validMaxTime = isValidTime(maxTime);
-              const validGuaranteedMinTime = isValidTime(guaranteedMinTime);
 
               return (
                 <tr key={name}>
@@ -79,9 +77,6 @@ export const StorePoolPanel: FC<StorePoolPanelProps> = ({ title, storePool }) =>
                   </td>
                   <td data-testid="maxTime" title={storeTimeRangeMsg(validMinTime, validMaxTime)}>
                     {validMaxTime ? formatTime(maxTime) : <FontAwesomeIcon icon={faMinus} />}
-                  </td>
-                  <td data-testid="guaranteedMinTime" title={storeTimeRangeMsg(validMinTime, validGuaranteedMinTime)}>
-                    {validGuaranteedMinTime ? formatTime(guaranteedMinTime) : <FontAwesomeIcon icon={faMinus} />}
                   </td>
                   <td data-testid="lastCheck">
                     {isValidTime(parseTime(lastCheck)) ? (
