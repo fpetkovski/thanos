@@ -5,6 +5,7 @@ package query
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"math"
 	"strings"
@@ -79,7 +80,7 @@ func (r remoteEndpoints) Engines() []api.RemoteEngine {
 	clients := r.getClients()
 	engines := make([]api.RemoteEngine, len(clients))
 	for i := range clients {
-		engines[i] = NewRemoteEngine(r.logger, clients[i], r.opts)
+		engines[i] = newCachingEngine(NewRemoteEngine(r.logger, clients[i], r.opts))
 	}
 	return engines
 }
@@ -445,3 +446,75 @@ func fromProtoHistogram(hp prompb.Histogram) *histogram.FloatHistogram {
 		return prompb.HistogramProtoToFloatHistogram(hp)
 	}
 }
+
+type cachingEngine struct {
+	e api.RemoteEngine
+
+	mtx   sync.Mutex
+	cache map[string]*cachedQuery
+}
+
+func newCachingEngine(e api.RemoteEngine) *cachingEngine {
+	return &cachingEngine{
+		e:     e,
+		cache: make(map[string]*cachedQuery),
+	}
+}
+
+func (c *cachingEngine) MinT() int64 { return c.e.MinT() }
+
+func (c *cachingEngine) MaxT() int64 { return c.e.MaxT() }
+
+func (c *cachingEngine) LabelSets() []labels.Labels { return c.e.LabelSets() }
+
+func (c *cachingEngine) NewRangeQuery(ctx context.Context, opts promql.QueryOpts, plan api.RemoteQuery, start, end time.Time, interval time.Duration) (promql.Query, error) {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+
+	key := fmt.Sprintf("%s-%s-%s-%s", plan.String(), start.String(), end.String(), interval.String())
+	qry, ok := c.cache[key]
+	if !ok {
+		query, err := c.e.NewRangeQuery(ctx, opts, plan, start, end, interval)
+		if err != nil {
+			return nil, err
+		}
+		qry = &cachedQuery{query: query}
+		c.cache[key] = qry
+	}
+	return qry, nil
+}
+
+type cachedQuery struct {
+	mtx sync.Mutex
+
+	query  promql.Query
+	result *promql.Result
+}
+
+func (c *cachedQuery) Exec(ctx context.Context) *promql.Result {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+
+	if c.result == nil {
+		c.result = c.query.Exec(ctx)
+	}
+	return c.result
+}
+
+func (c *cachedQuery) Close() {
+	c.mtx.Lock()
+	c.query.Close()
+	c.mtx.Unlock()
+}
+
+func (c *cachedQuery) Statement() parser.Statement { return c.query.Statement() }
+
+func (c *cachedQuery) Stats() *stats.Statistics { return c.query.Stats() }
+
+func (c *cachedQuery) Cancel() {
+	c.mtx.Lock()
+	c.query.Cancel()
+	c.mtx.Unlock()
+}
+
+func (c *cachedQuery) String() string { return c.query.String() }

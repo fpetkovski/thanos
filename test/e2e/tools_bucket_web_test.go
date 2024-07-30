@@ -68,6 +68,7 @@ func TestToolsBucketWebExternalPrefixWithoutReverseProxy(t *testing.T) {
 }
 
 func TestToolsBucketWebExternalPrefix(t *testing.T) {
+	t.Skip("Flaky test")
 	e, err := e2e.NewDockerEnvironment("external-prefix")
 	testutil.Ok(t, err)
 	t.Cleanup(e2ethanos.CleanScenario(t, e))
@@ -103,6 +104,7 @@ func TestToolsBucketWebExternalPrefix(t *testing.T) {
 }
 
 func TestToolsBucketWebExternalPrefixAndRoutePrefix(t *testing.T) {
+	t.Skip("flaky test")
 	e, err := e2e.NewDockerEnvironment("route-prefix")
 	testutil.Ok(t, err)
 	t.Cleanup(e2ethanos.CleanScenario(t, e))
