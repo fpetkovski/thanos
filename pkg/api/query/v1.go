@@ -1100,6 +1100,11 @@ func (qapi *QueryAPI) labelValues(r *http.Request) (interface{}, []error, *api.A
 		matcherSets = append(matcherSets, matchers)
 	}
 
+	limit, err := parseLimitParam(r.FormValue("limit"))
+	if err != nil {
+		return nil, nil, &api.ApiError{Typ: api.ErrorBadData, Err: err}, func() {}
+	}
+
 	q, err := qapi.queryableCreate(
 		true,
 		nil,
@@ -1116,6 +1121,10 @@ func (qapi *QueryAPI) labelValues(r *http.Request) (interface{}, []error, *api.A
 	}
 	defer runutil.CloseWithLogOnErr(qapi.logger, q, "queryable labelValues")
 
+	hints := &storage.LabelHints{
+		Limit: toHintLimit(limit),
+	}
+
 	var (
 		vals     []string
 		warnings annotations.Annotations
@@ -1124,7 +1133,7 @@ func (qapi *QueryAPI) labelValues(r *http.Request) (interface{}, []error, *api.A
 		var callWarnings annotations.Annotations
 		labelValuesSet := make(map[string]struct{})
 		for _, matchers := range matcherSets {
-			vals, callWarnings, err = q.LabelValues(ctx, name, nil, matchers...)
+			vals, callWarnings, err = q.LabelValues(ctx, name, hints, matchers...)
 			if err != nil {
 				return nil, nil, &api.ApiError{Typ: api.ErrorExec, Err: err}, func() {}
 			}
@@ -1140,7 +1149,7 @@ func (qapi *QueryAPI) labelValues(r *http.Request) (interface{}, []error, *api.A
 		}
 		sort.Strings(vals)
 	} else {
-		vals, warnings, err = q.LabelValues(ctx, name, nil)
+		vals, warnings, err = q.LabelValues(ctx, name, hints)
 		if err != nil {
 			return nil, nil, &api.ApiError{Typ: api.ErrorExec, Err: err}, func() {}
 		}
@@ -1148,6 +1157,11 @@ func (qapi *QueryAPI) labelValues(r *http.Request) (interface{}, []error, *api.A
 
 	if vals == nil {
 		vals = make([]string, 0)
+	}
+
+	if limit > 0 && len(vals) > limit {
+		vals = vals[:limit]
+		warnings = warnings.Add(errors.New("results truncated due to limit"))
 	}
 
 	return vals, warnings.AsErrors(), nil, func() {}
@@ -1191,6 +1205,11 @@ func (qapi *QueryAPI) series(r *http.Request) (interface{}, []error, *api.ApiErr
 		return nil, nil, apiErr, func() {}
 	}
 
+	limit, err := parseLimitParam(r.FormValue("limit"))
+	if err != nil {
+		return nil, nil, &api.ApiError{Typ: api.ErrorBadData, Err: err}, func() {}
+	}
+
 	enablePartialResponse, apiErr := qapi.parsePartialResponseParam(r, qapi.enableQueryPartialResponse)
 	if apiErr != nil {
 		return nil, nil, apiErr, func() {}
@@ -1217,18 +1236,30 @@ func (qapi *QueryAPI) series(r *http.Request) (interface{}, []error, *api.ApiErr
 		metrics = []labels.Labels{}
 		sets    []storage.SeriesSet
 	)
+
+	hints := &storage.SelectHints{
+		Limit: toHintLimit(limit),
+		Start: start.UnixMilli(),
+		End:   end.UnixMilli(),
+	}
 	for _, mset := range matcherSets {
-		sets = append(sets, q.Select(r.Context(), false, nil, mset...))
+		sets = append(sets, q.Select(r.Context(), false, hints, mset...))
 	}
 
 	set := storage.NewMergeSeriesSet(sets, storage.ChainedSeriesMerge)
+	warnings := set.Warnings()
 	for set.Next() {
 		metrics = append(metrics, set.At().Labels())
+		if limit > 0 && len(metrics) > limit {
+			metrics = metrics[:limit]
+			warnings.Add(errors.New("results truncated due to limit"))
+			return metrics, warnings.AsErrors(), nil, func() {}
+		}
 	}
 	if set.Err() != nil {
 		return nil, nil, &api.ApiError{Typ: api.ErrorExec, Err: set.Err()}, func() {}
 	}
-	return metrics, set.Warnings().AsErrors(), nil, func() {}
+	return metrics, warnings.AsErrors(), nil, func() {}
 }
 
 func (qapi *QueryAPI) labelNames(r *http.Request) (interface{}, []error, *api.ApiError, func()) {
@@ -1257,6 +1288,11 @@ func (qapi *QueryAPI) labelNames(r *http.Request) (interface{}, []error, *api.Ap
 		matcherSets = append(matcherSets, matchers)
 	}
 
+	limit, err := parseLimitParam(r.FormValue("limit"))
+	if err != nil {
+		return nil, nil, &api.ApiError{Typ: api.ErrorBadData, Err: err}, func() {}
+	}
+
 	q, err := qapi.queryableCreate(
 		true,
 		nil,
@@ -1278,11 +1314,15 @@ func (qapi *QueryAPI) labelNames(r *http.Request) (interface{}, []error, *api.Ap
 		warnings annotations.Annotations
 	)
 
+	hints := &storage.LabelHints{
+		Limit: toHintLimit(limit),
+	}
+
 	if len(matcherSets) > 0 {
 		var callWarnings annotations.Annotations
 		labelNamesSet := make(map[string]struct{})
 		for _, matchers := range matcherSets {
-			names, callWarnings, err = q.LabelNames(ctx, nil, matchers...)
+			names, callWarnings, err = q.LabelNames(ctx, hints, matchers...)
 			if err != nil {
 				return nil, nil, &api.ApiError{Typ: api.ErrorExec, Err: err}, func() {}
 			}
@@ -1298,7 +1338,7 @@ func (qapi *QueryAPI) labelNames(r *http.Request) (interface{}, []error, *api.Ap
 		}
 		sort.Strings(names)
 	} else {
-		names, warnings, err = q.LabelNames(ctx, nil)
+		names, warnings, err = q.LabelNames(ctx, hints)
 	}
 
 	if err != nil {
@@ -1306,6 +1346,11 @@ func (qapi *QueryAPI) labelNames(r *http.Request) (interface{}, []error, *api.Ap
 	}
 	if names == nil {
 		names = make([]string, 0)
+	}
+
+	if limit > 0 && len(names) > limit {
+		names = names[:limit]
+		warnings = warnings.Add(errors.New("results truncated due to limit"))
 	}
 
 	return names, warnings.AsErrors(), nil, func() {}
@@ -1577,6 +1622,33 @@ func parseDuration(s string) (time.Duration, error) {
 		return time.Duration(d), nil
 	}
 	return 0, errors.Errorf("cannot parse %q to a valid duration", s)
+}
+
+// parseLimitParam returning 0 means no limit is to be applied.
+func parseLimitParam(s string) (int, error) {
+	if s == "" {
+		return 0, nil
+	}
+
+	limit, err := strconv.Atoi(s)
+	if err != nil {
+		return 0, errors.Errorf("cannot parse %q to a valid limit", s)
+	}
+	if limit < 0 {
+		return 0, errors.New("limit must be non-negative")
+	}
+
+	return limit, nil
+}
+
+// toHintLimit increases the API limit, as returned by parseLimitParam, by 1.
+// This allows for emitting warnings when the results are truncated.
+func toHintLimit(limit int) int {
+	// 0 means no limit and avoid int overflow
+	if limit > 0 && limit < math.MaxInt {
+		return limit + 1
+	}
+	return limit
 }
 
 // NewMetricMetadataHandler creates handler compatible with HTTP /api/v1/metadata https://prometheus.io/docs/prometheus/latest/querying/api/#querying-metric-metadata
