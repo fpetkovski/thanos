@@ -955,11 +955,6 @@ func TestEndpointSetUpdate_AvailabilityScenarios(t *testing.T) {
 							{Name: "l3", Value: "v4"},
 						},
 					},
-					{
-						Labels: []labelpb.ZLabel{
-							{Name: store.CompatibilityTypeLabelName, Value: "store"},
-						},
-					},
 				}
 			},
 		},
@@ -977,11 +972,6 @@ func TestEndpointSetUpdate_AvailabilityScenarios(t *testing.T) {
 					{
 						Labels: []labelpb.ZLabel{
 							{Name: "l3", Value: "v4"},
-						},
-					},
-					{
-						Labels: []labelpb.ZLabel{
-							{Name: store.CompatibilityTypeLabelName, Value: "store"},
 						},
 					},
 				}
