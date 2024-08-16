@@ -10,8 +10,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -827,34 +825,8 @@ func removeLockfileIfAny(logger log.Logger, dataDir string) error {
 	return nil
 }
 
-func parseFlagLabels(s []string) (labels.Labels, error) {
-	var lset labels.Labels
-	for _, l := range s {
-		parts := strings.SplitN(l, "=", 2)
-		if len(parts) != 2 {
-			return nil, errors.Errorf("unrecognized label %q", l)
-		}
-		if !model.LabelName.IsValid(model.LabelName(parts[0])) {
-			return nil, errors.Errorf("unsupported format for label %s", l)
-		}
-		val, err := strconv.Unquote(parts[1])
-		if err != nil {
-			return nil, errors.Wrap(err, "unquote label value")
-		}
-		lset = append(lset, labels.Label{Name: parts[0], Value: val})
-	}
-	sort.Sort(lset)
-	return lset, nil
-}
-
 func labelsTSDBToProm(lset labels.Labels) (res labels.Labels) {
-	for _, l := range lset {
-		res = append(res, labels.Label{
-			Name:  l.Name,
-			Value: l.Value,
-		})
-	}
-	return res
+	return lset.Copy()
 }
 
 func queryFuncCreator(
