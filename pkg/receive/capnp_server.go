@@ -6,7 +6,6 @@ package receive
 import (
 	"context"
 	"net"
-	"sync"
 
 	"capnproto.org/go/capnp/v3"
 	"capnproto.org/go/capnp/v3/rpc"
@@ -18,18 +17,18 @@ import (
 )
 
 type CapNProtoServer struct {
-	mu       sync.Mutex
 	listener net.Listener
+	server   writecapnp.Writer
 }
 
-func NewCapNProtoServer() *CapNProtoServer {
-	return &CapNProtoServer{}
-}
-
-func (c *CapNProtoServer) ListenAndServe(addr string, client capnp.Client) error {
-	if err := c.connect(addr); err != nil {
-		return err
+func NewCapNProtoServer(listener net.Listener, handler *CapNProtoHandler) *CapNProtoServer {
+	return &CapNProtoServer{
+		listener: listener,
+		server:   writecapnp.Writer_ServerToClient(handler),
 	}
+}
+
+func (c *CapNProtoServer) ListenAndServe() error {
 	for {
 		conn, err := c.listener.Accept()
 		if err != nil {
@@ -40,29 +39,15 @@ func (c *CapNProtoServer) ListenAndServe(addr string, client capnp.Client) error
 			rpcConn := rpc.NewConn(rpc.NewPackedStreamTransport(conn), &rpc.Options{
 				// The BootstrapClient is the RPC interface that will be made available
 				// to the remote endpoint by default.
-				BootstrapClient: client.AddRef(),
+				BootstrapClient: capnp.Client(c.server),
 			})
 			<-rpcConn.Done()
 		}()
 	}
 }
 
-func (c *CapNProtoServer) connect(addr string) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	var err error
-	c.listener, err = net.Listen("tcp", addr)
-	return err
-}
-
-func (c *CapNProtoServer) Shutdown() error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.listener != nil {
-		return c.listener.Close()
-	}
-	return nil
+func (c *CapNProtoServer) Shutdown() {
+	c.server.Release()
 }
 
 type CapNProtoHandler struct {
@@ -110,3 +95,33 @@ func (c CapNProtoHandler) Write(ctx context.Context, call writecapnp.Writer_writ
 	}
 	return nil
 }
+
+type BufferedListener struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+
+	conns chan net.Conn
+}
+
+func (b BufferedListener) Accept() (net.Conn, error) {
+	select {
+	case <-b.ctx.Done():
+		return nil, b.ctx.Err()
+	case c := <-b.conns:
+		return c, nil
+	}
+}
+
+func (b BufferedListener) Close() error {
+	b.cancel()
+	return nil
+}
+
+func (b BufferedListener) Addr() net.Addr {
+	return addr{}
+}
+
+type addr struct{}
+
+func (addr) Network() string { return "bufconn" }
+func (addr) String() string  { return "bufconn" }

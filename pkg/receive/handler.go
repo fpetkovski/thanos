@@ -1197,7 +1197,7 @@ func (p *peerGroup) get(ctx context.Context, endpoint Endpoint) (storepb.Writeab
 	}
 	var client storepb.WriteableStoreClient
 	if p.useCapNProtoClient {
-		client = writecapnp.NewRemoteWriteClient(endpoint.CapNProtoAddress)
+		client = writecapnp.NewRemoteWriteClient(writecapnp.NewTCPDialer(endpoint.CapNProtoAddress))
 	} else {
 		conn, err := p.dialer(ctx, endpoint.Address, p.dialOpts...)
 		if err != nil {

@@ -117,7 +117,7 @@ require (
 )
 
 require (
-	capnproto.org/go/capnp/v3 v3.0.1-alpha.2
+	capnproto.org/go/capnp/v3 v3.0.0-alpha.30
 	github.com/onsi/gomega v1.31.0
 	go.opentelemetry.io/contrib/propagators/autoprop v0.38.0
 	go4.org/intern v0.0.0-20230525184215-6c62f75575cb
@@ -135,7 +135,6 @@ require (
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/bboreham/go-loser v0.0.0-20230920113527-fcc2c21820a3 // indirect
 	github.com/cncf/xds/go v0.0.0-20240423153145-555b57ec207b // indirect
-	github.com/colega/zeropool v0.0.0-20230505084239-6fb4a4f75381 // indirect
 	github.com/digitalocean/godo v1.117.0 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
 	github.com/docker/docker v26.1.3+incompatible // indirect
@@ -203,6 +202,7 @@ require (
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
+	zenhack.net/go/util v0.0.0-20230414204917-531d38494cf5 // indirect
 )
 
 require (
