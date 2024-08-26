@@ -39,9 +39,9 @@ import (
 
 	"github.com/thanos-io/thanos/pkg/api"
 	statusapi "github.com/thanos-io/thanos/pkg/api/status"
-	"github.com/thanos-io/thanos/pkg/logging"
-
 	extpromhttp "github.com/thanos-io/thanos/pkg/extprom/http"
+	"github.com/thanos-io/thanos/pkg/logging"
+	"github.com/thanos-io/thanos/pkg/receive/writecapnp"
 	"github.com/thanos-io/thanos/pkg/runutil"
 	"github.com/thanos-io/thanos/pkg/server/http/middleware"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
@@ -89,24 +89,25 @@ var (
 
 // Options for the web Handler.
 type Options struct {
-	Writer            *Writer
-	ListenAddress     string
-	Registry          *prometheus.Registry
-	TenantHeader      string
-	TenantField       string
-	DefaultTenantID   string
-	ReplicaHeader     string
-	Endpoint          string
-	ReplicationFactor uint64
-	ReceiverMode      ReceiverMode
-	Tracer            opentracing.Tracer
-	TLSConfig         *tls.Config
-	DialOpts          []grpc.DialOption
-	ForwardTimeout    time.Duration
-	MaxBackoff        time.Duration
-	RelabelConfigs    []*relabel.Config
-	TSDBStats         TSDBStats
-	Limiter           *Limiter
+	Writer                  *Writer
+	ListenAddress           string
+	Registry                *prometheus.Registry
+	TenantHeader            string
+	TenantField             string
+	DefaultTenantID         string
+	ReplicaHeader           string
+	Endpoint                string
+	ReplicationFactor       uint64
+	ReceiverMode            ReceiverMode
+	Tracer                  opentracing.Tracer
+	TLSConfig               *tls.Config
+	DialOpts                []grpc.DialOption
+	ForwardTimeout          time.Duration
+	MaxBackoff              time.Duration
+	RelabelConfigs          []*relabel.Config
+	TSDBStats               TSDBStats
+	Limiter                 *Limiter
+	UseCapNProtoReplication bool
 }
 
 // Handler serves a Prometheus remote write receiving HTTP endpoint.
@@ -121,7 +122,7 @@ type Handler struct {
 	hashring     Hashring
 	peers        *peerGroup
 	expBackoff   backoff.Backoff
-	peerStates   map[string]*retryState
+	peerStates   map[Endpoint]*retryState
 	receiverMode ReceiverMode
 
 	forwardRequests   *prometheus.CounterVec
@@ -149,7 +150,7 @@ func NewHandler(logger log.Logger, o *Options) *Handler {
 		writer:       o.Writer,
 		router:       route.New(),
 		options:      o,
-		peers:        newPeerGroup(o.DialOpts...),
+		peers:        newPeerGroup(o.UseCapNProtoReplication, o.DialOpts...),
 		receiverMode: o.ReceiverMode,
 		expBackoff: backoff.Backoff{
 			Factor: 2,
@@ -262,7 +263,7 @@ func (h *Handler) Hashring(hashring Hashring) {
 
 	h.hashring = hashring
 	h.expBackoff.Reset()
-	h.peerStates = make(map[string]*retryState)
+	h.peerStates = make(map[Endpoint]*retryState)
 }
 
 // Verifies whether the server is ready or not.
@@ -382,7 +383,7 @@ type replica struct {
 
 // endpointReplica is a pair of a receive endpoint and a write request replica.
 type endpointReplica struct {
-	endpoint string
+	endpoint Endpoint
 	replica  uint64
 }
 
@@ -726,19 +727,17 @@ func (h *Handler) fanoutForward(pctx context.Context, tenant string, wreqs map[e
 		// function as replication to other nodes, we can treat
 		// a failure to write locally as just another error that
 		// can be ignored if the replication factor is met.
-		if writeTarget.endpoint == h.options.Endpoint {
+		if writeTarget.endpoint.HasAddress(h.options.Endpoint) {
 			go func(writeTarget endpointReplica) {
 				defer wg.Done()
 
 				var err error
 				tracing.DoInSpan(fctx, "receive_tsdb_write", func(_ context.Context) {
-					err = h.writer.Write(fctx, tenant, &prompb.WriteRequest{
-						Timeseries: wreqs[writeTarget].timeSeries,
-					})
+					err = h.writer.Write(fctx, tenant, newProtobufWriteRequest(wreqs[writeTarget].timeSeries), true)
 				})
 				if err != nil {
 					level.Debug(tLogger).Log("msg", "local tsdb write failed", "err", err.Error())
-					responses <- newWriteResponse(wreqs[writeTarget].seriesIDs, errors.Wrapf(err, "store locally for endpoint %v", writeTarget.endpoint))
+					responses <- newWriteResponse(wreqs[writeTarget].seriesIDs, errors.Wrapf(err, "store locally for endpoint %v", writeTarget.endpoint.Address))
 					return
 				}
 				responses <- newWriteResponse(wreqs[writeTarget].seriesIDs, nil)
@@ -772,7 +771,7 @@ func (h *Handler) fanoutForward(pctx context.Context, tenant string, wreqs map[e
 
 			cl, err = h.peers.get(fctx, writeTarget.endpoint)
 			if err != nil {
-				responses <- newWriteResponse(wreqs[writeTarget].seriesIDs, errors.Wrapf(err, "get peer connection for endpoint %v", writeTarget.endpoint))
+				responses <- newWriteResponse(wreqs[writeTarget].seriesIDs, errors.Wrapf(err, "get peer connection for endpoint %v", writeTarget.endpoint.Address))
 				return
 			}
 
@@ -1159,29 +1158,31 @@ func newReplicationErrors(threshold, numErrors int) []*replicationErrors {
 	return errs
 }
 
-func newPeerGroup(dialOpts ...grpc.DialOption) *peerGroup {
+func newPeerGroup(useCapNProtoClient bool, dialOpts ...grpc.DialOption) *peerGroup {
 	return &peerGroup{
 		dialOpts: dialOpts,
-		cache:    map[string]storepb.WriteableStoreClient{},
+		cache:    map[Endpoint]storepb.WriteableStoreClient{},
 		m:        sync.RWMutex{},
 		//nolint:staticcheck
-		dialer: grpc.DialContext,
+		dialer:             grpc.DialContext,
+		useCapNProtoClient: useCapNProtoClient,
 	}
 }
 
 type peerGroup struct {
-	dialOpts []grpc.DialOption
-	cache    map[string]storepb.WriteableStoreClient
-	m        sync.RWMutex
+	dialOpts           []grpc.DialOption
+	cache              map[Endpoint]storepb.WriteableStoreClient
+	m                  sync.RWMutex
+	useCapNProtoClient bool
 
 	// dialer is used for testing.
 	dialer func(ctx context.Context, target string, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error)
 }
 
-func (p *peerGroup) get(ctx context.Context, addr string) (storepb.WriteableStoreClient, error) {
+func (p *peerGroup) get(ctx context.Context, endpoint Endpoint) (storepb.WriteableStoreClient, error) {
 	// use a RLock first to prevent blocking if we don't need to.
 	p.m.RLock()
-	c, ok := p.cache[addr]
+	c, ok := p.cache[endpoint]
 	p.m.RUnlock()
 	if ok {
 		return c, nil
@@ -1190,17 +1191,22 @@ func (p *peerGroup) get(ctx context.Context, addr string) (storepb.WriteableStor
 	p.m.Lock()
 	defer p.m.Unlock()
 	// Make sure that another caller hasn't created the connection since obtaining the write lock.
-	c, ok = p.cache[addr]
+	c, ok = p.cache[endpoint]
 	if ok {
 		return c, nil
 	}
-	conn, err := p.dialer(ctx, addr, p.dialOpts...)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to dial peer")
-	}
+	var client storepb.WriteableStoreClient
+	if p.useCapNProtoClient {
+		client = writecapnp.NewRemoteWriteClient(endpoint.CapNProtoAddress)
+	} else {
+		conn, err := p.dialer(ctx, endpoint.Address, p.dialOpts...)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to dial peer")
+		}
 
-	client := storepb.NewWriteableStoreClient(conn)
-	p.cache[addr] = client
+		client = storepb.NewWriteableStoreClient(conn)
+	}
+	p.cache[endpoint] = client
 	return client, nil
 }
 

@@ -5,11 +5,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path"
 	"strings"
 	"time"
 
+	"capnproto.org/go/capnp/v3"
 	extflag "github.com/efficientgo/tools/extkingpin"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -43,6 +45,7 @@ import (
 	"github.com/thanos-io/thanos/pkg/logging"
 	"github.com/thanos-io/thanos/pkg/prober"
 	"github.com/thanos-io/thanos/pkg/receive"
+	"github.com/thanos-io/thanos/pkg/receive/writecapnp"
 	"github.com/thanos-io/thanos/pkg/runutil"
 	grpcserver "github.com/thanos-io/thanos/pkg/server/grpc"
 	httpserver "github.com/thanos-io/thanos/pkg/server/http"
@@ -233,24 +236,25 @@ func runReceive(
 	}
 
 	webHandler := receive.NewHandler(log.With(logger, "component", "receive-handler"), &receive.Options{
-		Writer:            writer,
-		ListenAddress:     conf.rwAddress,
-		Registry:          reg,
-		Endpoint:          conf.endpoint,
-		TenantHeader:      conf.tenantHeader,
-		TenantField:       conf.tenantField,
-		DefaultTenantID:   conf.defaultTenantID,
-		ReplicaHeader:     conf.replicaHeader,
-		ReplicationFactor: conf.replicationFactor,
-		RelabelConfigs:    relabelConfig,
-		ReceiverMode:      receiveMode,
-		Tracer:            tracer,
-		TLSConfig:         rwTLSConfig,
-		DialOpts:          dialOpts,
-		ForwardTimeout:    time.Duration(*conf.forwardTimeout),
-		MaxBackoff:        time.Duration(*conf.maxBackoff),
-		TSDBStats:         dbs,
-		Limiter:           limiter,
+		Writer:                  writer,
+		ListenAddress:           conf.rwAddress,
+		Registry:                reg,
+		Endpoint:                conf.endpoint,
+		TenantHeader:            conf.tenantHeader,
+		TenantField:             conf.tenantField,
+		DefaultTenantID:         conf.defaultTenantID,
+		ReplicaHeader:           conf.replicaHeader,
+		ReplicationFactor:       conf.replicationFactor,
+		RelabelConfigs:          relabelConfig,
+		ReceiverMode:            receiveMode,
+		Tracer:                  tracer,
+		TLSConfig:               rwTLSConfig,
+		DialOpts:                dialOpts,
+		ForwardTimeout:          time.Duration(*conf.forwardTimeout),
+		MaxBackoff:              time.Duration(*conf.maxBackoff),
+		TSDBStats:               dbs,
+		Limiter:                 limiter,
+		UseCapNProtoReplication: conf.useCapNProtoReplication,
 	})
 
 	grpcProbe := prober.NewGRPC()
@@ -445,6 +449,19 @@ func runReceive(
 				cancel()
 			})
 		}
+	}
+
+	{
+		handler := receive.NewCapNProtoHandler(logger, writer)
+		writeClient := capnp.Client(writecapnp.Writer_ServerToClient(handler))
+		server := receive.NewCapNProtoServer()
+		g.Add(func() error {
+			return server.ListenAndServe(conf.replicationAddr, writeClient)
+		}, func(err error) {
+			if err := server.Shutdown(); err != nil {
+				level.Warn(logger).Log("msg", "Cap'n Proto server did not shut down gracefully", "err", err.Error())
+			}
+		})
 	}
 
 	level.Info(logger).Log("msg", "starting receiver")
@@ -777,6 +794,7 @@ type receiveConfig struct {
 
 	grpcConfig grpcConfig
 
+	replicationAddr    string
 	rwAddress          string
 	rwServerCert       string
 	rwServerKey        string
@@ -796,17 +814,18 @@ type receiveConfig struct {
 	hashringsFileContent string
 	hashringsAlgorithm   string
 
-	refreshInterval   *model.Duration
-	endpoint          string
-	tenantHeader      string
-	tenantField       string
-	tenantLabelName   string
-	defaultTenantID   string
-	replicaHeader     string
-	replicationFactor uint64
-	forwardTimeout    *model.Duration
-	maxBackoff        *model.Duration
-	compression       string
+	refreshInterval         *model.Duration
+	endpoint                string
+	tenantHeader            string
+	tenantField             string
+	tenantLabelName         string
+	defaultTenantID         string
+	replicaHeader           string
+	replicationFactor       uint64
+	forwardTimeout          *model.Duration
+	maxBackoff              *model.Duration
+	compression             string
+	useCapNProtoReplication bool
 
 	tsdbMinBlockDuration         *model.Duration
 	tsdbMaxBlockDuration         *model.Duration
@@ -895,6 +914,10 @@ func (rc *receiveConfig) registerFlag(cmd extkingpin.FlagClause) {
 	cmd.Flag("receive.grpc-compression", "Compression algorithm to use for gRPC requests to other receivers. Must be one of: "+compressionOptions).Default(snappy.Name).EnumVar(&rc.compression, snappy.Name, compressionNone)
 
 	cmd.Flag("receive.replication-factor", "How many times to replicate incoming write requests.").Default("1").Uint64Var(&rc.replicationFactor)
+
+	cmd.Flag("receive.capnproto-replication", "Use Cap'n Proto for replication requests.").Default("false").BoolVar(&rc.useCapNProtoReplication)
+
+	cmd.Flag("receive.capnproto-address", "Address for the Cap'n Proto server.").Default(fmt.Sprintf("0.0.0.0:%s", receive.DefaultCapNProtoPort)).StringVar(&rc.replicationAddr)
 
 	rc.forwardTimeout = extkingpin.ModelDuration(cmd.Flag("receive-forward-timeout", "Timeout for each forward request.").Default("5s").Hidden())
 

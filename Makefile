@@ -1,7 +1,7 @@
 include .bingo/Variables.mk
 include .busybox-versions
 
-FILES_TO_FMT      ?= $(shell find . -path ./vendor -prune -o -path ./internal/cortex -prune -o -name '*.go' -print)
+FILES_TO_FMT      ?= $(shell find . -path ./vendor -prune -o -path ./internal/cortex -prune -o -path '*.capnp.go' -prune -o -name '*.go' -print)
 MD_FILES_TO_FORMAT = $(shell find docs -name "*.md") $(shell find examples -name "*.md") $(filter-out mixin/runbook.md, $(shell find mixin -name "*.md")) $(shell ls *.md -I SHOPIFY.md | grep -v "SHOPIFY.md")
 FAST_MD_FILES_TO_FORMAT = $(shell git diff --name-only | grep "\.md")
 

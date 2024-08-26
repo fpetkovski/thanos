@@ -178,7 +178,7 @@ func newTestHandlerHashring(appendables []*fakeAppendable, replicationFactor uin
 	peers := &peerGroup{
 		dialOpts: nil,
 		m:        sync.RWMutex{},
-		cache:    map[string]storepb.WriteableStoreClient{},
+		cache:    map[Endpoint]storepb.WriteableStoreClient{},
 		dialer: func(context.Context, string, ...grpc.DialOption) (*grpc.ClientConn, error) {
 			// dialer should never be called since we are creating fake clients with fake addresses
 			// this protects against some leaking test that may attempt to dial random IP addresses
@@ -200,9 +200,9 @@ func newTestHandlerHashring(appendables []*fakeAppendable, replicationFactor uin
 		})
 		handlers = append(handlers, h)
 		h.peers = peers
-		addr := ag.newAddr()
-		h.options.Endpoint = addr
-		cfg[0].Endpoints = append(cfg[0].Endpoints, Endpoint{Address: h.options.Endpoint})
+		addr := ag.newEndpoint()
+		h.options.Endpoint = addr.Address
+		cfg[0].Endpoints = append(cfg[0].Endpoints, addr)
 		peers.cache[addr] = &fakeRemoteWriteGRPCServer{h: h}
 	}
 	// Use hashmod as default.
@@ -785,7 +785,7 @@ func endpointHit(t *testing.T, h Hashring, rf uint64, endpoint, tenant string, t
 		if err != nil {
 			t.Fatalf("got unexpected error querying hashring: %v", err)
 		}
-		if e == endpoint {
+		if e.HasAddress(endpoint) {
 			return true
 		}
 	}
@@ -829,9 +829,13 @@ func makeRequest(h *Handler, tenant string, wreq *prompb.WriteRequest) (*httptes
 
 type addrGen struct{ n int }
 
-func (a *addrGen) newAddr() string {
+func (a *addrGen) newEndpoint() Endpoint {
 	a.n++
-	return fmt.Sprintf("http://node-%d:%d", a.n, 12345+a.n)
+	addr := fmt.Sprintf("http://node-%d:%d", a.n, 12345+a.n)
+	return Endpoint{
+		Address:          addr,
+		CapNProtoAddress: addr,
+	}
 }
 
 type fakeRemoteWriteGRPCServer struct {
