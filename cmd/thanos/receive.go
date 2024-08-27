@@ -6,12 +6,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"path"
 	"strings"
 	"time"
 
-	"capnproto.org/go/capnp/v3"
 	extflag "github.com/efficientgo/tools/extkingpin"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -45,7 +45,6 @@ import (
 	"github.com/thanos-io/thanos/pkg/logging"
 	"github.com/thanos-io/thanos/pkg/prober"
 	"github.com/thanos-io/thanos/pkg/receive"
-	"github.com/thanos-io/thanos/pkg/receive/writecapnp"
 	"github.com/thanos-io/thanos/pkg/runutil"
 	grpcserver "github.com/thanos-io/thanos/pkg/server/grpc"
 	httpserver "github.com/thanos-io/thanos/pkg/server/http"
@@ -453,12 +452,16 @@ func runReceive(
 
 	{
 		handler := receive.NewCapNProtoHandler(logger, writer)
-		writeClient := capnp.Client(writecapnp.Writer_ServerToClient(handler))
-		server := receive.NewCapNProtoServer()
+		listener, err := net.Listen("tcp", conf.replicationAddr)
+		if err != nil {
+			return err
+		}
+		server := receive.NewCapNProtoServer(listener, handler)
 		g.Add(func() error {
-			return server.ListenAndServe(conf.replicationAddr, writeClient)
+			return server.ListenAndServe()
 		}, func(err error) {
-			if err := server.Shutdown(); err != nil {
+			server.Shutdown()
+			if err := listener.Close(); err != nil {
 				level.Warn(logger).Log("msg", "Cap'n Proto server did not shut down gracefully", "err", err.Error())
 			}
 		})
