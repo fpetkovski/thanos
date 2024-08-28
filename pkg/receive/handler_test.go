@@ -196,7 +196,6 @@ func newTestHandlerHashring(
 	}
 
 	var (
-		mu         sync.Mutex
 		closers    = make([]func() error, 0)
 		ag         = addrGen{}
 		limiter, _ = NewLimiter(NewNopConfig(), nil, RouterIngestor, log.NewNopLogger())
@@ -223,17 +222,12 @@ func newTestHandlerHashring(
 			)
 
 			srv := NewCapNProtoServer(listener, handler)
-			client := writecapnp.NewRemoteWriteClient(listener)
-			go func() {
-				mu.Lock()
-				closers = append(closers, func() error {
-					srv.Shutdown()
-					return goerrors.Join(listener.Close(), client.Close())
-				})
-				mu.Unlock()
-
-				_ = srv.ListenAndServe()
-			}()
+			client := writecapnp.NewRemoteWriteClient(listener, log.NewNopLogger())
+			closers = append(closers, func() error {
+				srv.Shutdown()
+				return goerrors.Join(listener.Close(), client.Close())
+			})
+			go func() { _ = srv.ListenAndServe() }()
 			peers.cache[addr] = client
 		} else {
 			peers.cache[addr] = &fakeRemoteWriteGRPCServer{h: h}
@@ -627,7 +621,7 @@ func testReceiveQuorum(t *testing.T, hashringAlgo HashringAlgorithm, withConsist
 			},
 		},
 	} {
-		t.Run(fmt.Sprintf("%s/%s=%t", tc.name, "capnp-replication", capnpReplication), func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			handlers, hashring, closeFunc, err := newTestHandlerHashring(tc.appendables, tc.replicationFactor, hashringAlgo, capnpReplication)
 			if err != nil {
 				t.Fatalf("unable to create test handler: %v", err)
@@ -699,25 +693,33 @@ func testReceiveQuorum(t *testing.T, hashringAlgo HashringAlgorithm, withConsist
 
 func TestReceiveQuorumHashmod(t *testing.T) {
 	for _, capnpReplication := range []bool{false, true} {
-		testReceiveQuorum(t, AlgorithmHashmod, false, capnpReplication)
+		t.Run(fmt.Sprintf("capnproto-replication=%t", capnpReplication), func(t *testing.T) {
+			testReceiveQuorum(t, AlgorithmHashmod, false, capnpReplication)
+		})
 	}
 }
 
 func TestReceiveQuorumKetama(t *testing.T) {
 	for _, capnpReplication := range []bool{false, true} {
-		testReceiveQuorum(t, AlgorithmKetama, false, capnpReplication)
+		t.Run(fmt.Sprintf("capnproto-replication=%t", capnpReplication), func(t *testing.T) {
+			testReceiveQuorum(t, AlgorithmKetama, false, capnpReplication)
+		})
 	}
 }
 
 func TestReceiveWithConsistencyDelayHashmod(t *testing.T) {
 	for _, capnpReplication := range []bool{false, true} {
-		testReceiveQuorum(t, AlgorithmHashmod, true, capnpReplication)
+		t.Run(fmt.Sprintf("capnproto-replication=%t", capnpReplication), func(t *testing.T) {
+			testReceiveQuorum(t, AlgorithmHashmod, true, capnpReplication)
+		})
 	}
 }
 
 func TestReceiveWithConsistencyDelayKetama(t *testing.T) {
 	for _, capnpReplication := range []bool{false, true} {
-		testReceiveQuorum(t, AlgorithmKetama, true, capnpReplication)
+		t.Run(fmt.Sprintf("capnproto-replication=%t", capnpReplication), func(t *testing.T) {
+			testReceiveQuorum(t, AlgorithmKetama, true, capnpReplication)
+		})
 	}
 }
 

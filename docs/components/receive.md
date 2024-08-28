@@ -364,6 +364,10 @@ Flags:
                                  Path to YAML file that contains object
                                  store configuration. See format details:
                                  https://thanos.io/tip/thanos/storage.md/#configuration
+      --receive.capnproto-address="0.0.0.0:19391"
+                                 Address for the Cap'n Proto server.
+      --receive.capnproto-replication
+                                 Use Cap'n Proto for replication requests.
       --receive.default-tenant-id="default-tenant"
                                  Default tenant ID to use when none is provided
                                  via a header.
