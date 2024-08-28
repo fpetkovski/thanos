@@ -10,6 +10,8 @@ import (
 
 	"capnproto.org/go/capnp/v3"
 	"capnproto.org/go/capnp/v3/rpc"
+	"github.com/go-kit/log"
+	"github.com/go-kit/log/level"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -46,14 +48,16 @@ type RemoteWriteClient struct {
 	mu sync.Mutex
 
 	dialer Dialer
-	conn   *net.Conn
+	conn   *rpc.Conn
 
 	writer Writer
+	logger log.Logger
 }
 
-func NewRemoteWriteClient(dialer Dialer) *RemoteWriteClient {
+func NewRemoteWriteClient(dialer Dialer, logger log.Logger) *RemoteWriteClient {
 	return &RemoteWriteClient{
 		dialer: dialer,
+		logger: logger,
 	}
 }
 
@@ -77,6 +81,7 @@ func (r *RemoteWriteClient) writeWithReconnect(ctx context.Context, numReconnect
 	s, err := result.Struct()
 	if err != nil {
 		if numReconnects > 0 && capnp.IsDisconnected(err) {
+			level.Warn(r.logger).Log("msg", "rpc failed, reconnecting")
 			if err := r.Close(); err != nil {
 				return nil, err
 			}
@@ -110,17 +115,15 @@ func (r *RemoteWriteClient) connect(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to dial peer")
 	}
-	r.writer = Writer(rpc.NewConn(rpc.NewPackedStreamTransport(conn), nil).Bootstrap(ctx))
-	r.conn = &conn
+	r.conn = rpc.NewConn(rpc.NewPackedStreamTransport(conn), nil)
+	r.writer = Writer(r.conn.Bootstrap(ctx))
 	return nil
 }
 
 func (r *RemoteWriteClient) Close() error {
 	r.mu.Lock()
 	if r.conn != nil {
-		r.writer.Release()
-
-		conn := *r.conn
+		conn := r.conn
 		r.conn = nil
 		go conn.Close()
 	}

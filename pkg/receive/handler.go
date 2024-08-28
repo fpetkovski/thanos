@@ -150,7 +150,7 @@ func NewHandler(logger log.Logger, o *Options) *Handler {
 		writer:       o.Writer,
 		router:       route.New(),
 		options:      o,
-		peers:        newPeerGroup(o.UseCapNProtoReplication, o.DialOpts...),
+		peers:        newPeerGroup(logger, o.UseCapNProtoReplication, o.DialOpts...),
 		receiverMode: o.ReceiverMode,
 		expBackoff: backoff.Backoff{
 			Factor: 2,
@@ -1158,8 +1158,9 @@ func newReplicationErrors(threshold, numErrors int) []*replicationErrors {
 	return errs
 }
 
-func newPeerGroup(useCapNProtoClient bool, dialOpts ...grpc.DialOption) *peerGroup {
+func newPeerGroup(logger log.Logger, useCapNProtoClient bool, dialOpts ...grpc.DialOption) *peerGroup {
 	return &peerGroup{
+		logger:   logger,
 		dialOpts: dialOpts,
 		cache:    map[Endpoint]storepb.WriteableStoreClient{},
 		m:        sync.RWMutex{},
@@ -1170,6 +1171,7 @@ func newPeerGroup(useCapNProtoClient bool, dialOpts ...grpc.DialOption) *peerGro
 }
 
 type peerGroup struct {
+	logger             log.Logger
 	dialOpts           []grpc.DialOption
 	cache              map[Endpoint]storepb.WriteableStoreClient
 	m                  sync.RWMutex
@@ -1197,7 +1199,7 @@ func (p *peerGroup) get(ctx context.Context, endpoint Endpoint) (storepb.Writeab
 	}
 	var client storepb.WriteableStoreClient
 	if p.useCapNProtoClient {
-		client = writecapnp.NewRemoteWriteClient(writecapnp.NewTCPDialer(endpoint.CapNProtoAddress))
+		client = writecapnp.NewRemoteWriteClient(writecapnp.NewTCPDialer(endpoint.CapNProtoAddress), p.logger)
 	} else {
 		conn, err := p.dialer(ctx, endpoint.Address, p.dialOpts...)
 		if err != nil {

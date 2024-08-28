@@ -39,7 +39,7 @@ func (c *CapNProtoServer) ListenAndServe() error {
 			rpcConn := rpc.NewConn(rpc.NewPackedStreamTransport(conn), &rpc.Options{
 				// The BootstrapClient is the RPC interface that will be made available
 				// to the remote endpoint by default.
-				BootstrapClient: capnp.Client(c.server),
+				BootstrapClient: capnp.Client(c.server).AddRef(),
 			})
 			<-rpcConn.Done()
 		}()
