@@ -29,18 +29,22 @@ func MarshalPacked(tenant string, tsreq []prompb.TimeSeries) ([]byte, error) {
 }
 
 func Build(tenant string, tsreq []prompb.TimeSeries) (WriteRequest, error) {
+	arena := capnp.SingleSegment(nil)
+	_, seg, err := capnp.NewMessage(arena)
+	if err != nil {
+		return WriteRequest{}, err
+	}
+
+	return BuildWithSegment(tenant, tsreq, seg)
+}
+
+func BuildWithSegment(tenant string, tsreq []prompb.TimeSeries, seg *capnp.Segment) (WriteRequest, error) {
 	symbols := make(map[string]uint32)
 	for _, ts := range tsreq {
 		addLabelsToTable(symbols, ts.Labels)
 		for _, e := range ts.Exemplars {
 			addLabelsToTable(symbols, e.Labels)
 		}
-	}
-
-	arena := capnp.SingleSegment(nil)
-	_, seg, err := capnp.NewMessage(arena)
-	if err != nil {
-		return WriteRequest{}, err
 	}
 
 	wr, err := NewRootWriteRequest(seg)
