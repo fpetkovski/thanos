@@ -16,7 +16,7 @@ import (
 	"github.com/thanos-io/thanos/pkg/store/storepb/prompb"
 )
 
-func BenchmarkUnmarshalWriteRequest(b *testing.B) {
+func BenchmarkMarshalWriteRequest(b *testing.B) {
 	const (
 		numSeries   = 2
 		numClusters = 3
@@ -59,6 +59,12 @@ func BenchmarkUnmarshalWriteRequest(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			var err error
 			bsProto, err = wreq.Marshal()
+			require.NoError(b, err)
+		}
+	})
+	b.Run("build", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_, err := Build("example_tenant", wreq.Timeseries)
 			require.NoError(b, err)
 		}
 	})
