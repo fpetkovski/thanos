@@ -70,7 +70,14 @@ func (r *RemoteWriteClient) writeWithReconnect(ctx context.Context, numReconnect
 		return nil, err
 	}
 	result, release := r.writer.Write(ctx, func(params Writer_write_Params) error {
-		wr, err := Build(in.Tenant, in.Timeseries)
+		arena := capnp.SingleSegment(nil)
+		_, seg, err := capnp.NewMessage(arena)
+		if err != nil {
+			return err
+		}
+		defer arena.Release()
+
+		wr, err := BuildWithSegment(in.Tenant, in.Timeseries, seg)
 		if err != nil {
 			return err
 		}
