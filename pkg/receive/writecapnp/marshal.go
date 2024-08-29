@@ -34,11 +34,17 @@ func Build(tenant string, tsreq []prompb.TimeSeries) (WriteRequest, error) {
 	if err != nil {
 		return WriteRequest{}, err
 	}
-
-	return BuildWithSegment(tenant, tsreq, seg)
+	wr, err := NewRootWriteRequest(seg)
+	if err != nil {
+		return WriteRequest{}, err
+	}
+	if err := BuildInto(wr, tenant, tsreq); err != nil {
+		return WriteRequest{}, err
+	}
+	return wr, nil
 }
 
-func BuildWithSegment(tenant string, tsreq []prompb.TimeSeries, seg *capnp.Segment) (WriteRequest, error) {
+func BuildInto(wr WriteRequest, tenant string, tsreq []prompb.TimeSeries) error {
 	symbols := make(map[string]uint32)
 	for _, ts := range tsreq {
 		addLabelsToTable(symbols, ts.Labels)
@@ -47,54 +53,50 @@ func BuildWithSegment(tenant string, tsreq []prompb.TimeSeries, seg *capnp.Segme
 		}
 	}
 
-	wr, err := NewRootWriteRequest(seg)
-	if err != nil {
-		return WriteRequest{}, err
-	}
 	if err := wr.SetTenant(tenant); err != nil {
-		return WriteRequest{}, err
+		return err
 	}
 
 	s, err := wr.NewSymbols()
 	if err != nil {
-		return WriteRequest{}, err
+		return err
 	}
 	items, err := s.NewItems(int32(len(symbols)))
 	if err != nil {
-		return WriteRequest{}, err
+		return err
 	}
 	for k, i := range symbols {
 		if err := items.Set(int(i), k); err != nil {
-			return WriteRequest{}, err
+			return err
 		}
 	}
 
 	series, err := wr.NewTimeSeries(int32(len(tsreq)))
 	if err != nil {
-		return WriteRequest{}, err
+		return err
 	}
 	for i, ts := range tsreq {
 		tsc := series.At(i)
 
 		lblsc, err := tsc.NewLabels(int32(len(ts.Labels)))
 		if err != nil {
-			return WriteRequest{}, err
+			return err
 		}
 		if err := marshalLabels(lblsc, ts.Labels, symbols); err != nil {
-			return WriteRequest{}, err
+			return err
 		}
 		if err := marshalSamples(tsc, ts.Samples); err != nil {
-			return WriteRequest{}, err
+			return err
 		}
 		if err := marshalHistograms(tsc, ts.Histograms); err != nil {
-			return WriteRequest{}, err
+			return err
 		}
 		if err := marshalExemplars(tsc, ts.Exemplars, symbols); err != nil {
-			return WriteRequest{}, err
+			return err
 		}
 	}
 
-	return wr, nil
+	return nil
 }
 
 func addLabelsToTable(symbols map[string]uint32, lbls []labelpb.ZLabel) {
