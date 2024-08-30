@@ -5,7 +5,8 @@ $Go.package("writecapnp");
 $Go.import("writecapnp");
 
 struct Symbols {
-    items @0 :List(Text);
+    data @0 :Data;
+    offsets @1 :List(UInt32);
 }
 
 struct Label {

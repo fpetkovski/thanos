@@ -45,30 +45,13 @@ func Build(tenant string, tsreq []prompb.TimeSeries) (WriteRequest, error) {
 }
 
 func BuildInto(wr WriteRequest, tenant string, tsreq []prompb.TimeSeries) error {
-	symbols := make(map[string]uint32)
-	for _, ts := range tsreq {
-		addLabelsToTable(symbols, ts.Labels)
-		for _, e := range ts.Exemplars {
-			addLabelsToTable(symbols, e.Labels)
-		}
+	symbols, err := marshalSymbols(wr, tsreq)
+	if err != nil {
+		return err
 	}
 
 	if err := wr.SetTenant(tenant); err != nil {
 		return err
-	}
-
-	s, err := wr.NewSymbols()
-	if err != nil {
-		return err
-	}
-	items, err := s.NewItems(int32(len(symbols)))
-	if err != nil {
-		return err
-	}
-	for k, i := range symbols {
-		if err := items.Set(int(i), k); err != nil {
-			return err
-		}
 	}
 
 	series, err := wr.NewTimeSeries(int32(len(tsreq)))
@@ -99,21 +82,44 @@ func BuildInto(wr WriteRequest, tenant string, tsreq []prompb.TimeSeries) error 
 	return nil
 }
 
-func addLabelsToTable(symbols map[string]uint32, lbls []labelpb.ZLabel) {
-	for _, lbl := range lbls {
-		if _, ok := symbols[lbl.Name]; !ok {
-			symbols[lbl.Name] = uint32(len(symbols))
+func marshalSymbols(wr WriteRequest, series []prompb.TimeSeries) (*symbolTable, error) {
+	symbols := newSymbolTable()
+	for _, ts := range series {
+		for _, lbl := range ts.Labels {
+			symbols.addEntry(lbl.Name)
+			symbols.addEntry(lbl.Value)
+
 		}
-		if _, ok := symbols[lbl.Value]; !ok {
-			symbols[lbl.Value] = uint32(len(symbols))
+		for _, e := range ts.Exemplars {
+			for _, lbl := range e.Labels {
+				symbols.addEntry(lbl.Name)
+				symbols.addEntry(lbl.Value)
+			}
 		}
 	}
+
+	s, err := wr.NewSymbols()
+	if err != nil {
+		return nil, err
+	}
+	offsets, err := s.NewOffsets(symbols.len())
+	if err != nil {
+		return nil, err
+	}
+	data := make([]byte, symbols.symbolSize)
+	for k, entry := range symbols.table {
+		end := entry.start + uint32(len(k))
+		copy(data[entry.start:end], k)
+		offsets.Set(entry.index, end)
+	}
+
+	return symbols, s.SetData(data)
 }
 
-func marshalLabels(lbls Label_List, pbLbls []labelpb.ZLabel, symbols map[string]uint32) error {
+func marshalLabels(lbls Label_List, pbLbls []labelpb.ZLabel, symbols *symbolTable) error {
 	for j, lbl := range pbLbls {
-		lbls.At(j).SetName(symbols[lbl.Name])
-		lbls.At(j).SetValue(symbols[lbl.Value])
+		lbls.At(j).SetName(uint32(symbols.table[lbl.Name].index))
+		lbls.At(j).SetValue(uint32(symbols.table[lbl.Value].index))
 	}
 	return nil
 }
@@ -221,7 +227,7 @@ func marshalSpans(spans BucketSpan_List, pbSpans []prompb.BucketSpan) error {
 	return nil
 }
 
-func marshalExemplars(ts TimeSeries, pbExemplars []prompb.Exemplar, symbols map[string]uint32) error {
+func marshalExemplars(ts TimeSeries, pbExemplars []prompb.Exemplar, symbols *symbolTable) error {
 	if len(pbExemplars) == 0 {
 		return nil
 	}
@@ -256,4 +262,34 @@ func marshalFloat64List(list capnp.Float64List, ints []float64) {
 	for j, d := range ints {
 		list.Set(j, d)
 	}
+}
+
+type symbolTable struct {
+	table      map[string]tableEntry
+	symbolSize uint32
+}
+
+func newSymbolTable() *symbolTable {
+	return &symbolTable{
+		table: make(map[string]tableEntry),
+	}
+}
+
+func (s *symbolTable) addEntry(item string) {
+	if _, ok := s.table[item]; !ok {
+		s.table[item] = tableEntry{
+			index: len(s.table),
+			start: s.symbolSize,
+		}
+		s.symbolSize += uint32(len(item))
+	}
+}
+
+func (s *symbolTable) len() int32 {
+	return int32(len(s.table))
+}
+
+type tableEntry struct {
+	index int
+	start uint32
 }

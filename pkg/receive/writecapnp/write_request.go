@@ -17,12 +17,15 @@ type WriteableRequest struct {
 func NewWriteableRequest(wr WriteRequest) *WriteableRequest {
 	ts, _ := wr.TimeSeries()
 	symTable, _ := wr.Symbols()
-	symbols, _ := symTable.Items()
+	data, _ := symTable.Data()
+	offsets, _ := symTable.Offsets()
 
-	strings := make([]string, 0, symbols.Len())
-	for i := 0; i < symbols.Len(); i++ {
-		sym, _ := symbols.At(i)
-		strings = append(strings, sym)
+	strings := make([]string, 0, len(data))
+	start := uint32(0)
+	for i := 0; i < offsets.Len(); i++ {
+		end := offsets.At(i)
+		strings = append(strings, string(data[start:end]))
+		start = end
 	}
 
 	return &WriteableRequest{
