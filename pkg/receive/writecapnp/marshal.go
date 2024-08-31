@@ -45,11 +45,6 @@ func Build(tenant string, tsreq []prompb.TimeSeries) (WriteRequest, error) {
 }
 
 func BuildInto(wr WriteRequest, tenant string, tsreq []prompb.TimeSeries) error {
-	symbols, err := marshalSymbols(wr, tsreq)
-	if err != nil {
-		return err
-	}
-
 	if err := wr.SetTenant(tenant); err != nil {
 		return err
 	}
@@ -58,6 +53,7 @@ func BuildInto(wr WriteRequest, tenant string, tsreq []prompb.TimeSeries) error 
 	if err != nil {
 		return err
 	}
+	builder := newSymbolsBuilder()
 	for i, ts := range tsreq {
 		tsc := series.At(i)
 
@@ -65,7 +61,7 @@ func BuildInto(wr WriteRequest, tenant string, tsreq []prompb.TimeSeries) error 
 		if err != nil {
 			return err
 		}
-		if err := marshalLabels(lblsc, ts.Labels, symbols); err != nil {
+		if err := marshalLabels(lblsc, ts.Labels, builder); err != nil {
 			return err
 		}
 		if err := marshalSamples(tsc, ts.Samples); err != nil {
@@ -74,52 +70,38 @@ func BuildInto(wr WriteRequest, tenant string, tsreq []prompb.TimeSeries) error 
 		if err := marshalHistograms(tsc, ts.Histograms); err != nil {
 			return err
 		}
-		if err := marshalExemplars(tsc, ts.Exemplars, symbols); err != nil {
+		if err := marshalExemplars(tsc, ts.Exemplars, builder); err != nil {
 			return err
 		}
 	}
 
-	return nil
+	symbols, err := wr.NewSymbols()
+	if err != nil {
+		return err
+	}
+	return marshalSymbols(builder, symbols)
 }
 
-func marshalSymbols(wr WriteRequest, series []prompb.TimeSeries) (*symbolTable, error) {
-	symbols := newSymbolTable()
-	for _, ts := range series {
-		for _, lbl := range ts.Labels {
-			symbols.addEntry(lbl.Name)
-			symbols.addEntry(lbl.Value)
-
-		}
-		for _, e := range ts.Exemplars {
-			for _, lbl := range e.Labels {
-				symbols.addEntry(lbl.Name)
-				symbols.addEntry(lbl.Value)
-			}
-		}
-	}
-
-	s, err := wr.NewSymbols()
+func marshalSymbols(builder *symbolsBuilder, symbols Symbols) error {
+	offsets, err := symbols.NewOffsets(builder.len())
 	if err != nil {
-		return nil, err
+		return err
 	}
-	offsets, err := s.NewOffsets(symbols.len())
-	if err != nil {
-		return nil, err
-	}
-	data := make([]byte, symbols.symbolSize)
-	for k, entry := range symbols.table {
+	data := make([]byte, builder.symbolsSize)
+	for k, entry := range builder.table {
 		end := entry.start + uint32(len(k))
 		copy(data[entry.start:end], k)
-		offsets.Set(entry.index, end)
+		offsets.Set(int(entry.index), end)
 	}
 
-	return symbols, s.SetData(data)
+	return symbols.SetData(data)
 }
 
-func marshalLabels(lbls Label_List, pbLbls []labelpb.ZLabel, symbols *symbolTable) error {
-	for j, lbl := range pbLbls {
-		lbls.At(j).SetName(uint32(symbols.table[lbl.Name].index))
-		lbls.At(j).SetValue(uint32(symbols.table[lbl.Value].index))
+func marshalLabels(lbls Label_List, pbLbls []labelpb.ZLabel, symbols *symbolsBuilder) error {
+	for i, pbLbl := range pbLbls {
+		lbl := lbls.At(i)
+		lbl.SetName(symbols.addEntry(pbLbl.Name))
+		lbl.SetValue(symbols.addEntry(pbLbl.Value))
 	}
 	return nil
 }
@@ -227,7 +209,7 @@ func marshalSpans(spans BucketSpan_List, pbSpans []prompb.BucketSpan) error {
 	return nil
 }
 
-func marshalExemplars(ts TimeSeries, pbExemplars []prompb.Exemplar, symbols *symbolTable) error {
+func marshalExemplars(ts TimeSeries, pbExemplars []prompb.Exemplar, symbols *symbolsBuilder) error {
 	if len(pbExemplars) == 0 {
 		return nil
 	}
@@ -264,32 +246,36 @@ func marshalFloat64List(list capnp.Float64List, ints []float64) {
 	}
 }
 
-type symbolTable struct {
-	table      map[string]tableEntry
-	symbolSize uint32
+type symbolsBuilder struct {
+	table       map[string]tableEntry
+	symbolsSize uint32
 }
 
-func newSymbolTable() *symbolTable {
-	return &symbolTable{
+func newSymbolsBuilder() *symbolsBuilder {
+	return &symbolsBuilder{
 		table: make(map[string]tableEntry),
 	}
 }
 
-func (s *symbolTable) addEntry(item string) {
-	if _, ok := s.table[item]; !ok {
-		s.table[item] = tableEntry{
-			index: len(s.table),
-			start: s.symbolSize,
-		}
-		s.symbolSize += uint32(len(item))
+func (s *symbolsBuilder) addEntry(item string) uint32 {
+	entry, ok := s.table[item]
+	if ok {
+		return entry.index
 	}
+	entry = tableEntry{
+		index: uint32(len(s.table)),
+		start: s.symbolsSize,
+	}
+	s.symbolsSize += uint32(len(item))
+	s.table[item] = entry
+	return entry.index
 }
 
-func (s *symbolTable) len() int32 {
+func (s *symbolsBuilder) len() int32 {
 	return int32(len(s.table))
 }
 
 type tableEntry struct {
-	index int
+	index uint32
 	start uint32
 }
