@@ -60,6 +60,7 @@ func NewCapNProtoHandler(logger log.Logger, writer *Writer) *CapNProtoHandler {
 }
 
 func (c CapNProtoHandler) Write(ctx context.Context, call writecapnp.Writer_write) error {
+	call.Go()
 	wr, err := call.Args().Wr()
 	if err != nil {
 		return err
