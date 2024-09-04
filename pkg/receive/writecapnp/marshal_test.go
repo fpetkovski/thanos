@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"capnproto.org/go/capnp/v3"
+	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/tsdb/tsdbutil"
 	"github.com/stretchr/testify/require"
 
@@ -86,4 +87,81 @@ func TestMarshalWriteRequest(t *testing.T) {
 		require.Equal(t, expected, actual, fmt.Sprintf("incorrect series at %d", i))
 		i++
 	}
+}
+
+func TestMarshalWithMultipleHistogramSeries(t *testing.T) {
+	wreq := storepb.WriteRequest{
+		Tenant: "example-tenant",
+		Timeseries: []prompb.TimeSeries{
+			{
+				Labels: []labelpb.ZLabel{
+					{Name: "job", Value: "prometheus-1"},
+				},
+				Histograms: []prompb.Histogram{
+					prompb.HistogramToHistogramProto(1, &histogram.Histogram{}),
+					prompb.HistogramToHistogramProto(1, tsdbutil.GenerateTestHistogram(1)),
+					prompb.FloatHistogramToHistogramProto(2, tsdbutil.GenerateTestFloatHistogram(2)),
+				},
+			},
+			{
+				Labels: []labelpb.ZLabel{
+					{Name: "job", Value: "prometheus-2"},
+				},
+				Histograms: []prompb.Histogram{
+					prompb.HistogramToHistogramProto(1, tsdbutil.GenerateTestHistogram(1)),
+					prompb.FloatHistogramToHistogramProto(2, tsdbutil.GenerateTestFloatHistogram(2)),
+					prompb.HistogramToHistogramProto(1, &histogram.Histogram{}),
+				},
+			},
+		},
+	}
+	b, err := Marshal(wreq.Tenant, wreq.Timeseries)
+	require.NoError(t, err)
+
+	msg, err := capnp.Unmarshal(b)
+	require.NoError(t, err)
+
+	wr, err := ReadRootWriteRequest(msg)
+	require.NoError(t, err)
+
+	tenant, err := wr.Tenant()
+	require.NoError(t, err)
+	require.Equal(t, wreq.Tenant, tenant)
+
+	series, err := wr.TimeSeries()
+	require.NoError(t, err)
+	require.Equal(t, len(wreq.Timeseries), series.Len())
+	var (
+		request = NewWriteableRequest(wr)
+		current prompb.TimeSeries
+
+		readHistograms      []*histogram.Histogram
+		readFloatHistograms []*histogram.FloatHistogram
+	)
+	for request.Next() {
+		request.At(&current)
+		current.Labels = labelpb.ZLabelsFromPromLabels(labelpb.ZLabelsToPromLabels(current.Labels).Copy())
+		for _, h := range current.Histograms {
+			if h.IsFloatHistogram() {
+				readFloatHistograms = append(readFloatHistograms, prompb.FloatHistogramProtoToFloatHistogram(h))
+			} else {
+				readHistograms = append(readHistograms, prompb.HistogramProtoToHistogram(h))
+			}
+		}
+	}
+	var (
+		histograms      []*histogram.Histogram
+		floatHistograms []*histogram.FloatHistogram
+	)
+	for _, ts := range wreq.Timeseries {
+		for _, h := range ts.Histograms {
+			if h.IsFloatHistogram() {
+				floatHistograms = append(floatHistograms, prompb.FloatHistogramProtoToFloatHistogram(h))
+			} else {
+				histograms = append(histograms, prompb.HistogramProtoToHistogram(h))
+			}
+		}
+	}
+	require.Equal(t, histograms, readHistograms)
+	require.Equal(t, floatHistograms, readFloatHistograms)
 }

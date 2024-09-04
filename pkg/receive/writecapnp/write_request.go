@@ -112,13 +112,12 @@ func (s *WriteableRequest) readHistogram(pbHistogram *prompb.Histogram, h Histog
 	if err != nil {
 		panic(err)
 	}
-	if negativeSpans.Len() > 0 {
-		pbHistogram.NegativeSpans = make([]prompb.BucketSpan, negativeSpans.Len())
-		for j := 0; j < len(pbHistogram.NegativeSpans); j++ {
-			pbHistogram.NegativeSpans[j].Offset = negativeSpans.At(j).Offset()
-			pbHistogram.NegativeSpans[j].Length = negativeSpans.At(j).Length()
-		}
+	pbHistogram.NegativeSpans = resizeSlice(pbHistogram.NegativeSpans, negativeSpans.Len())
+	for j := 0; j < len(pbHistogram.NegativeSpans); j++ {
+		pbHistogram.NegativeSpans[j].Offset = negativeSpans.At(j).Offset()
+		pbHistogram.NegativeSpans[j].Length = negativeSpans.At(j).Length()
 	}
+
 	negativeDeltas, err := h.NegativeDeltas()
 	if err != nil {
 		panic(err)
@@ -128,7 +127,10 @@ func (s *WriteableRequest) readHistogram(pbHistogram *prompb.Histogram, h Histog
 		for j := 0; j < negativeDeltas.Len(); j++ {
 			pbHistogram.NegativeDeltas[j] = negativeDeltas.At(j)
 		}
+	} else {
+		pbHistogram.NegativeDeltas = nil
 	}
+
 	negativeCounts, err := h.NegativeCounts()
 	if err != nil {
 		panic(err)
@@ -138,6 +140,8 @@ func (s *WriteableRequest) readHistogram(pbHistogram *prompb.Histogram, h Histog
 		for j := 0; j < negativeCounts.Len(); j++ {
 			pbHistogram.NegativeCounts[j] = negativeCounts.At(j)
 		}
+	} else {
+		pbHistogram.NegativeCounts = nil
 	}
 
 	// Positive spans, counts and deltas.
@@ -145,13 +149,12 @@ func (s *WriteableRequest) readHistogram(pbHistogram *prompb.Histogram, h Histog
 	if err != nil {
 		panic(err)
 	}
-	if positiveSpans.Len() > 0 {
-		pbHistogram.PositiveSpans = make([]prompb.BucketSpan, positiveSpans.Len())
-		for j := 0; j < len(pbHistogram.PositiveSpans); j++ {
-			pbHistogram.PositiveSpans[j].Offset = positiveSpans.At(j).Offset()
-			pbHistogram.PositiveSpans[j].Length = positiveSpans.At(j).Length()
-		}
+	pbHistogram.PositiveSpans = resizeSlice(pbHistogram.PositiveSpans, positiveSpans.Len())
+	for j := 0; j < len(pbHistogram.PositiveSpans); j++ {
+		pbHistogram.PositiveSpans[j].Offset = positiveSpans.At(j).Offset()
+		pbHistogram.PositiveSpans[j].Length = positiveSpans.At(j).Length()
 	}
+
 	positiveDeltas, err := h.PositiveDeltas()
 	if err != nil {
 		panic(err)
@@ -161,7 +164,10 @@ func (s *WriteableRequest) readHistogram(pbHistogram *prompb.Histogram, h Histog
 		for j := 0; j < positiveDeltas.Len(); j++ {
 			pbHistogram.PositiveDeltas[j] = positiveDeltas.At(j)
 		}
+	} else {
+		pbHistogram.PositiveDeltas = nil
 	}
+
 	positiveCounts, err := h.PositiveCounts()
 	if err != nil {
 		panic(err)
@@ -171,6 +177,8 @@ func (s *WriteableRequest) readHistogram(pbHistogram *prompb.Histogram, h Histog
 		for j := 0; j < positiveCounts.Len(); j++ {
 			pbHistogram.PositiveCounts[j] = positiveCounts.At(j)
 		}
+	} else {
+		pbHistogram.PositiveCounts = nil
 	}
 
 	pbHistogram.Timestamp = h.Timestamp()
