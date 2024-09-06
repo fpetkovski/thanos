@@ -27,8 +27,6 @@ import (
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"github.com/thanos-io/thanos/pkg/block"
 	"github.com/thanos-io/thanos/pkg/component"
@@ -57,27 +55,6 @@ type mockedStartTimeDB struct {
 }
 
 func (db *mockedStartTimeDB) StartTime() (int64, error) { return db.startTime, nil }
-
-func TestProxyStore_Info(t *testing.T) {
-	defer custom.TolerantVerifyLeak(t)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	q := NewProxyStore(nil,
-		nil,
-		func() []Client { return nil },
-		component.Query,
-		labels.EmptyLabels(), 0*time.Second, EagerRetrieval,
-	)
-
-	resp, err := q.Info(ctx, &storepb.InfoRequest{})
-	testutil.Ok(t, err)
-	testutil.Equals(t, []labelpb.ZLabelSet(nil), resp.LabelSets)
-	testutil.Equals(t, storepb.StoreType_QUERY, resp.StoreType)
-	testutil.Equals(t, int64(0), resp.MinTime)
-	testutil.Equals(t, int64(0), resp.MaxTime)
-}
 
 func TestProxyStore_TSDBInfos(t *testing.T) {
 	stores := []Client{
@@ -1991,10 +1968,6 @@ type mockedStoreAPI struct {
 	// injectedError will be injected into Recv() if not nil.
 	injectedError      error
 	injectedErrorIndex int
-}
-
-func (s *mockedStoreAPI) Info(context.Context, *storepb.InfoRequest, ...grpc.CallOption) (*storepb.InfoResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "not implemented")
 }
 
 func (s *mockedStoreAPI) Series(ctx context.Context, req *storepb.SeriesRequest, _ ...grpc.CallOption) (storepb.Store_SeriesClient, error) {

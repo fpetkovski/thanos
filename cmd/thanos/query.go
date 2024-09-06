@@ -336,7 +336,6 @@ func registerQuery(app *extkingpin.App) {
 			enableQueryPushdown,
 			*alertQueryURL,
 			*grpcProxyStrategy,
-			component.Query,
 			*queryTelemetryDurationQuantiles,
 			*queryTelemetrySamplesQuantiles,
 			*queryTelemetrySeriesQuantiles,
@@ -414,7 +413,6 @@ func runQuery(
 	enableQueryPushdown bool,
 	alertQueryURL string,
 	grpcProxyStrategy string,
-	comp component.Component,
 	queryTelemetryDurationQuantiles []float64,
 	queryTelemetrySamplesQuantiles []float64,
 	queryTelemetrySeriesQuantiles []float64,
@@ -424,6 +422,7 @@ func runQuery(
 	queryMode queryMode,
 	enableExtendedFunctions bool,
 ) error {
+	comp := component.Query
 	if alertQueryURL == "" {
 		lastColon := strings.LastIndex(httpBindAddr, ":")
 		if lastColon != -1 {
