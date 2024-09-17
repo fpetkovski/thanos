@@ -343,7 +343,7 @@ type BucketStore struct {
 	indexCache      storecache.IndexCache
 	indexReaderPool *indexheader.ReaderPool
 	buffers         sync.Pool
-	chunkPool       pool.Bytes
+	chunkPool       pool.Pool[byte]
 	seriesBatchSize int
 
 	// Sets of blocks that have the same labels. They are indexed by a hash over their label set.
@@ -436,7 +436,7 @@ func WithQueryGate(queryGate gate.Gate) BucketStoreOption {
 }
 
 // WithChunkPool sets a pool.Bytes to use for chunks.
-func WithChunkPool(chunkPool pool.Bytes) BucketStoreOption {
+func WithChunkPool(chunkPool pool.Pool[byte]) BucketStoreOption {
 	return func(s *BucketStore) {
 		s.chunkPool = chunkPool
 	}
@@ -508,7 +508,7 @@ func NewBucketStore(
 			b := make([]byte, 0, initialBufSize)
 			return &b
 		}},
-		chunkPool:                   pool.NoopBytes{},
+		chunkPool:                   &pool.NoopPool[byte]{},
 		blocks:                      map[ulid.ULID]*bucketBlock{},
 		blockSets:                   map[uint64]*bucketBlockSet{},
 		blockSyncConcurrency:        blockSyncConcurrency,
@@ -2032,7 +2032,7 @@ type bucketBlock struct {
 	meta       *metadata.Meta
 	dir        string
 	indexCache storecache.IndexCache
-	chunkPool  pool.Bytes
+	chunkPool  pool.Pool[byte]
 	extLset    labels.Labels
 
 	indexHeaderReader indexheader.Reader
@@ -2059,7 +2059,7 @@ func newBucketBlock(
 	bkt objstore.BucketReader,
 	dir string,
 	indexCache storecache.IndexCache,
-	chunkPool pool.Bytes,
+	chunkPool pool.Pool[byte],
 	indexHeadReader indexheader.Reader,
 	p Partitioner,
 	maxSeriesSizeFunc BlockEstimator,
@@ -3308,6 +3308,6 @@ func (s queryStats) toHints() *hintspb.QueryStats {
 }
 
 // NewDefaultChunkBytesPool returns a chunk bytes pool with default settings.
-func NewDefaultChunkBytesPool(maxChunkPoolBytes uint64) (pool.Bytes, error) {
-	return pool.NewBucketedBytes(chunkBytesPoolMinSize, chunkBytesPoolMaxSize, 2, maxChunkPoolBytes)
+func NewDefaultChunkBytesPool(maxChunkPoolBytes uint64) (pool.Pool[byte], error) {
+	return pool.NewBucketedPool[byte](chunkBytesPoolMinSize, chunkBytesPoolMaxSize, 2, maxChunkPoolBytes)
 }

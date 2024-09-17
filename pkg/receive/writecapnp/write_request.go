@@ -4,13 +4,16 @@
 package writecapnp
 
 import (
+	"github.com/thanos-io/thanos/pkg/pool"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
 	"github.com/thanos-io/thanos/pkg/store/storepb/prompb"
 )
 
+var symbolsPool = pool.MustNewBucketedPool[string](256, 65536, 2, 0)
+
 type WriteableRequest struct {
 	i       int
-	symbols []string
+	symbols *[]string
 	series  TimeSeries_List
 }
 
@@ -20,11 +23,11 @@ func NewWriteableRequest(wr WriteRequest) *WriteableRequest {
 	data, _ := symTable.Data()
 	offsets, _ := symTable.Offsets()
 
-	strings := make([]string, 0, len(data))
+	strings, _ := symbolsPool.Get(offsets.Len())
 	start := uint32(0)
 	for i := 0; i < offsets.Len(); i++ {
 		end := offsets.At(i)
-		strings = append(strings, string(data[start:end]))
+		*strings = append(*strings, string(data[start:end]))
 		start = end
 	}
 
@@ -48,8 +51,8 @@ func (s *WriteableRequest) At(t *prompb.TimeSeries) {
 	t.Labels = resizeSlice(t.Labels, lbls.Len())
 	for i := 0; i < lbls.Len(); i++ {
 		lbl := lbls.At(i)
-		t.Labels[i].Name = s.symbols[lbl.Name()]
-		t.Labels[i].Value = s.symbols[lbl.Value()]
+		t.Labels[i].Name = (*s.symbols)[lbl.Name()]
+		t.Labels[i].Value = (*s.symbols)[lbl.Value()]
 	}
 
 	samples, err := s.series.At(s.i).Samples()
@@ -184,19 +187,24 @@ func (s *WriteableRequest) readHistogram(pbHistogram *prompb.Histogram, h Histog
 	pbHistogram.Timestamp = h.Timestamp()
 }
 
-func (s *WriteableRequest) readExemplar(symbols []string, exemplar *prompb.Exemplar, e Exemplar) error {
+func (s *WriteableRequest) readExemplar(symbols *[]string, exemplar *prompb.Exemplar, e Exemplar) error {
 	lbls, err := e.Labels()
 	if err != nil {
 		return err
 	}
 	exemplar.Labels = make([]labelpb.ZLabel, lbls.Len())
 	for i := 0; i < lbls.Len(); i++ {
-		exemplar.Labels[i].Name = symbols[lbls.At(i).Name()]
-		exemplar.Labels[i].Value = symbols[lbls.At(i).Value()]
+		exemplar.Labels[i].Name = (*symbols)[lbls.At(i).Name()]
+		exemplar.Labels[i].Value = (*symbols)[lbls.At(i).Value()]
 	}
 	exemplar.Value = e.Value()
 	exemplar.Timestamp = e.Timestamp()
 
+	return nil
+}
+
+func (s *WriteableRequest) Close() error {
+	symbolsPool.Put(s.symbols)
 	return nil
 }
 
