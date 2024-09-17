@@ -136,6 +136,7 @@ func BenchmarkMarshalWriteRequest(b *testing.B) {
 			for iter.Next() {
 				iter.At(&ts)
 			}
+			iter.Close()
 		}
 	})
 }

@@ -24,6 +24,7 @@ import (
 type writeRequest interface {
 	Next() bool
 	At(t *prompb.TimeSeries)
+	Close() error
 }
 
 type protobufWriteRequest struct {
@@ -46,6 +47,8 @@ func (p *protobufWriteRequest) Next() bool {
 func (p *protobufWriteRequest) At(t *prompb.TimeSeries) {
 	*t = p.timeseries[p.i]
 }
+
+func (p *protobufWriteRequest) Close() error { return nil }
 
 // Appendable returns an Appender.
 type Appendable interface {

@@ -70,8 +70,13 @@ func (c CapNProtoHandler) Write(ctx context.Context, call writecapnp.Writer_writ
 		return err
 	}
 
-	var errs writeErrors
-	errs.Add(c.writer.Write(ctx, t, writecapnp.NewWriteableRequest(wr), false))
+	var (
+		errs writeErrors
+		req  = writecapnp.NewWriteableRequest(wr)
+	)
+	defer req.Close()
+
+	errs.Add(c.writer.Write(ctx, t, req, false))
 	if err := errs.ErrOrNil(); err != nil {
 		level.Debug(c.logger).Log("msg", "failed to handle request", "err", err)
 		result, allocErr := call.AllocResults()
