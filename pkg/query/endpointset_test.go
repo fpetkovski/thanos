@@ -17,8 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/prometheus/prometheus/model/labels"
-	"github.com/thanos-io/thanos/pkg/store"
-
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -955,11 +953,6 @@ func TestEndpointSetUpdate_AvailabilityScenarios(t *testing.T) {
 							{Name: "l3", Value: "v4"},
 						},
 					},
-					{
-						Labels: []labelpb.ZLabel{
-							{Name: store.CompatibilityTypeLabelName, Value: "store"},
-						},
-					},
 				}
 			},
 		},
@@ -977,11 +970,6 @@ func TestEndpointSetUpdate_AvailabilityScenarios(t *testing.T) {
 					{
 						Labels: []labelpb.ZLabel{
 							{Name: "l3", Value: "v4"},
-						},
-					},
-					{
-						Labels: []labelpb.ZLabel{
-							{Name: store.CompatibilityTypeLabelName, Value: "store"},
 						},
 					},
 				}

@@ -8,7 +8,14 @@ package main
 
 import (
 	"net/url"
+
+	"strconv"
+	"strings"
 	"time"
+
+	"github.com/KimMachineGun/automemlimit/memlimit"
+	"github.com/pkg/errors"
+	"github.com/prometheus/prometheus/model/labels"
 
 	extflag "github.com/efficientgo/tools/extkingpin"
 
@@ -232,4 +239,63 @@ func (ac *alertMgrConfig) registerFlag(cmd extflag.FlagClause) *alertMgrConfig {
 		StringsVar(&ac.alertExcludeLabels)
 	ac.alertRelabelConfigPath = extflag.RegisterPathOrContent(cmd, "alert.relabel-config", "YAML file that contains alert relabelling configuration.", extflag.WithEnvSubstitution())
 	return ac
+}
+
+func parseFlagLabels(s []string) (labels.Labels, error) {
+	var lset labels.ScratchBuilder
+	for _, l := range s {
+		parts := strings.SplitN(l, "=", 2)
+		if len(parts) != 2 {
+			return labels.EmptyLabels(), errors.Errorf("unrecognized label %q", l)
+		}
+		if !model.LabelName.IsValid(model.LabelName(parts[0])) {
+			return labels.EmptyLabels(), errors.Errorf("unsupported format for label %s", l)
+		}
+		val, err := strconv.Unquote(parts[1])
+		if err != nil {
+			return labels.EmptyLabels(), errors.Wrap(err, "unquote label value")
+		}
+		lset.Add(parts[0], val)
+	}
+	lset.Sort()
+	return lset.Labels(), nil
+}
+
+type goMemLimitConfig struct {
+	enableAutoGoMemlimit bool
+	memlimitRatio        float64
+}
+
+func (gml *goMemLimitConfig) registerFlag(cmd extkingpin.FlagClause) *goMemLimitConfig {
+	cmd.Flag("enable-auto-gomemlimit",
+		"Enable go runtime to automatically limit memory consumption.").
+		Default("false").BoolVar(&gml.enableAutoGoMemlimit)
+
+	cmd.Flag("auto-gomemlimit.ratio",
+		"The ratio of reserved GOMEMLIMIT memory to the detected maximum container or system memory.").
+		Default("0.9").FloatVar(&gml.memlimitRatio)
+
+	return gml
+}
+
+func configureGoAutoMemLimit(common goMemLimitConfig) error {
+	if common.memlimitRatio <= 0.0 || common.memlimitRatio > 1.0 {
+		return errors.New("--auto-gomemlimit.ratio must be greater than 0 and less than or equal to 1.")
+	}
+
+	if common.enableAutoGoMemlimit {
+		if _, err := memlimit.SetGoMemLimitWithOpts(
+			memlimit.WithRatio(common.memlimitRatio),
+			memlimit.WithProvider(
+				memlimit.ApplyFallback(
+					memlimit.FromCgroup,
+					memlimit.FromSystem,
+				),
+			),
+		); err != nil {
+			return errors.Wrap(err, "Failed to set GOMEMLIMIT automatically")
+		}
+	}
+
+	return nil
 }
