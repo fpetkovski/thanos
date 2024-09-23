@@ -7,13 +7,15 @@
 package main
 
 import (
-	"github.com/KimMachineGun/automemlimit/memlimit"
-	"github.com/pkg/errors"
-	"github.com/prometheus/prometheus/model/labels"
 	"net/url"
+
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/KimMachineGun/automemlimit/memlimit"
+	"github.com/pkg/errors"
+	"github.com/prometheus/prometheus/model/labels"
 
 	extflag "github.com/efficientgo/tools/extkingpin"
 
