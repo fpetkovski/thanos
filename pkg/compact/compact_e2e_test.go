@@ -143,9 +143,9 @@ func TestSyncer_GarbageCollect_e2e(t *testing.T) {
 		groups, err := grouper.Groups(sy.Metas())
 		testutil.Ok(t, err)
 
-		testutil.Equals(t, "0@G11417238981180435610", groups[0].Key())
+		testutil.Equals(t, "0@G17241709254077376921", groups[0].Key())
 		testutil.Equals(t, []ulid.ULID{metas[9].ULID, m3.ULID}, groups[0].IDs())
-		testutil.Equals(t, "1000@G11417238981180435610", groups[1].Key())
+		testutil.Equals(t, "1000@G17241709254077376921", groups[1].Key())
 		testutil.Equals(t, []ulid.ULID{m4.ULID}, groups[1].IDs())
 	})
 }

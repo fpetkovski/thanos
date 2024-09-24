@@ -422,9 +422,10 @@ func removeExternalLabelMatchers(stores []Client, matchers []storepb.LabelMatche
 	)
 	for _, store := range stores {
 		for _, labelSets := range store.LabelSets() {
-			for _, lbl := range labelSets {
+			labelSets.Range(func(lbl labels.Label) {
 				extLset[lbl.Name] = struct{}{}
-			}
+
+			})
 		}
 	}
 	for _, m := range matchers {

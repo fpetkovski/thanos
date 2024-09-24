@@ -403,9 +403,9 @@ func (s *TSDBStore) LabelValues(ctx context.Context, r *storepb.LabelValuesReque
 }
 
 func labelsToMap(lset labels.Labels) map[string]struct{} {
-	r := make(map[string]struct{}, len(lset))
-	for _, l := range lset {
+	r := make(map[string]struct{}, lset.Len())
+	lset.Range(func(l labels.Label) {
 		r[l.Name] = struct{}{}
-	}
+	})
 	return r
 }

@@ -161,12 +161,12 @@ func (m *Thanos) GroupKey() string {
 		shardKey = fmt.Sprintf("@S%d", *m.VerticalShardID)
 	}
 
-	lbls := labels.FromMap(m.Labels)
-	lbls = append(lbls, labels.Label{
-		Name:  "__source",
-		Value: string(m.Source),
-	})
-	return fmt.Sprintf("%d%s@G%v", m.Downsample.Resolution, shardKey, lbls.Hash())
+	builder := labels.NewScratchBuilder(len(m.Labels))
+	for k, v := range m.Labels {
+		builder.Add(k, v)
+	}
+	builder.Sort()
+	return fmt.Sprintf("%d%s@G%v", m.Downsample.Resolution, shardKey, builder.Labels().Hash())
 }
 
 func (m *Thanos) GetVerticalShardID() string {

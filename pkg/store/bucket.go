@@ -740,8 +740,6 @@ func (s *BucketStore) addBlock(ctx context.Context, meta *metadata.Meta) (err er
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
-	sort.Sort(lset)
-
 	set, ok := s.blockSets[h]
 	if !ok {
 		set = newBucketBlockSet(lset)
@@ -929,16 +927,15 @@ type blockSeriesClient struct {
 
 	// Internal state.
 
-	i                uint64
-	postings         []storage.SeriesRef
-	expandedPostings []storage.SeriesRef
-	chkMetas         []chunks.Meta
-	lset             labels.Labels
-	b                *labels.Builder
-	symbolizedLset   []symbolizedLabel
-	entries          []seriesEntry
-	hasMorePostings  bool
-	batchSize        int
+	i               uint64
+	postings        []storage.SeriesRef
+	chkMetas        []chunks.Meta
+	lset            labels.Labels
+	b               *labels.Builder
+	symbolizedLset  []symbolizedLabel
+	entries         []seriesEntry
+	hasMorePostings bool
+	batchSize       int
 }
 
 func newBlockSeriesClient(
