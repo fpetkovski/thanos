@@ -16,6 +16,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/thanos-io/thanos/pkg/dedup"
+
 	"github.com/blang/semver/v4"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -299,6 +301,7 @@ func (p *PrometheusStore) queryPrometheus(
 		for k, v := range vector.Metric {
 			b.Add(string(k), string(v))
 		}
+		b.Add(dedup.PushdownMarker.Name, dedup.PushdownMarker.Value)
 		b.Sort()
 
 		finalLbls := labelpb.ExtendSortedLabels(b.Labels(), externalLbls)
