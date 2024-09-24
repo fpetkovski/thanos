@@ -399,7 +399,7 @@ sync/atomic=go.uber.org/atomic,github.com/cortexproject/cortex=github.com/thanos
 io/ioutil.{Discard,NopCloser,ReadAll,ReadDir,ReadFile,TempDir,TempFile,Writefile}" $(shell go list ./... | grep -v -e "internal/cortex" -e "internal/mimir-prometheus")
 	@$(FAILLINT) -paths "fmt.{Print,Println,Sprint}" -ignore-tests ./...
 	@echo ">> linting all of the Go files GOGC=${GOGC}"
-	@$(GOLANGCI_LINT) run
+	@$(GOLANGCI_LINT) run --timeout=10m
 	@echo ">> ensuring Copyright headers"
 	@go run ./scripts/copyright
 	@echo ">> ensuring generated proto files are up to date"
