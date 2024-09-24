@@ -16,6 +16,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/thanos-io/thanos/pkg/dedup"
+
 	"github.com/blang/semver/v4"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -33,7 +35,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/thanos-io/thanos/pkg/component"
-	"github.com/thanos-io/thanos/pkg/dedup"
 	"github.com/thanos-io/thanos/pkg/info/infopb"
 	"github.com/thanos-io/thanos/pkg/promclient"
 	"github.com/thanos-io/thanos/pkg/queryconfig"
@@ -121,12 +122,11 @@ func (p *PrometheusStore) Info(_ context.Context, _ *storepb.InfoRequest) (*stor
 	mint, maxt := p.timestamps()
 
 	res := &storepb.InfoResponse{
-		Labels:    make([]labelpb.ZLabel, 0, len(lset)),
+		Labels:    labelpb.ZLabelsFromPromLabels(lset),
 		StoreType: p.component.ToProto(),
 		MinTime:   mint,
 		MaxTime:   maxt,
 	}
-	res.Labels = append(res.Labels, labelpb.ZLabelsFromPromLabels(lset)...)
 
 	// Until we deprecate the single labels in the reply, we just duplicate
 	// them here for migration/compatibility purposes.
@@ -194,7 +194,7 @@ func (p *PrometheusStore) Series(r *storepb.SeriesRequest, s storepb.Store_Serie
 			return err
 		}
 		for _, lbm := range labelMaps {
-			lset := make([]labelpb.ZLabel, 0, len(lbm)+len(finalExtLset))
+			lset := make([]labelpb.ZLabel, 0, len(lbm)+finalExtLset.Len())
 			for k, v := range lbm {
 				lset = append(lset, labelpb.ZLabel{Name: k, Value: v})
 			}
@@ -293,19 +293,18 @@ func (p *PrometheusStore) queryPrometheus(
 	}
 
 	externalLbls := rmLabels(p.externalLabelsFn().Copy(), extLsetToRemove)
+	b := labels.NewScratchBuilder(16)
 	for _, vector := range matrix {
-		seriesLbls := labels.Labels(make([]labels.Label, 0, len(vector.Metric)))
+		b.Reset()
 
 		// Attach labels from samples.
 		for k, v := range vector.Metric {
-			seriesLbls = append(seriesLbls, labels.FromStrings(string(k), string(v))...)
+			b.Add(string(k), string(v))
 		}
-		sort.Slice(seriesLbls, func(i, j int) bool {
-			return seriesLbls.Less(i, j)
-		})
-		// Attach external labels for compatibility with remote read.
-		finalLbls := labelpb.ExtendSortedLabels(seriesLbls, externalLbls)
-		finalLbls = append(finalLbls, dedup.PushdownMarker)
+		b.Add(dedup.PushdownMarker.Name, dedup.PushdownMarker.Value)
+		b.Sort()
+
+		finalLbls := labelpb.ExtendSortedLabels(b.Labels(), externalLbls)
 
 		series := &prompb.TimeSeries{
 			Labels:  labelpb.ZLabelsFromPromLabels(finalLbls),
@@ -606,7 +605,7 @@ func matchesExternalLabels(ms []storepb.LabelMatcher, externalLabels labels.Labe
 		return false, nil, err
 	}
 
-	if len(externalLabels) == 0 {
+	if externalLabels.IsEmpty() {
 		return true, tms, nil
 	}
 
@@ -683,9 +682,9 @@ func (p *PrometheusStore) LabelNames(ctx context.Context, r *storepb.LabelNamesR
 	}
 
 	if len(lbls) > 0 {
-		for _, extLbl := range extLset {
-			lbls = append(lbls, extLbl.Name)
-		}
+		extLset.Range(func(l labels.Label) {
+			lbls = append(lbls, l.Name)
+		})
 		sort.Strings(lbls)
 	}
 
@@ -761,10 +760,7 @@ func (p *PrometheusStore) LabelValues(ctx context.Context, r *storepb.LabelValue
 }
 
 func (p *PrometheusStore) LabelSet() []labelpb.ZLabelSet {
-	lset := p.externalLabelsFn()
-
-	labels := make([]labelpb.ZLabel, 0, len(lset))
-	labels = append(labels, labelpb.ZLabelsFromPromLabels(lset)...)
+	labels := labelpb.ZLabelsFromPromLabels(p.externalLabelsFn())
 
 	labelset := []labelpb.ZLabelSet{}
 	if len(labels) > 0 {

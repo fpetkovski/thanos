@@ -136,8 +136,12 @@ func ReadSeriesFromBlock(t testing.TB, h tsdb.BlockReader, extLabels labels.Labe
 	all := allPostings(t, ir)
 	for all.Next() {
 		testutil.Ok(t, ir.Series(all.At(), &builder, &chunkMetas))
-		lset := builder.Labels()
-		expected = append(expected, &storepb.Series{Labels: labelpb.ZLabelsFromPromLabels(append(extLabels.Copy(), lset...))})
+
+		for _, lbl := range extLabels {
+			builder.Add(lbl.Name, lbl.Value)
+		}
+		builder.Sort()
+		expected = append(expected, &storepb.Series{Labels: labelpb.ZLabelsFromPromLabels(builder.Labels())})
 
 		if skipChunks {
 			continue
@@ -189,7 +193,7 @@ func appendFloatSamples(t testing.TB, app storage.Appender, tsLabel int, opts He
 	testutil.Ok(t, err)
 
 	for is := 1; is < opts.SamplesPerSeries; is++ {
-		_, err := app.Append(ref, nil, int64(tsLabel+is)*opts.ScrapeInterval.Milliseconds(), opts.Random.Float64())
+		_, err := app.Append(ref, labels.EmptyLabels(), int64(tsLabel+is)*opts.ScrapeInterval.Milliseconds(), opts.Random.Float64())
 		testutil.Ok(t, err)
 	}
 }
@@ -211,7 +215,7 @@ func appendHistogramSamples(t testing.TB, app storage.Appender, tsLabel int, opt
 	testutil.Ok(t, err)
 
 	for i, h := range histograms[1:] {
-		_, err := app.AppendHistogram(ref, nil, int64(tsLabel+i+1)*opts.ScrapeInterval.Milliseconds(), h, nil)
+		_, err := app.AppendHistogram(ref, labels.EmptyLabels(), int64(tsLabel+i+1)*opts.ScrapeInterval.Milliseconds(), h, nil)
 		testutil.Ok(t, err)
 	}
 }
