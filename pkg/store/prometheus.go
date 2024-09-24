@@ -33,7 +33,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/thanos-io/thanos/pkg/component"
-	"github.com/thanos-io/thanos/pkg/dedup"
 	"github.com/thanos-io/thanos/pkg/info/infopb"
 	"github.com/thanos-io/thanos/pkg/promclient"
 	"github.com/thanos-io/thanos/pkg/queryconfig"
@@ -300,7 +299,6 @@ func (p *PrometheusStore) queryPrometheus(
 		for k, v := range vector.Metric {
 			b.Add(string(k), string(v))
 		}
-		b.Add(dedup.PushdownMarker.Name, dedup.PushdownMarker.Value)
 		b.Sort()
 
 		finalLbls := labelpb.ExtendSortedLabels(b.Labels(), externalLbls)

@@ -186,10 +186,10 @@ func (c *Client) ExternalLabels(ctx context.Context, base *url.URL) (labels.Labe
 		return labels.EmptyLabels(), errors.Wrapf(err, "parse Prometheus config: %v", d.Data.YAML)
 	}
 
-	lbls := cfg.GlobalConfig.ExternalLabels
-	sort.Sort(lbls)
-
-	return lbls, nil
+	var builder labels.ScratchBuilder
+	builder.Assign(cfg.GlobalConfig.ExternalLabels)
+	builder.Sort()
+	return builder.Labels(), nil
 }
 
 type Flags struct {

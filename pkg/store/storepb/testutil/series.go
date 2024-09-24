@@ -136,8 +136,12 @@ func ReadSeriesFromBlock(t testing.TB, h tsdb.BlockReader, extLabels labels.Labe
 	all := allPostings(t, ir)
 	for all.Next() {
 		testutil.Ok(t, ir.Series(all.At(), &builder, &chunkMetas))
-		lset := labelpb.ExtendSortedLabels(builder.Labels(), extLabels)
-		expected = append(expected, &storepb.Series{Labels: labelpb.ZLabelsFromPromLabels(lset)})
+
+		for _, lbl := range extLabels {
+			builder.Add(lbl.Name, lbl.Value)
+		}
+		builder.Sort()
+		expected = append(expected, &storepb.Series{Labels: labelpb.ZLabelsFromPromLabels(builder.Labels())})
 
 		if skipChunks {
 			continue
