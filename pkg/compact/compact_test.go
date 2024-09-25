@@ -99,21 +99,21 @@ func TestGroupKey(t *testing.T) {
 	}{
 		{
 			input:    metadata.Thanos{},
-			expected: "0@G11417238981180435610",
+			expected: "0@G17241709254077376921",
 		},
 		{
 			input: metadata.Thanos{
 				Labels:     map[string]string{},
 				Downsample: metadata.ThanosDownsample{Resolution: 0},
 			},
-			expected: "0@G11417238981180435610",
+			expected: "0@G17241709254077376921",
 		},
 		{
 			input: metadata.Thanos{
 				Labels:     map[string]string{"foo": "bar", "foo1": "bar2"},
 				Downsample: metadata.ThanosDownsample{Resolution: 0},
 			},
-			expected: "0@G3669226448040571762",
+			expected: "0@G2124638872457683483",
 		},
 		{
 			input: metadata.Thanos{
@@ -121,7 +121,7 @@ func TestGroupKey(t *testing.T) {
 				Downsample:      metadata.ThanosDownsample{Resolution: 0},
 				VerticalShardID: &shardID,
 			},
-			expected: "0@S1@G16136433465867513556",
+			expected: "0@S1@G16590761456214576373",
 		},
 	} {
 		if ok := t.Run("", func(t *testing.T) {

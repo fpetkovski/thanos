@@ -88,13 +88,13 @@ func (sr *storeSelector) buildLabelMatchers(labelSets []labels.Labels) []storepb
 	labelCounts := make(map[string]int)
 	matcherSet := make(map[string]map[string]struct{})
 	for _, labelSet := range labelSets {
-		for _, lbl := range labelSet {
+		labelSet.Range(func(lbl labels.Label) {
 			if _, ok := matcherSet[lbl.Name]; !ok {
 				matcherSet[lbl.Name] = make(map[string]struct{})
 			}
 			labelCounts[lbl.Name]++
 			matcherSet[lbl.Name][lbl.Value] = struct{}{}
-		}
+		})
 	}
 
 	for k := range matcherSet {
