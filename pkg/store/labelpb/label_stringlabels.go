@@ -4,7 +4,7 @@
 // Package containing proto and JSON serializable Labels and ZLabels (no copy) structs used to
 // identify series. This package expose no-copy converters to Prometheus labels.Labels.
 
-//go:build !stringlabels && !dedupelabels
+//go:build stringlabels
 
 package labelpb
 
@@ -38,18 +38,27 @@ func noAllocBytes(buf string) []byte {
 	return *(*[]byte)(unsafe.Pointer(&buf))
 }
 
-// ZLabelsFromPromLabels converts Prometheus labels to slice of labelpb.ZLabel in type unsafe manner.
+// ZLabelsFromPromLabels converts Prometheus labels to slice of labelpb.ZLabel.
 // It reuses the same memory. Caller should abort using passed labels.Labels.
 func ZLabelsFromPromLabels(lset labels.Labels) []ZLabel {
-	return *(*[]ZLabel)(unsafe.Pointer(&lset))
+	zlabels := make([]ZLabel, 0, lset.Len())
+	lset.Range(func(l labels.Label) {
+		zlabels = append(zlabels, ZLabel{
+			Name:  l.Name,
+			Value: l.Value,
+		})
+	})
+	return zlabels
 }
 
-// ZLabelsToPromLabels convert slice of labelpb.ZLabel to Prometheus labels in type unsafe manner.
-// It reuses the same memory. Caller should abort using passed []ZLabel.
-// NOTE: Use with care. ZLabels holds memory from the whole protobuf unmarshal, so the returned
-// Prometheus Labels will hold this memory as well.
+// ZLabelsToPromLabels convert slice of labelpb.ZLabel to Prometheus labels.
 func ZLabelsToPromLabels(lset []ZLabel) labels.Labels {
-	return *(*labels.Labels)(unsafe.Pointer(&lset))
+	builder := labels.NewScratchBuilder(len(lset))
+	for _, l := range lset {
+		builder.Add(l.Name, l.Value)
+	}
+	builder.Sort()
+	return builder.Labels()
 }
 
 // ReAllocAndInternZLabelsStrings re-allocates all underlying bytes for string, detaching it from bigger memory pool.

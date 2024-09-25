@@ -1,0 +1,10 @@
+containers:
+  thanos-stringlabels:
+    dockerfile:
+      path: Dockerfile-stringlabels.shopify
+  thanos-ci:
+    docker: cimg/go:1.19-node
+
+steps:
+  - build: thanos-stringlabels
+    architectures: [x86_64, arm64]

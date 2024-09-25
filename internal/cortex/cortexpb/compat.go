@@ -26,14 +26,26 @@ import (
 // Note: while resulting labels.Labels is supposedly sorted, this function
 // doesn't enforce that. If input is not sorted, output will be wrong.
 func FromLabelAdaptersToLabels(ls []LabelAdapter) labels.Labels {
-	return *(*labels.Labels)(unsafe.Pointer(&ls))
+	builder := labels.NewScratchBuilder(len(ls))
+	for _, l := range ls {
+		builder.Add(l.Name, l.Value)
+	}
+	builder.Sort()
+	return builder.Labels()
 }
 
 // FromLabelsToLabelAdapters casts labels.Labels to []LabelAdapter.
 // It uses unsafe, but as LabelAdapter == labels.Label this should be safe.
 // This allows us to use labels.Labels directly in protos.
 func FromLabelsToLabelAdapters(ls labels.Labels) []LabelAdapter {
-	return *(*[]LabelAdapter)(unsafe.Pointer(&ls))
+	lbs := make([]LabelAdapter, 0, ls.Len())
+	ls.Range(func(l labels.Label) {
+		lbs = append(lbs, LabelAdapter{
+			Name:  l.Name,
+			Value: l.Value,
+		})
+	})
+	return lbs
 }
 
 // FromLabelAdaptersToMetric converts []LabelAdapter to a model.Metric.
