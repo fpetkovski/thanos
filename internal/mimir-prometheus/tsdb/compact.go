@@ -1176,13 +1176,27 @@ func (c *LeveledCompactor) populateSymbols(sets []storage.ChunkSeriesSet, outBlo
 			obIx = labels.StableHash(s.Labels()) % uint64(len(outBlocks))
 		}
 
-		for _, l := range s.Labels() {
-			if err := batchers[obIx].addSymbol(l.Name); err != nil {
-				return errors.Wrap(err, "addSymbol to batcher")
+		var (
+			err  error
+			stop bool
+		)
+		s.Labels().Range(func(l labels.Label) {
+			if stop {
+				return
 			}
-			if err := batchers[obIx].addSymbol(l.Value); err != nil {
-				return errors.Wrap(err, "addSymbol to batcher")
+			if batchErr := batchers[obIx].addSymbol(l.Name); err != nil {
+				err = errors.Wrap(batchErr, "addSymbol to batcher")
+				stop = true
+				return
 			}
+			if batchErr := batchers[obIx].addSymbol(l.Value); err != nil {
+				err = errors.Wrap(batchErr, "addSymbol to batcher")
+				stop = true
+				return
+			}
+		})
+		if err != nil {
+			return err
 		}
 	}
 

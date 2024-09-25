@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"strconv"
+	"strings"
 	"unsafe"
 
 	"github.com/cespare/xxhash/v2"
@@ -385,7 +386,7 @@ func yoloBytes(s string) (b []byte) {
 // New returns a sorted Labels from the given labels.
 // The caller has to guarantee that all label names are unique.
 func New(ls ...Label) Labels {
-	slices.SortFunc(ls, func(a, b Label) bool { return a.Name < b.Name })
+	slices.SortFunc(ls, func(a, b Label) int { return strings.Compare(a.Name, b.Name) })
 	size := labelsSize(ls)
 	buf := make([]byte, size)
 	marshalLabelsToSizedBuffer(ls, buf)
@@ -629,7 +630,7 @@ func (b *Builder) Labels(res Labels) Labels {
 		return b.base
 	}
 
-	slices.SortFunc(b.add, func(a, b Label) bool { return a.Name < b.Name })
+	slices.SortFunc(b.add, func(a, b Label) int { return strings.Compare(a.Name, b.Name) })
 	slices.Sort(b.del)
 	a, d := 0, 0
 
@@ -788,7 +789,7 @@ func (b *ScratchBuilder) Add(name, value string) {
 
 // Sort the labels added so far by name.
 func (b *ScratchBuilder) Sort() {
-	slices.SortFunc(b.add, func(a, b Label) bool { return a.Name < b.Name })
+	slices.SortFunc(b.add, func(a, b Label) int { return strings.Compare(a.Name, b.Name) })
 }
 
 // Asssign is for when you already have a Labels which you want this ScratchBuilder to return.
