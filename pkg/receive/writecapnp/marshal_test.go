@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"testing"
 
-	"capnproto.org/go/capnp/v3"
 	"github.com/prometheus/prometheus/model/histogram"
+	"github.com/prometheus/prometheus/model/labels"
+
+	"capnproto.org/go/capnp/v3"
 	"github.com/prometheus/prometheus/tsdb/tsdbutil"
 	"github.com/stretchr/testify/require"
 
@@ -18,6 +20,24 @@ import (
 )
 
 func TestMarshalWriteRequest(t *testing.T) {
+	testHistogram := &histogram.Histogram{
+		Count:         12,
+		ZeroCount:     2,
+		ZeroThreshold: 0.001,
+		Sum:           18.4,
+		Schema:        1,
+		PositiveSpans: []histogram.Span{
+			{Offset: 0, Length: 2},
+			{Offset: 1, Length: 2},
+		},
+		PositiveBuckets: []int64{1, 1, -1, 0},
+		NegativeSpans: []histogram.Span{
+			{Offset: 0, Length: 2},
+			{Offset: 1, Length: 2},
+		},
+		NegativeBuckets: []int64{1, 1, -1, 0},
+	}
+
 	wreq := storepb.WriteRequest{
 		Tenant: "example-tenant",
 		Timeseries: []prompb.TimeSeries{
@@ -31,7 +51,7 @@ func TestMarshalWriteRequest(t *testing.T) {
 					{Timestamp: 2, Value: 2},
 				},
 				Histograms: []prompb.Histogram{
-					prompb.HistogramToHistogramProto(1, tsdbutil.GenerateTestHistogram(1)),
+					prompb.HistogramToHistogramProto(1, testHistogram),
 					prompb.FloatHistogramToHistogramProto(2, tsdbutil.GenerateTestFloatHistogram(2)),
 				},
 				Exemplars: []prompb.Exemplar{
@@ -70,21 +90,55 @@ func TestMarshalWriteRequest(t *testing.T) {
 	series, err := wr.TimeSeries()
 	require.NoError(t, err)
 	require.Equal(t, len(wreq.Timeseries), series.Len())
+
 	var (
-		i       int
-		request = NewWriteableRequest(wr)
+		i      int
+		actual Series
 	)
-	var actual prompb.TimeSeries
+	request, err := NewRequest(wr)
+	require.NoError(t, err)
 	for request.Next() {
 		request.At(&actual)
 		expected := wreq.Timeseries[i]
-		if expected.Exemplars == nil {
-			expected.Exemplars = make([]prompb.Exemplar, 0)
-		}
-		if expected.Histograms == nil {
-			expected.Histograms = make([]prompb.Histogram, 0)
-		}
-		require.Equal(t, expected, actual, fmt.Sprintf("incorrect series at %d", i))
+
+		t.Run("test_labels", func(t *testing.T) {
+			builder := labels.ScratchBuilder{}
+			for _, lbl := range expected.Labels {
+				builder.Add(lbl.Name, lbl.Value)
+			}
+			builder.Sort()
+			require.Equal(t, builder.Labels(), actual.Labels, fmt.Sprintf("incorrect series labels at %d", i))
+		})
+		t.Run("test_float_samples", func(t *testing.T) {
+			expectedSamples := make([]FloatSample, 0)
+			for _, s := range expected.Samples {
+				expectedSamples = append(expectedSamples, FloatSample{
+					Value:     s.Value,
+					Timestamp: s.Timestamp,
+				})
+			}
+			require.Equal(t, expectedSamples, actual.Samples, fmt.Sprintf("incorrect series samples at %d", i))
+		})
+		t.Run("test_histogram_samples", func(t *testing.T) {
+			for i, hs := range expected.Histograms {
+				require.Equal(t, hs.Timestamp, actual.Histograms[i].Timestamp)
+				if hs.IsFloatHistogram() {
+					fh := prompb.FloatHistogramProtoToFloatHistogram(hs)
+					require.Equal(t, fh, actual.Histograms[i].FloatHistogram)
+				} else {
+					h := prompb.HistogramProtoToHistogram(hs)
+					require.Equal(t, h, actual.Histograms[i].Histogram)
+				}
+			}
+		})
+		t.Run("test_exemplars", func(t *testing.T) {
+			for i, ex := range expected.Exemplars {
+				require.Equal(t, labelpb.ZLabelsToPromLabels(ex.Labels), actual.Exemplars[i].Labels)
+				require.Equal(t, ex.Timestamp, actual.Exemplars[i].Ts)
+				require.Equal(t, ex.Value, actual.Exemplars[i].Value)
+			}
+		})
+
 		i++
 	}
 }
@@ -132,20 +186,21 @@ func TestMarshalWithMultipleHistogramSeries(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, len(wreq.Timeseries), series.Len())
 	var (
-		request = NewWriteableRequest(wr)
-		current prompb.TimeSeries
+		current Series
 
 		readHistograms      []*histogram.Histogram
 		readFloatHistograms []*histogram.FloatHistogram
 	)
+	request, err := NewRequest(wr)
+	require.NoError(t, err)
+
 	for request.Next() {
 		request.At(&current)
-		current.Labels = labelpb.ZLabelsFromPromLabels(labelpb.ZLabelsToPromLabels(current.Labels).Copy())
 		for _, h := range current.Histograms {
-			if h.IsFloatHistogram() {
-				readFloatHistograms = append(readFloatHistograms, prompb.FloatHistogramProtoToFloatHistogram(h))
+			if h.FloatHistogram != nil {
+				readFloatHistograms = append(readFloatHistograms, h.FloatHistogram)
 			} else {
-				readHistograms = append(readHistograms, prompb.HistogramProtoToHistogram(h))
+				readHistograms = append(readHistograms, h.Histogram)
 			}
 		}
 	}

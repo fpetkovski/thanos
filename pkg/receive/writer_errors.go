@@ -11,7 +11,6 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
-	"github.com/thanos-io/thanos/pkg/store/storepb/prompb"
 )
 
 type writeErrorTracker struct {
@@ -30,6 +29,10 @@ type writeErrorTracker struct {
 }
 
 func (a *writeErrorTracker) addLabelsError(err error, lset *labelpb.ZLabelSet, logger log.Logger) {
+	if err == nil {
+		return
+	}
+
 	switch err {
 	case labelpb.ErrOutOfOrderLabels:
 		a.numLabelsOutOfOrder++
@@ -45,49 +48,56 @@ func (a *writeErrorTracker) addLabelsError(err error, lset *labelpb.ZLabelSet, l
 	}
 }
 
-func (a *writeErrorTracker) addSampleError(err error, tLogger log.Logger, lset labels.Labels, s prompb.Sample) {
+func (a *writeErrorTracker) addSampleError(err error, tLogger log.Logger, lset labels.Labels, t int64, v float64) {
+	if err == nil {
+		return
+	}
+
 	switch {
 	case errors.Is(err, storage.ErrOutOfOrderSample):
 		a.numSamplesOutOfOrder++
-		level.Debug(tLogger).Log("msg", "Out of order sample", "lset", lset, "value", s.Value, "timestamp", s.Timestamp)
+		level.Debug(tLogger).Log("msg", "Out of order sample", "lset", lset, "value", v, "timestamp", t)
 	case errors.Is(err, storage.ErrDuplicateSampleForTimestamp):
 		a.numSamplesDuplicates++
-		level.Debug(tLogger).Log("msg", "Duplicate sample for timestamp", "lset", lset, "value", s.Value, "timestamp", s.Timestamp)
+		level.Debug(tLogger).Log("msg", "Duplicate sample for timestamp", "lset", lset, "value", v, "timestamp", t)
 	case errors.Is(err, storage.ErrOutOfBounds):
 		a.numSamplesOutOfBounds++
-		level.Debug(tLogger).Log("msg", "Out of bounds metric", "lset", lset, "value", s.Value, "timestamp", s.Timestamp)
+		level.Debug(tLogger).Log("msg", "Out of bounds metric", "lset", lset, "value", v, "timestamp", t)
 	case errors.Is(err, storage.ErrTooOldSample):
 		a.numSamplesTooOld++
-		level.Debug(tLogger).Log("msg", "Sample is too old", "lset", lset, "value", s.Value, "timestamp", s.Timestamp)
+		level.Debug(tLogger).Log("msg", "Sample is too old", "lset", lset, "value", v, "timestamp", t)
 	default:
-		if err != nil {
-			level.Debug(tLogger).Log("msg", "Error ingesting sample", "err", err)
-		}
+		level.Debug(tLogger).Log("msg", "Error ingesting sample", "err", err)
 	}
 }
 
-func (a *writeErrorTracker) addHistogramError(err error, tLogger log.Logger, lset labels.Labels, hp prompb.Histogram) {
+func (a *writeErrorTracker) addHistogramError(err error, tLogger log.Logger, lset labels.Labels, timestamp int64) {
+	if err == nil {
+		return
+	}
 	switch {
 	case errors.Is(err, storage.ErrOutOfOrderSample):
 		a.numSamplesOutOfOrder++
-		level.Debug(tLogger).Log("msg", "Out of order histogram", "lset", lset, "timestamp", hp.Timestamp)
+		level.Debug(tLogger).Log("msg", "Out of order histogram", "lset", lset, "timestamp", timestamp)
 	case errors.Is(err, storage.ErrDuplicateSampleForTimestamp):
 		a.numSamplesDuplicates++
-		level.Debug(tLogger).Log("msg", "Duplicate histogram for timestamp", "lset", lset, "timestamp", hp.Timestamp)
+		level.Debug(tLogger).Log("msg", "Duplicate histogram for timestamp", "lset", lset, "timestamp", timestamp)
 	case errors.Is(err, storage.ErrOutOfBounds):
 		a.numSamplesOutOfBounds++
-		level.Debug(tLogger).Log("msg", "Out of bounds metric", "lset", lset, "timestamp", hp.Timestamp)
+		level.Debug(tLogger).Log("msg", "Out of bounds metric", "lset", lset, "timestamp", timestamp)
 	case errors.Is(err, storage.ErrTooOldSample):
 		a.numSamplesTooOld++
-		level.Debug(tLogger).Log("msg", "Histogram is too old", "lset", lset, "timestamp", hp.Timestamp)
+		level.Debug(tLogger).Log("msg", "Histogram is too old", "lset", lset, "timestamp", timestamp)
 	default:
-		if err != nil {
-			level.Debug(tLogger).Log("msg", "Error ingesting histogram", "err", err)
-		}
+		level.Debug(tLogger).Log("msg", "Error ingesting histogram", "err", err)
 	}
 }
 
 func (a *writeErrorTracker) addExemplarError(err error, exLogger log.Logger) {
+	if err == nil {
+		return
+	}
+
 	switch {
 	case errors.Is(err, storage.ErrOutOfOrderExemplar):
 		a.numExemplarsOutOfOrder++
@@ -99,9 +109,7 @@ func (a *writeErrorTracker) addExemplarError(err error, exLogger log.Logger) {
 		a.numExemplarsLabelLength++
 		level.Debug(exLogger).Log("msg", "Label length for exemplar exceeds max limit", "limit", exemplar.ExemplarMaxLabelSetLength)
 	default:
-		if err != nil {
-			level.Debug(exLogger).Log("msg", "Error ingesting exemplar", "err", err)
-		}
+		level.Debug(exLogger).Log("msg", "Error ingesting exemplar", "err", err)
 	}
 }
 
