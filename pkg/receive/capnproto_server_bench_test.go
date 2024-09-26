@@ -46,11 +46,11 @@ func BenchmarkCapNProtoServer_SingleConcurrentClient(b *testing.B) {
 	}
 
 	var (
-		writer = NewWriter(
+		writer = NewCapNProtoWriter(
 			log.NewNopLogger(),
 			newFakeTenantAppendable(
 				&fakeAppendable{appender: newFakeAppender(nil, nil, nil)}),
-			&WriterOptions{},
+			&CapNProtoWriterOptions{},
 		)
 		listener = bufconn.Listen(1024)
 		handler  = NewCapNProtoHandler(log.NewNopLogger(), writer)

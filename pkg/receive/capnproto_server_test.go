@@ -18,11 +18,11 @@ import (
 
 func TestCapNProtoServer_SingleConcurrentClient(t *testing.T) {
 	var (
-		writer = NewWriter(
+		writer = NewCapNProtoWriter(
 			log.NewNopLogger(),
 			newFakeTenantAppendable(
 				&fakeAppendable{appender: newFakeAppender(nil, nil, nil)}),
-			&WriterOptions{},
+			&CapNProtoWriterOptions{},
 		)
 		listener = bufconn.Listen(1024)
 		handler  = NewCapNProtoHandler(log.NewNopLogger(), writer)
@@ -46,11 +46,11 @@ func TestCapNProtoServer_SingleConcurrentClient(t *testing.T) {
 
 func TestCapNProtoServer_MultipleConcurrentClients(t *testing.T) {
 	var (
-		writer = NewWriter(
+		writer = NewCapNProtoWriter(
 			log.NewNopLogger(),
 			newFakeTenantAppendable(
 				&fakeAppendable{appender: newFakeAppender(nil, nil, nil)}),
-			&WriterOptions{},
+			&CapNProtoWriterOptions{},
 		)
 		listener = bufconn.Listen(1024)
 		handler  = NewCapNProtoHandler(log.NewNopLogger(), writer)

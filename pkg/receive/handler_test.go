@@ -216,9 +216,10 @@ func newTestHandlerHashring(
 		cfg[0].Endpoints = append(cfg[0].Endpoints, addr)
 
 		if capnpReplication {
+			writer := NewCapNProtoWriter(log.NewNopLogger(), newFakeTenantAppendable(appendables[i]), nil)
 			var (
 				listener = bufconn.Listen(1024)
-				handler  = NewCapNProtoHandler(log.NewNopLogger(), h.writer)
+				handler  = NewCapNProtoHandler(log.NewNopLogger(), writer)
 			)
 
 			srv := NewCapNProtoServer(listener, handler)
