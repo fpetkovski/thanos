@@ -733,9 +733,7 @@ func (h *Handler) fanoutForward(pctx context.Context, tenant string, wreqs map[e
 
 				var err error
 				tracing.DoInSpan(fctx, "receive_tsdb_write", func(_ context.Context) {
-					req := newProtobufWriteRequest(wreqs[writeTarget].timeSeries)
-					err = h.writer.Write(fctx, tenant, req, true)
-					req.Close()
+					err = h.writer.Write(fctx, tenant, wreqs[writeTarget].timeSeries)
 				})
 				if err != nil {
 					level.Debug(tLogger).Log("msg", "local tsdb write failed", "err", err.Error())

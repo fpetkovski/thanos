@@ -51,11 +51,11 @@ func (c *CapNProtoServer) Shutdown() {
 }
 
 type CapNProtoHandler struct {
-	writer *Writer
+	writer *CapNProtoWriter
 	logger log.Logger
 }
 
-func NewCapNProtoHandler(logger log.Logger, writer *Writer) *CapNProtoHandler {
+func NewCapNProtoHandler(logger log.Logger, writer *CapNProtoWriter) *CapNProtoHandler {
 	return &CapNProtoHandler{logger: logger, writer: writer}
 }
 
@@ -76,7 +76,7 @@ func (c CapNProtoHandler) Write(ctx context.Context, call writecapnp.Writer_writ
 	)
 	defer req.Close()
 
-	errs.Add(c.writer.Write(ctx, t, req, false))
+	errs.Add(c.writer.Write(ctx, t, req))
 	if err := errs.ErrOrNil(); err != nil {
 		level.Debug(c.logger).Log("msg", "failed to handle request", "err", err)
 		result, allocErr := call.AllocResults()
