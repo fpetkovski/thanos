@@ -122,7 +122,7 @@ func (r *Writer) Write(ctx context.Context, tenantID string, wreq []prompb.TimeS
 		// Append as many valid samples as possible, but keep track of the errors.
 		for _, s := range t.Samples {
 			ref, err = app.Append(ref, lset, s.Timestamp, s.Value)
-			errorTracker.addSampleError(err, tLogger, lset, s)
+			errorTracker.addSampleError(err, tLogger, lset, s.Timestamp, s.Value)
 		}
 
 		b := labels.ScratchBuilder{}
@@ -141,7 +141,7 @@ func (r *Writer) Write(ctx context.Context, tenantID string, wreq []prompb.TimeS
 			}
 
 			ref, err = app.AppendHistogram(ref, lset, hp.Timestamp, h, fh)
-			errorTracker.addHistogramError(err, tLogger, lset, hp)
+			errorTracker.addHistogramError(err, tLogger, lset, hp.Timestamp)
 		}
 
 		// Current implemetation of app.AppendExemplar doesn't create a new series, so it must be already present.

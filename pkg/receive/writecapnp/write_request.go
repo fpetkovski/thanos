@@ -4,24 +4,56 @@
 package writecapnp
 
 import (
+	"github.com/prometheus/prometheus/model/exemplar"
+	"github.com/prometheus/prometheus/model/histogram"
+	"github.com/prometheus/prometheus/model/labels"
 	"github.com/thanos-io/thanos/pkg/pool"
-	"github.com/thanos-io/thanos/pkg/store/labelpb"
-	"github.com/thanos-io/thanos/pkg/store/storepb/prompb"
 )
 
 var symbolsPool = pool.MustNewBucketedPool[string](256, 65536, 2, 0)
 
-type WriteableRequest struct {
+type HistogramSample struct {
+	Timestamp      int64
+	Histogram      *histogram.Histogram
+	FloatHistogram *histogram.FloatHistogram
+}
+
+type FloatSample struct {
+	Value     float64
+	Timestamp int64
+}
+
+type Series struct {
+	Labels     labels.Labels
+	Samples    []FloatSample
+	Histograms []HistogramSample
+	Exemplars  []exemplar.Exemplar
+}
+
+type Request struct {
 	i       int
 	symbols *[]string
+	builder labels.ScratchBuilder
 	series  TimeSeries_List
 }
 
-func NewWriteableRequest(wr WriteRequest) *WriteableRequest {
-	ts, _ := wr.TimeSeries()
-	symTable, _ := wr.Symbols()
-	data, _ := symTable.Data()
-	offsets, _ := symTable.Offsets()
+func NewRequest(wr WriteRequest) (*Request, error) {
+	ts, err := wr.TimeSeries()
+	if err != nil {
+		return nil, err
+	}
+	symTable, err := wr.Symbols()
+	if err != nil {
+		return nil, err
+	}
+	data, err := symTable.Data()
+	if err != nil {
+		return nil, err
+	}
+	offsets, err := symTable.Offsets()
+	if err != nil {
+		return nil, err
+	}
 
 	strings, _ := symbolsPool.Get(offsets.Len())
 	start := uint32(0)
@@ -31,189 +63,191 @@ func NewWriteableRequest(wr WriteRequest) *WriteableRequest {
 		start = end
 	}
 
-	return &WriteableRequest{
+	return &Request{
 		i:       -1,
 		symbols: strings,
 		series:  ts,
-	}
+		builder: labels.NewScratchBuilder(8),
+	}, nil
 }
 
-func (s *WriteableRequest) Next() bool {
+func (s *Request) Next() bool {
 	s.i++
 	return s.i < s.series.Len()
 }
 
-func (s *WriteableRequest) At(t *prompb.TimeSeries) {
+func (s *Request) At(t *Series) {
 	lbls, err := s.series.At(s.i).Labels()
 	if err != nil {
 		panic(err)
 	}
-	t.Labels = resizeSlice(t.Labels, lbls.Len())
+
+	s.builder.Reset()
 	for i := 0; i < lbls.Len(); i++ {
 		lbl := lbls.At(i)
-		t.Labels[i].Name = (*s.symbols)[lbl.Name()]
-		t.Labels[i].Value = (*s.symbols)[lbl.Value()]
+		s.builder.Add((*s.symbols)[lbl.Name()], (*s.symbols)[lbl.Value()])
 	}
+	s.builder.Sort()
+	s.builder.Overwrite(&t.Labels)
 
 	samples, err := s.series.At(s.i).Samples()
 	if err != nil {
 		panic(err)
 	}
-	t.Samples = resizeSlice(t.Samples, samples.Len())
+	t.Samples = t.Samples[:0]
 	for i := 0; i < samples.Len(); i++ {
 		sample := samples.At(i)
-		t.Samples[i].Timestamp = sample.Timestamp()
-		t.Samples[i].Value = sample.Value()
+		t.Samples = append(t.Samples, FloatSample{
+			Value:     sample.Value(),
+			Timestamp: sample.Timestamp(),
+		})
 	}
 
 	histograms, err := s.series.At(s.i).Histograms()
 	if err != nil {
 		panic(err)
 	}
-	t.Histograms = resizeSlice(t.Histograms, histograms.Len())
+	t.Histograms = t.Histograms[:0]
 	for i := 0; i < histograms.Len(); i++ {
-		s.readHistogram(&t.Histograms[i], histograms.At(i))
+		t.Histograms = append(t.Histograms, s.readHistogram(histograms.At(i)))
 	}
 
 	exemplars, err := s.series.At(s.i).Exemplars()
 	if err != nil {
 		panic(err)
 	}
-	t.Exemplars = resizeSlice(t.Exemplars, exemplars.Len())
+	t.Exemplars = t.Exemplars[:0]
 	for i := 0; i < exemplars.Len(); i++ {
-		e := exemplars.At(i)
-		if err := s.readExemplar(s.symbols, &t.Exemplars[i], e); err != nil {
+		ex, err := s.readExemplar(s.symbols, exemplars.At(i))
+		if err != nil {
 			panic(err)
 		}
+		t.Exemplars = append(t.Exemplars, ex)
 	}
-
 }
 
-func (s *WriteableRequest) readHistogram(pbHistogram *prompb.Histogram, h Histogram) {
-	pbHistogram.ResetHint = prompb.Histogram_ResetHint(h.ResetHint())
+func (s *Request) readHistogram(src Histogram) HistogramSample {
+	var (
+		h  *histogram.Histogram
+		fh *histogram.FloatHistogram
+	)
+	if src.Count().Which() == Histogram_count_Which_countInt {
+		h = &histogram.Histogram{
+			CounterResetHint: histogram.CounterResetHint(src.ResetHint()),
+			Count:            src.Count().CountInt(),
+			Sum:              src.Sum(),
+			Schema:           src.Schema(),
+			ZeroThreshold:    src.ZeroThreshold(),
+			ZeroCount:        src.ZeroCount().ZeroCountInt(),
+		}
+		h.PositiveSpans, h.NegativeSpans = createSpans(src)
 
-	switch h.Count().Which() {
-	case Histogram_count_Which_countInt:
-		pbHistogram.Count = &prompb.Histogram_CountInt{CountInt: h.Count().CountInt()}
-	case Histogram_count_Which_countFloat:
-		pbHistogram.Count = &prompb.Histogram_CountFloat{CountFloat: h.Count().CountFloat()}
-	}
+		positiveDeltas, err := src.PositiveDeltas()
+		if err != nil {
+			panic(err)
+		}
+		if positiveDeltas.Len() > 0 {
+			h.PositiveBuckets = make([]int64, positiveDeltas.Len())
+			for i := 0; i < positiveDeltas.Len(); i++ {
+				h.PositiveBuckets[i] = positiveDeltas.At(i)
+			}
+		}
 
-	pbHistogram.Sum = h.Sum()
-	pbHistogram.Schema = h.Schema()
-	pbHistogram.ZeroThreshold = h.ZeroThreshold()
-
-	switch h.ZeroCount().Which() {
-	case Histogram_zeroCount_Which_zeroCountInt:
-		pbHistogram.ZeroCount = &prompb.Histogram_ZeroCountInt{ZeroCountInt: h.ZeroCount().ZeroCountInt()}
-	case Histogram_zeroCount_Which_zeroCountFloat:
-		pbHistogram.ZeroCount = &prompb.Histogram_ZeroCountFloat{ZeroCountFloat: h.ZeroCount().ZeroCountFloat()}
-	}
-
-	// Negative spans, counts and deltas.
-	negativeSpans, err := h.NegativeSpans()
-	if err != nil {
-		panic(err)
-	}
-	pbHistogram.NegativeSpans = resizeSlice(pbHistogram.NegativeSpans, negativeSpans.Len())
-	for j := 0; j < len(pbHistogram.NegativeSpans); j++ {
-		pbHistogram.NegativeSpans[j].Offset = negativeSpans.At(j).Offset()
-		pbHistogram.NegativeSpans[j].Length = negativeSpans.At(j).Length()
-	}
-
-	negativeDeltas, err := h.NegativeDeltas()
-	if err != nil {
-		panic(err)
-	}
-	if negativeDeltas.Len() > 0 {
-		pbHistogram.NegativeDeltas = make([]int64, negativeDeltas.Len())
-		for j := 0; j < negativeDeltas.Len(); j++ {
-			pbHistogram.NegativeDeltas[j] = negativeDeltas.At(j)
+		negativeDeltas, err := src.NegativeDeltas()
+		if err != nil {
+			panic(err)
+		}
+		if negativeDeltas.Len() > 0 {
+			h.NegativeBuckets = make([]int64, negativeDeltas.Len())
+			for i := 0; i < negativeDeltas.Len(); i++ {
+				h.NegativeBuckets[i] = negativeDeltas.At(i)
+			}
 		}
 	} else {
-		pbHistogram.NegativeDeltas = nil
-	}
-
-	negativeCounts, err := h.NegativeCounts()
-	if err != nil {
-		panic(err)
-	}
-	if negativeCounts.Len() > 0 {
-		pbHistogram.NegativeCounts = make([]float64, negativeCounts.Len())
-		for j := 0; j < negativeCounts.Len(); j++ {
-			pbHistogram.NegativeCounts[j] = negativeCounts.At(j)
+		fh = &histogram.FloatHistogram{
+			CounterResetHint: histogram.CounterResetHint(src.ResetHint()),
+			Count:            src.Count().CountFloat(),
+			Sum:              src.Sum(),
+			Schema:           src.Schema(),
+			ZeroThreshold:    src.ZeroThreshold(),
+			ZeroCount:        src.ZeroCount().ZeroCountFloat(),
 		}
-	} else {
-		pbHistogram.NegativeCounts = nil
-	}
+		fh.PositiveSpans, fh.NegativeSpans = createSpans(src)
 
-	// Positive spans, counts and deltas.
-	positiveSpans, err := h.PositiveSpans()
-	if err != nil {
-		panic(err)
-	}
-	pbHistogram.PositiveSpans = resizeSlice(pbHistogram.PositiveSpans, positiveSpans.Len())
-	for j := 0; j < len(pbHistogram.PositiveSpans); j++ {
-		pbHistogram.PositiveSpans[j].Offset = positiveSpans.At(j).Offset()
-		pbHistogram.PositiveSpans[j].Length = positiveSpans.At(j).Length()
-	}
-
-	positiveDeltas, err := h.PositiveDeltas()
-	if err != nil {
-		panic(err)
-	}
-	if positiveDeltas.Len() > 0 {
-		pbHistogram.PositiveDeltas = make([]int64, positiveDeltas.Len())
-		for j := 0; j < positiveDeltas.Len(); j++ {
-			pbHistogram.PositiveDeltas[j] = positiveDeltas.At(j)
+		positiveCounts, err := src.PositiveCounts()
+		if err != nil {
+			panic(err)
 		}
-	} else {
-		pbHistogram.PositiveDeltas = nil
-	}
-
-	positiveCounts, err := h.PositiveCounts()
-	if err != nil {
-		panic(err)
-	}
-	if positiveCounts.Len() > 0 {
-		pbHistogram.PositiveCounts = make([]float64, positiveCounts.Len())
-		for j := 0; j < positiveCounts.Len(); j++ {
-			pbHistogram.PositiveCounts[j] = positiveCounts.At(j)
+		if positiveCounts.Len() > 0 {
+			fh.PositiveBuckets = make([]float64, positiveCounts.Len())
+			for i := 0; i < positiveCounts.Len(); i++ {
+				fh.PositiveBuckets[i] = positiveCounts.At(i)
+			}
 		}
-	} else {
-		pbHistogram.PositiveCounts = nil
+
+		negativeCounts, err := src.NegativeCounts()
+		if err != nil {
+			panic(err)
+		}
+		if negativeCounts.Len() > 0 {
+			fh.NegativeBuckets = make([]float64, negativeCounts.Len())
+			for i := 0; i < negativeCounts.Len(); i++ {
+				fh.NegativeBuckets[i] = negativeCounts.At(i)
+			}
+		}
 	}
 
-	pbHistogram.Timestamp = h.Timestamp()
+	return HistogramSample{
+		Timestamp:      src.Timestamp(),
+		Histogram:      h,
+		FloatHistogram: fh,
+	}
 }
 
-func (s *WriteableRequest) readExemplar(symbols *[]string, exemplar *prompb.Exemplar, e Exemplar) error {
+type spanGetter interface {
+	PositiveSpans() (BucketSpan_List, error)
+	NegativeSpans() (BucketSpan_List, error)
+}
+
+func createSpans(src spanGetter) ([]histogram.Span, []histogram.Span) {
+	positiveSpans, err := src.PositiveSpans()
+	if err != nil {
+		panic(err)
+	}
+	negativeSpans, err := src.NegativeSpans()
+	if err != nil {
+		panic(err)
+	}
+	return copySpans(positiveSpans), copySpans(negativeSpans)
+}
+
+func copySpans(src BucketSpan_List) []histogram.Span {
+	spans := make([]histogram.Span, src.Len())
+	for i := 0; i < src.Len(); i++ {
+		spans[i].Offset = src.At(i).Offset()
+		spans[i].Length = src.At(i).Length()
+	}
+	return spans
+}
+
+func (s *Request) readExemplar(symbols *[]string, e Exemplar) (exemplar.Exemplar, error) {
+	ex := exemplar.Exemplar{}
 	lbls, err := e.Labels()
 	if err != nil {
-		return err
+		return ex, err
 	}
-	exemplar.Labels = make([]labelpb.ZLabel, lbls.Len())
-	for i := 0; i < lbls.Len(); i++ {
-		exemplar.Labels[i].Name = (*symbols)[lbls.At(i).Name()]
-		exemplar.Labels[i].Value = (*symbols)[lbls.At(i).Value()]
-	}
-	exemplar.Value = e.Value()
-	exemplar.Timestamp = e.Timestamp()
 
-	return nil
+	builder := labels.ScratchBuilder{}
+	for i := 0; i < lbls.Len(); i++ {
+		builder.Add((*symbols)[lbls.At(i).Name()], (*symbols)[lbls.At(i).Value()])
+	}
+	ex.Labels = builder.Labels()
+	ex.Value = e.Value()
+	ex.Ts = e.Timestamp()
+	return ex, nil
 }
 
-func (s *WriteableRequest) Close() error {
+func (s *Request) Close() error {
 	symbolsPool.Put(s.symbols)
 	return nil
-}
-
-func resizeSlice[T any](slice []T, sz int) []T {
-	if slice == nil && sz == 0 {
-		return nil
-	}
-	if cap(slice) >= sz {
-		return slice[:sz]
-	}
-	return make([]T, sz)
 }

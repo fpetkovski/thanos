@@ -131,8 +131,9 @@ func BenchmarkMarshalWriteRequest(b *testing.B) {
 			wr, err := ReadRootWriteRequest(msg)
 			require.NoError(b, err)
 
-			var ts prompb.TimeSeries
-			iter := NewWriteableRequest(wr)
+			var ts Series
+			iter, err := NewRequest(wr)
+			require.NoError(b, err)
 			for iter.Next() {
 				iter.At(&ts)
 			}

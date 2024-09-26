@@ -9,13 +9,11 @@ import (
 	"github.com/go-kit/log"
 	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/model/exemplar"
-	"github.com/prometheus/prometheus/model/histogram"
+	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb"
-	"github.com/thanos-io/thanos/pkg/receive/writecapnp"
 
-	"github.com/thanos-io/thanos/pkg/store/labelpb"
-	"github.com/thanos-io/thanos/pkg/store/storepb/prompb"
+	"github.com/thanos-io/thanos/pkg/receive/writecapnp"
 )
 
 type CapNProtoWriterOptions struct {
@@ -39,7 +37,7 @@ func NewCapNProtoWriter(logger log.Logger, multiTSDB TenantStorage, opts *CapNPr
 	}
 }
 
-func (r *CapNProtoWriter) Write(ctx context.Context, tenantID string, wreq *writecapnp.WriteableRequest) error {
+func (r *CapNProtoWriter) Write(ctx context.Context, tenantID string, wreq *writecapnp.Request) error {
 	tLogger := log.With(r.logger, "tenant", tenantID)
 
 	s, err := r.multiTSDB.TenantAppendable(tenantID)
@@ -65,58 +63,38 @@ func (r *CapNProtoWriter) Write(ctx context.Context, tenantID string, wreq *writ
 		Appender:       app,
 	}
 
-	var t prompb.TimeSeries
+	var series writecapnp.Series
 	for wreq.Next() {
-		wreq.At(&t)
-		// Check if time series labels are valid. If not, skip the time series
-		// and report the error.
-		if err := labelpb.ValidateLabels(t.Labels); err != nil {
-			lset := &labelpb.ZLabelSet{Labels: t.Labels}
-			errorTracker.addLabelsError(err, lset, tLogger)
-			continue
-		}
+		wreq.At(&series)
 
-		lset := labelpb.ZLabelsToPromLabels(t.Labels)
-
+		var lset labels.Labels
 		// Check if the TSDB has cached reference for those labels.
-		ref, lset = getRef.GetRef(lset, lset.Hash())
+		ref, lset = getRef.GetRef(series.Labels, series.Labels.Hash())
 		if ref == 0 {
-			lset = labelpb.ZLabelsToPromLabels(t.Labels).Copy()
+			lset = series.Labels.Copy()
 		}
 
 		// Append as many valid samples as possible, but keep track of the errors.
-		for _, s := range t.Samples {
+		for _, s := range series.Samples {
 			ref, err = app.Append(ref, lset, s.Timestamp, s.Value)
-			errorTracker.addSampleError(err, tLogger, lset, s)
+			errorTracker.addSampleError(err, tLogger, lset, s.Timestamp, s.Value)
 		}
 
-		for _, hp := range t.Histograms {
-			var (
-				h  *histogram.Histogram
-				fh *histogram.FloatHistogram
-			)
-
-			if hp.IsFloatHistogram() {
-				fh = prompb.FloatHistogramProtoToFloatHistogram(hp)
-			} else {
-				h = prompb.HistogramProtoToHistogram(hp)
-			}
-
-			ref, err = app.AppendHistogram(ref, lset, hp.Timestamp, h, fh)
-			errorTracker.addHistogramError(err, tLogger, lset, hp)
+		for _, hp := range series.Histograms {
+			ref, err = app.AppendHistogram(ref, lset, hp.Timestamp, hp.Histogram, hp.FloatHistogram)
+			errorTracker.addHistogramError(err, tLogger, lset, hp.Timestamp)
 		}
 
 		// Current implemetation of app.AppendExemplar doesn't create a new series, so it must be already present.
 		// We drop the exemplars in case the series doesn't exist.
-		if ref != 0 && len(t.Exemplars) > 0 {
-			for _, ex := range t.Exemplars {
-				exLset := labelpb.ZLabelsToPromLabels(ex.Labels)
-				exLogger := log.With(tLogger, "exemplarLset", exLset, "exemplar", ex.String())
+		if ref != 0 && len(series.Exemplars) > 0 {
+			for _, ex := range series.Exemplars {
+				exLogger := log.With(tLogger, "exemplarLset", ex.Labels)
 
 				if _, err = app.AppendExemplar(ref, lset, exemplar.Exemplar{
-					Labels: exLset,
+					Labels: ex.Labels,
 					Value:  ex.Value,
-					Ts:     ex.Timestamp,
+					Ts:     ex.Ts,
 					HasTs:  true,
 				}); err != nil {
 					errorTracker.addExemplarError(err, exLogger)
