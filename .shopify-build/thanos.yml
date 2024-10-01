@@ -1,10 +1,21 @@
 containers:
   thanos:
+    environment: production
     dockerfile:
       path: Dockerfile.shopify
+      build_args:
+        BUILD_TARGET: build
+  thanos-stringlabels:
+    environment: stringlabels
+    dockerfile:
+      path: Dockerfile.shopify
+      build_args:
+        BUILD_TARGET: build-stringlabels
   thanos-ci:
     docker: cimg/go:1.19-node
 
 steps:
   - build: thanos
+    architectures: [x86_64, arm64]
+  - build: thanos-stringlabels
     architectures: [x86_64, arm64]

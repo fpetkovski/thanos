@@ -11,7 +11,8 @@ RUN apk update && apk add --no-cache alpine-sdk
 # https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#add-or-copy
 COPY . $GOPATH/src/github.com/thanos-io/thanos
 
-RUN git update-index --refresh; make build
+ARG BUILD_TARGET="build"
+RUN git update-index --refresh; make $BUILD_TARGET
 
 # -----------------------------------------------------------------------------
 
