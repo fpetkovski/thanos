@@ -319,6 +319,7 @@ func runReceive(
 
 		options := []store.ProxyStoreOption{
 			store.PropagateStoreSelectorMatchers(false),
+			store.WithoutDedup(),
 		}
 		if debugLogging {
 			options = append(options, store.WithProxyStoreDebugLogging())
