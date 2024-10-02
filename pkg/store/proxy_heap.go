@@ -26,8 +26,13 @@ import (
 	grpc_opentracing "github.com/thanos-io/thanos/pkg/tracing/tracing_middleware"
 )
 
+type seriesStream interface {
+	Next() bool
+	At() *storepb.SeriesResponse
+}
+
 type dedupResponseHeap struct {
-	h *ProxyResponseHeap
+	h seriesStream
 
 	bufferedSameSeries []*storepb.SeriesResponse
 
@@ -40,7 +45,7 @@ type dedupResponseHeap struct {
 
 // NewDedupResponseHeap returns a wrapper around ProxyResponseHeap that merged duplicated series messages into one.
 // It also deduplicates identical chunks identified by the same checksum from each series message.
-func NewDedupResponseHeap(h *ProxyResponseHeap) *dedupResponseHeap {
+func NewDedupResponseHeap(h seriesStream) *dedupResponseHeap {
 	ok := h.Next()
 	var prev *storepb.SeriesResponse
 	if ok {
