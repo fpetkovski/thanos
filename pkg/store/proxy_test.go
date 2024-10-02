@@ -500,6 +500,7 @@ func TestProxyStore_Series(t *testing.T) {
 					ExtLset: []labels.Labels{labels.FromStrings("ext", "1")},
 					MinTime: 1,
 					MaxTime: 300,
+					Name:    labels.FromStrings("ext", "1").String(),
 				},
 			},
 			req: &storepb.SeriesRequest{
@@ -509,7 +510,7 @@ func TestProxyStore_Series(t *testing.T) {
 				PartialResponseDisabled: true,
 				PartialResponseStrategy: storepb.PartialResponseStrategy_ABORT,
 			},
-			expectedErr: errors.New("fetch series for {ext=\"1\"} : error!"),
+			expectedErr: errors.New("fetch series for {ext=\"1\"}: error!"),
 		},
 		{
 			name: "storeAPI available for time range; available series for ext=1 external label matcher; allowed by store debug matcher",

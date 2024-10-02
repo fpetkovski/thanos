@@ -5,7 +5,6 @@ package receive
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -98,51 +97,52 @@ type nowMillis func() int64
 
 type localClient struct {
 	storepb.StoreClient
-	nowFunc       nowMillis
-	labelSetFunc  func() []labelpb.ZLabelSet
-	timeRangeFunc func() (int64, int64)
-	tsdbOpts      *tsdb.Options
+	nowFunc  nowMillis
+	tsdbOpts *tsdb.Options
+	store    *store.TSDBStore
 }
 
 func NewLocalClient(
-	c storepb.StoreClient,
+	logger log.Logger,
 	nowFunc nowMillis,
-	labelSetFunc func() []labelpb.ZLabelSet,
-	timeRangeFunc func() (int64, int64),
+	tsdbStore *store.TSDBStore,
 	tsdbOpts *tsdb.Options,
 ) store.Client {
+	client := storepb.ServerAsClient(store.NewRecoverableStoreServer(logger, tsdbStore))
+
 	return &localClient{
-		StoreClient:   c,
-		nowFunc:       nowFunc,
-		labelSetFunc:  labelSetFunc,
-		timeRangeFunc: timeRangeFunc,
-		tsdbOpts:      tsdbOpts,
+		StoreClient: client,
+		store:       tsdbStore,
+		nowFunc:     nowFunc,
+		tsdbOpts:    tsdbOpts,
 	}
 }
 
 func (l *localClient) LabelSets() []labels.Labels {
-	return labelpb.ZLabelSetsToPromLabelSets(l.labelSetFunc()...)
+	return l.store.LabelSet()
 }
 
 func (l *localClient) TimeRange() (mint int64, maxt int64) {
-	return l.timeRangeFunc()
+	return l.store.TimeRange()
 }
 
 func (l *localClient) GuaranteedMinTime() int64 {
-	mint, _ := l.timeRangeFunc()
+	mint, _ := l.store.TimeRange()
 	return store.GuaranteedMinTime(l.nowFunc(), mint, l.tsdbOpts.RetentionDuration, l.tsdbOpts.MinBlockDuration)
 }
 
 func (l *localClient) TSDBInfos() []infopb.TSDBInfo {
-	labelsets := l.labelSetFunc()
+	labelsets := l.store.LabelSet()
 	if len(labelsets) == 0 {
 		return []infopb.TSDBInfo{}
 	}
 
-	mint, maxt := l.timeRangeFunc()
+	mint, maxt := l.store.TimeRange()
 	return []infopb.TSDBInfo{
 		{
-			Labels:  labelsets[0],
+			Labels: labelpb.ZLabelSet{
+				Labels: labelpb.ZLabelsFromPromLabels(labelsets[0]),
+			},
 			MinTime: mint,
 			MaxTime: maxt,
 		},
@@ -150,11 +150,7 @@ func (l *localClient) TSDBInfos() []infopb.TSDBInfo {
 }
 
 func (l *localClient) String() string {
-	mint, maxt := l.timeRangeFunc()
-	return fmt.Sprintf(
-		"LabelSets: %v MinTime: %d MaxTime: %d",
-		labelpb.PromLabelSetsToString(l.LabelSets()), mint, maxt,
-	)
+	return l.store.String()
 }
 
 func (l *localClient) Addr() (string, bool) {
@@ -199,6 +195,10 @@ func (t *tenant) store() *store.TSDBStore {
 	return t.storeTSDB
 }
 
+func nowInMillis() int64 {
+	return time.Now().UnixMilli()
+}
+
 func (t *tenant) client(logger log.Logger, tsdbOpts *tsdb.Options) store.Client {
 	t.mtx.RLock()
 	defer t.mtx.RUnlock()
@@ -207,12 +207,8 @@ func (t *tenant) client(logger log.Logger, tsdbOpts *tsdb.Options) store.Client 
 	if tsdbStore == nil {
 		return nil
 	}
-	nowInMillis := func() int64 {
-		return time.Now().UnixMilli()
-	}
 
-	client := storepb.ServerAsClient(store.NewRecoverableStoreServer(logger, tsdbStore))
-	return NewLocalClient(client, nowInMillis, tsdbStore.LabelSet, tsdbStore.TimeRange, tsdbOpts)
+	return NewLocalClient(logger, nowInMillis, tsdbStore, tsdbOpts)
 }
 
 func (t *tenant) exemplars() *exemplars.TSDB {

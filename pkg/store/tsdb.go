@@ -39,11 +39,14 @@ type TSDBReader interface {
 // It attaches the provided external labels to all results. It only responds with raw data
 // and does not support downsampling.
 type TSDBStore struct {
-	logger           log.Logger
-	db               TSDBReader
-	component        component.StoreAPI
-	extLset          labels.Labels
-	extLabelsMap     map[string]struct{}
+	logger    log.Logger
+	db        TSDBReader
+	component component.StoreAPI
+
+	extLset       labels.Labels
+	extLsetString string
+	extLabelsMap  map[string]struct{}
+
 	buffers          sync.Pool
 	maxBytesPerFrame int
 
@@ -73,6 +76,7 @@ func NewTSDBStore(logger log.Logger, db TSDBReader, component component.StoreAPI
 		db:               db,
 		component:        component,
 		extLset:          extLset,
+		extLsetString:    extLset.String(),
 		extLabelsMap:     labelsToMap(extLset),
 		maxBytesPerFrame: RemoteReadFrameLimit,
 		buffers: sync.Pool{New: func() interface{} {
@@ -87,6 +91,7 @@ func (s *TSDBStore) SetExtLset(extLset labels.Labels) {
 	defer s.mtx.Unlock()
 
 	s.extLset = extLset
+	s.extLsetString = extLset.String()
 }
 
 func (s *TSDBStore) getExtLset() labels.Labels {
@@ -96,16 +101,14 @@ func (s *TSDBStore) getExtLset() labels.Labels {
 	return s.extLset
 }
 
-func (s *TSDBStore) LabelSet() []labelpb.ZLabelSet {
-	labels := labelpb.ZLabelsFromPromLabels(s.getExtLset())
-	labelSets := []labelpb.ZLabelSet{}
-	if len(labels) > 0 {
-		labelSets = append(labelSets, labelpb.ZLabelSet{
-			Labels: labels,
-		})
+func (s *TSDBStore) LabelSet() []labels.Labels {
+	return []labels.Labels{
+		s.getExtLset(),
 	}
+}
 
-	return labelSets
+func (s *TSDBStore) String() string {
+	return s.extLsetString
 }
 
 func (p *TSDBStore) TSDBInfos() []infopb.TSDBInfo {
@@ -118,7 +121,7 @@ func (p *TSDBStore) TSDBInfos() []infopb.TSDBInfo {
 	return []infopb.TSDBInfo{
 		{
 			Labels: labelpb.ZLabelSet{
-				Labels: labels[0].Labels,
+				Labels: labelpb.ZLabelsFromPromLabels(labels[0]),
 			},
 			MinTime: mint,
 			MaxTime: maxt,
@@ -130,7 +133,7 @@ func (s *TSDBStore) TimeRange() (int64, int64) {
 	var minTime int64 = math.MinInt64
 	startTime, err := s.db.StartTime()
 	if err == nil {
-		// Since we always use tsdb.DB  implementation,
+		// Since we always use tsdb.DB implementation,
 		// StartTime should never return error.
 		minTime = startTime
 	}
@@ -178,21 +181,22 @@ func (s *TSDBStore) Series(r *storepb.SeriesRequest, srv storepb.Store_SeriesSer
 	hasher := hashPool.Get().(hash.Hash64)
 	defer hashPool.Put(hasher)
 
-	extLsetToRemove := map[string]struct{}{}
-	for _, lbl := range r.WithoutReplicaLabels {
-		extLsetToRemove[lbl] = struct{}{}
-	}
-
-	finalExtLset := rmLabels(s.extLset.Copy(), extLsetToRemove)
+	builder := labels.NewBuilder(labels.EmptyLabels())
 	// Stream at most one series per frame; series may be split over multiple frames according to maxBytesInFrame.
 	for set.Next() {
 		series := set.At()
 
-		completeLabelset := labelpb.ExtendSortedLabels(rmLabels(series.Labels(), extLsetToRemove), finalExtLset)
-		if !shardMatcher.MatchesLabels(completeLabelset) {
+		builder.Reset(series.Labels())
+		s.extLset.Range(func(l labels.Label) {
+			builder.Set(l.Name, l.Value)
+		})
+		builder.Del(r.WithoutReplicaLabels...)
+
+		if !shardMatcher.MatchesLabels(builder) {
 			continue
 		}
-		storeSeries := storepb.Series{Labels: labelpb.ZLabelsFromPromLabels(completeLabelset)}
+
+		storeSeries := storepb.Series{Labels: labelpb.ZLabelsFromPromLabels(builder.Labels())}
 		if r.SkipChunks {
 			if err := srv.Send(storepb.NewSeriesResponse(&storeSeries)); err != nil {
 				return status.Error(codes.Aborted, err.Error())

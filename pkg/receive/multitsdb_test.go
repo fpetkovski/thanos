@@ -761,9 +761,13 @@ func TestLocalClientGuaranteedMinTime(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			nowFunc := func() int64 { return test.now }
-			timeFunc := func() (int64, int64) { return test.minTime, 0 }
-			client := NewLocalClient(nil, nowFunc, nil, timeFunc, &tsdb.Options{
+			var (
+				nowFunc = func() int64 { return test.now }
+				reader  = &mockedStartTimeDB{startTime: test.minTime}
+				logger  = log.NewNopLogger()
+				s       = store.NewTSDBStore(logger, reader, component.Store, nil)
+			)
+			client := NewLocalClient(logger, nowFunc, s, &tsdb.Options{
 				RetentionDuration: test.retention.Milliseconds(),
 				MinBlockDuration:  test.blockDuration.Milliseconds(),
 			})
@@ -772,8 +776,14 @@ func TestLocalClientGuaranteedMinTime(t *testing.T) {
 			testutil.Equals(t, test.expected, result, "expected", time.UnixMilli(test.expected), "got", time.UnixMilli(result))
 		})
 	}
-
 }
+
+type mockedStartTimeDB struct {
+	*tsdb.DBReadOnly
+	startTime int64
+}
+
+func (db *mockedStartTimeDB) StartTime() (int64, error) { return db.startTime, nil }
 
 type slowClient struct {
 	store.Client
