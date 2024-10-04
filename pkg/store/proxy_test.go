@@ -678,7 +678,7 @@ func TestProxyStore_Series(t *testing.T) {
 								},
 							},
 						}
-					}, component.Store, labels.FromStrings("role", "proxy"), 1*time.Minute, EagerRetrieval), 1),
+					}, component.Store, labels.FromStrings("role", "proxy"), 1*time.Minute, EagerRetrieval)),
 				},
 				&storetestutil.TestClient{
 					MinTime: 1,

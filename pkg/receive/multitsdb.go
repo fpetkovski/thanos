@@ -211,7 +211,7 @@ func (t *tenant) client(logger log.Logger, tsdbOpts *tsdb.Options) store.Client 
 		return time.Now().UnixMilli()
 	}
 
-	client := storepb.ServerAsClient(store.NewRecoverableStoreServer(logger, tsdbStore), 0)
+	client := storepb.ServerAsClient(store.NewRecoverableStoreServer(logger, tsdbStore))
 	return NewLocalClient(client, nowInMillis, tsdbStore.LabelSet, tsdbStore.TimeRange, tsdbOpts)
 }
 
