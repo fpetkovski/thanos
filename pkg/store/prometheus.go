@@ -114,31 +114,6 @@ func (p *PrometheusStore) labelCallsSupportMatchers() bool {
 	return parseErr == nil && version.GTE(baseVer)
 }
 
-// Info returns store information about the Prometheus instance.
-// NOTE(bwplotka): MaxTime & MinTime are not accurate nor adjusted dynamically.
-// This is fine for now, but might be needed in future.
-func (p *PrometheusStore) Info(_ context.Context, _ *storepb.InfoRequest) (*storepb.InfoResponse, error) {
-	lset := p.externalLabelsFn()
-	mint, maxt := p.timestamps()
-
-	res := &storepb.InfoResponse{
-		Labels:    labelpb.ZLabelsFromPromLabels(lset),
-		StoreType: p.component.ToProto(),
-		MinTime:   mint,
-		MaxTime:   maxt,
-	}
-
-	// Until we deprecate the single labels in the reply, we just duplicate
-	// them here for migration/compatibility purposes.
-	res.LabelSets = []labelpb.ZLabelSet{}
-	if len(res.Labels) > 0 {
-		res.LabelSets = append(res.LabelSets, labelpb.ZLabelSet{
-			Labels: res.Labels,
-		})
-	}
-	return res, nil
-}
-
 func (p *PrometheusStore) getBuffer() *[]byte {
 	b := p.buffers.Get()
 	return b.(*[]byte)
