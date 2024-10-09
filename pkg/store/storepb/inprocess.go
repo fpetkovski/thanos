@@ -77,13 +77,6 @@ func ServerAsClient(srv StoreServer) StoreClient {
 // NOTE: Passing CallOptions does not work - it would be needed to be implemented in grpc itself (before, after are private).
 type serverAsClient struct {
 	srv StoreServer
-<<<<<<< HEAD
-=======
-}
-
-func (s serverAsClient) Info(ctx context.Context, in *InfoRequest, opts ...grpc.CallOption) (*InfoResponse, error) {
-	return s.srv.Info(ctx, in)
->>>>>>> e9a48587 (Update golangci-lint)
 }
 
 func (s serverAsClient) LabelNames(ctx context.Context, in *LabelNamesRequest, _ ...grpc.CallOption) (*LabelNamesResponse, error) {
