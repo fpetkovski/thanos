@@ -179,9 +179,7 @@ func (h *ProxyResponseHeap) Less(i, j int) bool {
 
 func compareResponses(iResp *storepb.SeriesResponse, jResp *storepb.SeriesResponse) bool {
 	if iResp.GetSeries() != nil && jResp.GetSeries() != nil {
-		iLbls := labelpb.ZLabelsToPromLabels(iResp.GetSeries().Labels)
-		jLbls := labelpb.ZLabelsToPromLabels(jResp.GetSeries().Labels)
-		return labels.Compare(iLbls, jLbls) < 0
+		return labelpb.Compare(iResp.GetSeries().Labels, jResp.GetSeries().Labels) < 0
 	} else if iResp.GetSeries() == nil && jResp.GetSeries() != nil {
 		return true
 	} else if iResp.GetSeries() != nil && jResp.GetSeries() == nil {
@@ -260,10 +258,6 @@ func (h *ProxyResponseHeap) At() *storepb.SeriesResponse {
 
 func (l *lazyRespSet) StoreID() string {
 	return l.storeName
-}
-
-func (l *lazyRespSet) Labelset() string {
-	return labelpb.PromLabelSetsToString(l.storeLabelSets)
 }
 
 // lazyRespSet is a lazy storepb.SeriesSet that buffers
@@ -523,7 +517,7 @@ func newAsyncRespSet(
 	var closeSeries context.CancelFunc
 
 	storeAddr, isLocalStore := st.Addr()
-	storeID := labelpb.PromLabelSetsToString(st.LabelSets())
+	storeID := st.String()
 	if storeID == "" {
 		storeID = "Store Gateway"
 	}
@@ -549,7 +543,7 @@ func newAsyncRespSet(
 
 	cl, err := st.Series(seriesCtx, req)
 	if err != nil {
-		err = errors.Wrapf(err, "fetch series for %s %s", storeID, st)
+		err = errors.Wrapf(err, "fetch series for %s", storeID)
 
 		span.SetTag("err", err.Error())
 		span.Finish()
@@ -831,15 +825,10 @@ func (l *eagerRespSet) Empty() bool {
 
 func (l *eagerRespSet) StoreID() string { return l.storeName }
 
-func (l *eagerRespSet) Labelset() string {
-	return labelpb.PromLabelSetsToString(l.storeLabelSets)
-}
-
 type respSet interface {
 	Close()
 	At() *storepb.SeriesResponse
 	Next() bool
 	StoreID() string
-	Labelset() string
 	Empty() bool
 }

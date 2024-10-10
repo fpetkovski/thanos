@@ -673,7 +673,7 @@ func runRule(
 		infoOptions = append(
 			infoOptions,
 			info.WithLabelSetFunc(func() []labelpb.ZLabelSet {
-				return tsdbStore.LabelSet()
+				return labelpb.ZLabelSetsFromPromLabels(tsdbStore.LabelSet()...)
 			}),
 			info.WithStoreInfoFunc(func() *infopb.StoreInfo {
 				if httpProbe.IsReady() {
