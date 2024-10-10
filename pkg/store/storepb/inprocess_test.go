@@ -78,7 +78,7 @@ func TestServerAsClient(t *testing.T) {
 							Matchers:                []LabelMatcher{{Value: "wfsdfs", Name: "__name__", Type: LabelMatcher_EQ}},
 							PartialResponseStrategy: PartialResponseStrategy_ABORT,
 						}
-						client, err := ServerAsClient(s, 0).Series(context.TODO(), r)
+						client, err := ServerAsClient(s).Series(context.TODO(), r)
 						testutil.Ok(t, err)
 						var resps []*SeriesResponse
 						for {
@@ -103,7 +103,7 @@ func TestServerAsClient(t *testing.T) {
 							Matchers:                []LabelMatcher{{Value: "wfsdfs", Name: "__name__", Type: LabelMatcher_EQ}},
 							PartialResponseStrategy: PartialResponseStrategy_ABORT,
 						}
-						client, err := ServerAsClient(s, 0).Series(context.TODO(), r)
+						client, err := ServerAsClient(s).Series(context.TODO(), r)
 						testutil.Ok(t, err)
 						var resps []*SeriesResponse
 						for {
@@ -131,7 +131,7 @@ func TestServerAsClient(t *testing.T) {
 							Matchers:                []LabelMatcher{{Value: "wfsdfs", Name: "__name__", Type: LabelMatcher_EQ}},
 							PartialResponseStrategy: PartialResponseStrategy_ABORT,
 						}
-						client, err := ServerAsClient(s, 0).Series(context.TODO(), r)
+						client, err := ServerAsClient(s).Series(context.TODO(), r)
 						testutil.Ok(t, err)
 						var resps []*SeriesResponse
 						for {
@@ -160,7 +160,7 @@ func TestServerAsClient(t *testing.T) {
 							End:                     234,
 							PartialResponseStrategy: PartialResponseStrategy_ABORT,
 						}
-						resp, err := ServerAsClient(s, 0).LabelNames(context.TODO(), r)
+						resp, err := ServerAsClient(s).LabelNames(context.TODO(), r)
 						testutil.Ok(t, err)
 						testutil.Equals(t, s.labelNames, resp)
 						testutil.Equals(t, r, s.labelNamesLastReq)
@@ -175,7 +175,7 @@ func TestServerAsClient(t *testing.T) {
 							End:                     234,
 							PartialResponseStrategy: PartialResponseStrategy_ABORT,
 						}
-						_, err := ServerAsClient(s, 0).LabelNames(context.TODO(), r)
+						_, err := ServerAsClient(s).LabelNames(context.TODO(), r)
 						testutil.NotOk(t, err)
 						testutil.Equals(t, s.err, err)
 					}
@@ -196,7 +196,7 @@ func TestServerAsClient(t *testing.T) {
 							End:                     234,
 							PartialResponseStrategy: PartialResponseStrategy_ABORT,
 						}
-						resp, err := ServerAsClient(s, 0).LabelValues(context.TODO(), r)
+						resp, err := ServerAsClient(s).LabelValues(context.TODO(), r)
 						testutil.Ok(t, err)
 						testutil.Equals(t, s.labelValues, resp)
 						testutil.Equals(t, r, s.labelValuesLastReq)
@@ -212,7 +212,7 @@ func TestServerAsClient(t *testing.T) {
 							End:                     234,
 							PartialResponseStrategy: PartialResponseStrategy_ABORT,
 						}
-						_, err := ServerAsClient(s, 0).LabelValues(context.TODO(), r)
+						_, err := ServerAsClient(s).LabelValues(context.TODO(), r)
 						testutil.NotOk(t, err)
 						testutil.Equals(t, s.err, err)
 					}

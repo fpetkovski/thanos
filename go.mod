@@ -1,8 +1,6 @@
 module github.com/thanos-io/thanos
 
-go 1.22.0
-
-toolchain go1.22.3
+go 1.23.0
 
 require (
 	cloud.google.com/go/storage v1.40.0 // indirect
@@ -75,21 +73,21 @@ require (
 	go.elastic.co/apm v1.11.0
 	go.elastic.co/apm/module/apmot v1.11.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.52.0
-	go.opentelemetry.io/otel v1.27.0
+	go.opentelemetry.io/otel v1.29.0
 	go.opentelemetry.io/otel/bridge/opentracing v1.21.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.27.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.27.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.27.0
-	go.opentelemetry.io/otel/sdk v1.27.0
-	go.opentelemetry.io/otel/trace v1.27.0
+	go.opentelemetry.io/otel/sdk v1.29.0
+	go.opentelemetry.io/otel/trace v1.29.0
 	go.uber.org/atomic v1.11.0
 	go.uber.org/automaxprocs v1.5.3
 	go.uber.org/goleak v1.3.0
-	golang.org/x/crypto v0.24.0
-	golang.org/x/net v0.26.0
-	golang.org/x/sync v0.7.0
-	golang.org/x/text v0.16.0
-	golang.org/x/time v0.5.0
+	golang.org/x/crypto v0.28.0
+	golang.org/x/net v0.30.0
+	golang.org/x/sync v0.8.0
+	golang.org/x/text v0.19.0
+	golang.org/x/time v0.6.0
 	google.golang.org/api v0.183.0 // indirect
 	google.golang.org/genproto v0.0.0-20240528184218-531527333157 // indirect
 	google.golang.org/grpc v1.66.0-dev.0.20240703232254-bdd707e642e4
@@ -119,8 +117,8 @@ require (
 require (
 	capnproto.org/go/capnp/v3 v3.0.0-alpha.30
 	github.com/KimMachineGun/automemlimit v0.6.1
-	github.com/onsi/gomega v1.31.0
-	go.opentelemetry.io/contrib/propagators/autoprop v0.38.0
+	github.com/onsi/gomega v1.34.0
+	go.opentelemetry.io/contrib/propagators/autoprop v0.54.0
 	go4.org/intern v0.0.0-20230525184215-6c62f75575cb
 	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
 )
@@ -194,9 +192,9 @@ require (
 	go.opentelemetry.io/collector/pdata v1.11.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.104.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0 // indirect
-	go.opentelemetry.io/contrib/propagators/ot v1.13.0 // indirect
+	go.opentelemetry.io/contrib/propagators/ot v1.29.0 // indirect
 	go4.org/unsafe/assume-no-moving-gc v0.0.0-20230525183740-e7c30c78aeb2 // indirect
-	golang.org/x/term v0.21.0 // indirect
+	golang.org/x/term v0.25.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240604185151-ef581f913117 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
@@ -289,7 +287,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/common/sigv4 v0.1.0
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/redis/rueidis v1.0.14-go1.18
+	github.com/redis/rueidis v1.0.45-alpha.1
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/rs/xid v1.5.0 // indirect
 	github.com/santhosh-tekuri/jsonschema v1.2.4 // indirect
@@ -307,16 +305,16 @@ require (
 	go.elastic.co/fastjson v1.1.0 // indirect
 	go.mongodb.org/mongo-driver v1.14.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/contrib/propagators/aws v1.13.0 // indirect
-	go.opentelemetry.io/contrib/propagators/b3 v1.13.0 // indirect
-	go.opentelemetry.io/contrib/propagators/jaeger v1.13.0 // indirect
-	go.opentelemetry.io/otel/metric v1.27.0 // indirect
+	go.opentelemetry.io/contrib/propagators/aws v1.29.0 // indirect
+	go.opentelemetry.io/contrib/propagators/b3 v1.29.0 // indirect
+	go.opentelemetry.io/contrib/propagators/jaeger v1.29.0 // indirect
+	go.opentelemetry.io/otel/metric v1.29.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.2.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/mod v0.18.0 // indirect
-	golang.org/x/oauth2 v0.21.0 // indirect
-	golang.org/x/sys v0.21.0
-	golang.org/x/tools v0.22.0 // indirect
+	golang.org/x/mod v0.21.0 // indirect
+	golang.org/x/oauth2 v0.22.0 // indirect
+	golang.org/x/sys v0.26.0
+	golang.org/x/tools v0.24.0 // indirect
 	gonum.org/v1/gonum v0.15.0 // indirect
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/ini.v1 v1.67.0 // indirect
