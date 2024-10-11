@@ -177,6 +177,8 @@ func (s *TSDBStore) Series(r *storepb.SeriesRequest, srv storepb.Store_SeriesSer
 	hints := &storage.SelectHints{
 		Start:           r.MinTime,
 		End:             r.MaxTime,
+                 // The Thanos engine will already skip samples that are outside the time range. 
+                 // No need to trim and re-encode chunks just because of that.
 		DisableTrimming: true,
 	}
 	set := q.Select(srv.Context(), true, hints, matchers...)
