@@ -551,13 +551,6 @@ func newAsyncRespSet(
 		}
 	}
 
-	closeSeries := func() {
-		cancel()
-		err := cl.CloseSend()
-		if err != nil {
-			level.Warn(logger).Log("msg", "closing client stream", "err", err)
-		}
-	}
 	switch retrievalStrategy {
 	case LazyRetrieval:
 		return newLazyRespSet(
@@ -566,7 +559,7 @@ func newAsyncRespSet(
 			frameTimeout,
 			st.String(),
 			st.LabelSets(),
-			closeSeries,
+			cancel,
 			cl,
 			shardMatcher,
 			applySharding,
@@ -579,7 +572,7 @@ func newAsyncRespSet(
 			frameTimeout,
 			st.String(),
 			st.LabelSets(),
-			closeSeries,
+			cancel,
 			cl,
 			shardMatcher,
 			applySharding,
@@ -600,6 +593,7 @@ func (l *lazyRespSet) Close() {
 	l.dataOrFinishEvent.Signal()
 
 	l.shardMatcher.Close()
+	_ = l.cl.CloseSend()
 }
 
 // eagerRespSet is a SeriesSet that blocks until all data is retrieved from
@@ -789,6 +783,7 @@ func (l *eagerRespSet) Close() {
 		l.closeSeries()
 	}
 	l.shardMatcher.Close()
+	_ = l.cl.CloseSend()
 }
 
 func (l *eagerRespSet) At() *storepb.SeriesResponse {

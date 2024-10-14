@@ -1356,8 +1356,6 @@ func (s *BucketStore) Series(req *storepb.SeriesRequest, srv storepb.Store_Serie
 				extLsetToRemove,
 			)
 
-			defer blockClient.Close()
-
 			g.Go(func() error {
 
 				span, _ := tracing.StartSpan(gctx, "bucket_store_block_series", tracing.Tags{
