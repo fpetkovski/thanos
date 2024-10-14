@@ -978,6 +978,11 @@ func (b *blockSeriesClient) Close() {
 	runutil.CloseWithLogOnErr(b.logger, b.indexr, "series block")
 }
 
+func (b *blockSeriesClient) CloseSend() error {
+	b.Close()
+	return nil
+}
+
 func (b *blockSeriesClient) MergeStats(stats *queryStats) *queryStats {
 	stats = stats.merge(b.indexr.stats)
 	if !b.skipChunks {
@@ -1350,8 +1355,6 @@ func (s *BucketStore) Series(req *storepb.SeriesRequest, srv storepb.Store_Serie
 				s.metrics.chunkFetchDuration,
 				extLsetToRemove,
 			)
-
-			defer blockClient.Close()
 
 			g.Go(func() error {
 
