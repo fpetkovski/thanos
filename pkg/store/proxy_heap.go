@@ -513,9 +513,10 @@ func newAsyncRespSet(
 	emptyStreamResponses prometheus.Counter,
 ) (respSet, error) {
 
-	var span opentracing.Span
-	var closeSeries context.CancelFunc
-
+	var (
+		span        opentracing.Span
+		closeSeries context.CancelFunc
+	)
 	storeAddr, isLocalStore := st.Addr()
 	storeID := st.String()
 	if storeID == "" {
@@ -596,7 +597,7 @@ func newAsyncRespSet(
 	}
 }
 
-func (l *lazyRespSet) Close() {
+func (l *lazyRespSet) Close() error {
 	l.bufferedResponsesMtx.Lock()
 	defer l.bufferedResponsesMtx.Unlock()
 
@@ -605,6 +606,7 @@ func (l *lazyRespSet) Close() {
 	l.dataOrFinishEvent.Signal()
 
 	l.shardMatcher.Close()
+	return l.cl.CloseSend()
 }
 
 // eagerRespSet is a SeriesSet that blocks until all data is retrieved from
@@ -795,8 +797,9 @@ func sortWithoutLabels(set []*storepb.SeriesResponse, labelsToRemove map[string]
 	})
 }
 
-func (l *eagerRespSet) Close() {
+func (l *eagerRespSet) Close() error {
 	l.shardMatcher.Close()
+	return l.cl.CloseSend()
 }
 
 func (l *eagerRespSet) At() *storepb.SeriesResponse {
@@ -826,7 +829,7 @@ func (l *eagerRespSet) Empty() bool {
 func (l *eagerRespSet) StoreID() string { return l.storeName }
 
 type respSet interface {
-	Close()
+	io.Closer
 	At() *storepb.SeriesResponse
 	Next() bool
 	StoreID() string
