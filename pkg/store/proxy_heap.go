@@ -410,19 +410,8 @@ func newLazyRespSet(
 				defer t.Reset(frameTimeout)
 			}
 
-			select {
-			case <-l.ctx.Done():
-				err := errors.Wrapf(l.ctx.Err(), "failed to receive any data from %s", st)
-				l.span.SetTag("err", err.Error())
-
-				l.bufferedResponsesMtx.Lock()
-				l.bufferedResponses = append(l.bufferedResponses, storepb.NewWarnSeriesResponse(err))
-				l.noMoreData = true
-				l.dataOrFinishEvent.Signal()
-				l.bufferedResponsesMtx.Unlock()
-				return false
-			default:
-				resp, err := cl.Recv()
+			resp, err := cl.Recv()
+			if err != nil {
 				if err == io.EOF {
 					l.bufferedResponsesMtx.Lock()
 					l.noMoreData = true
@@ -431,45 +420,43 @@ func newLazyRespSet(
 					return false
 				}
 
-				if err != nil {
-					// TODO(bwplotka): Return early on error. Don't wait of dedup, merge and sort if partial response is disabled.
-					var rerr error
-					if t != nil && !t.Stop() && errors.Is(err, context.Canceled) {
-						// Most likely the per-Recv timeout has been reached.
-						// There's a small race between canceling and the Recv()
-						// but this is most likely true.
-						rerr = errors.Wrapf(err, "failed to receive any data in %s from %s", l.frameTimeout, st)
-					} else {
-						rerr = errors.Wrapf(err, "receive series from %s", st)
+				var rerr error
+				// If timer is already stopped
+				if t != nil && !t.Stop() {
+					if t.C != nil {
+						<-t.C // Drain the channel if it was already stopped.
 					}
-
-					l.span.SetTag("err", rerr.Error())
-
-					l.bufferedResponsesMtx.Lock()
-					l.bufferedResponses = append(l.bufferedResponses, storepb.NewWarnSeriesResponse(rerr))
-					l.noMoreData = true
-					l.dataOrFinishEvent.Signal()
-					l.bufferedResponsesMtx.Unlock()
-					return false
+					rerr = errors.Wrapf(err, "failed to receive any data in %s from %s", l.frameTimeout, st)
+				} else {
+					rerr = errors.Wrapf(err, "receive series from %s", st)
 				}
 
-				numResponses++
-				bytesProcessed += resp.Size()
-
-				if resp.GetSeries() != nil && applySharding && !shardMatcher.MatchesZLabels(resp.GetSeries().Labels) {
-					return true
-				}
-
-				if resp.GetSeries() != nil {
-					seriesStats.Count(resp.GetSeries())
-				}
+				l.span.SetTag("err", rerr.Error())
 
 				l.bufferedResponsesMtx.Lock()
-				l.bufferedResponses = append(l.bufferedResponses, resp)
+				l.bufferedResponses = append(l.bufferedResponses, storepb.NewWarnSeriesResponse(rerr))
+				l.noMoreData = true
 				l.dataOrFinishEvent.Signal()
 				l.bufferedResponsesMtx.Unlock()
+				return false
+			}
+
+			numResponses++
+			bytesProcessed += resp.Size()
+
+			if resp.GetSeries() != nil && applySharding && !shardMatcher.MatchesZLabels(resp.GetSeries().Labels) {
 				return true
 			}
+
+			if resp.GetSeries() != nil {
+				seriesStats.Count(resp.GetSeries())
+			}
+
+			l.bufferedResponsesMtx.Lock()
+			l.bufferedResponses = append(l.bufferedResponses, resp)
+			l.dataOrFinishEvent.Signal()
+			l.bufferedResponsesMtx.Unlock()
+			return true
 		}
 
 		var t *time.Timer
@@ -514,8 +501,8 @@ func newAsyncRespSet(
 ) (respSet, error) {
 
 	var (
-		span        opentracing.Span
-		closeSeries context.CancelFunc
+		span   opentracing.Span
+		cancel context.CancelFunc
 	)
 	storeAddr, isLocalStore := st.Addr()
 	storeID := st.String()
@@ -533,7 +520,7 @@ func newAsyncRespSet(
 		"store.addr":     storeAddr,
 	})
 
-	seriesCtx, closeSeries = context.WithCancel(seriesCtx)
+	seriesCtx, cancel = context.WithCancel(seriesCtx)
 
 	shardMatcher := shardInfo.Matcher(buffers)
 
@@ -548,7 +535,7 @@ func newAsyncRespSet(
 
 		span.SetTag("err", err.Error())
 		span.Finish()
-		closeSeries()
+		cancel()
 		return nil, err
 	}
 
@@ -564,6 +551,13 @@ func newAsyncRespSet(
 		}
 	}
 
+	closeSeries := func() {
+		cancel()
+		err := cl.CloseSend()
+		if err != nil {
+			level.Warn(logger).Log("msg", "closing client stream", "err", err)
+		}
+	}
 	switch retrievalStrategy {
 	case LazyRetrieval:
 		return newLazyRespSet(
@@ -597,7 +591,7 @@ func newAsyncRespSet(
 	}
 }
 
-func (l *lazyRespSet) Close() error {
+func (l *lazyRespSet) Close() {
 	l.bufferedResponsesMtx.Lock()
 	defer l.bufferedResponsesMtx.Unlock()
 
@@ -606,7 +600,6 @@ func (l *lazyRespSet) Close() error {
 	l.dataOrFinishEvent.Signal()
 
 	l.shardMatcher.Close()
-	return l.cl.CloseSend()
 }
 
 // eagerRespSet is a SeriesSet that blocks until all data is retrieved from
@@ -670,7 +663,7 @@ func newEagerRespSet(
 	ret.wg.Add(1)
 
 	// Start a goroutine and immediately buffer everything.
-	go func(storeName string, l *eagerRespSet) {
+	go func(l *eagerRespSet) {
 		seriesStats := &storepb.SeriesStatsCounter{}
 		bytesProcessed := 0
 
@@ -697,48 +690,43 @@ func newEagerRespSet(
 				defer t.Reset(frameTimeout)
 			}
 
-			select {
-			case <-l.ctx.Done():
-				err := errors.Wrapf(l.ctx.Err(), "failed to receive any data from %s", storeName)
-				l.bufferedResponses = append(l.bufferedResponses, storepb.NewWarnSeriesResponse(err))
-				l.span.SetTag("err", err.Error())
-				return false
-			default:
-				resp, err := cl.Recv()
+			resp, err := cl.Recv()
+			if err != nil {
 				if err == io.EOF {
 					return false
 				}
-				if err != nil {
-					// TODO(bwplotka): Return early on error. Don't wait of dedup, merge and sort if partial response is disabled.
-					var rerr error
-					if t != nil && !t.Stop() && errors.Is(err, context.Canceled) {
-						// Most likely the per-Recv timeout has been reached.
-						// There's a small race between canceling and the Recv()
-						// but this is most likely true.
-						rerr = errors.Wrapf(err, "failed to receive any data in %s from %s", l.frameTimeout, storeName)
-					} else {
-						rerr = errors.Wrapf(err, "receive series from %s", storeName)
+
+				var rerr error
+				// If timer is already stopped
+				if t != nil && !t.Stop() {
+					if t.C != nil {
+						<-t.C // Drain the channel if it was already stopped.
 					}
-					l.bufferedResponses = append(l.bufferedResponses, storepb.NewWarnSeriesResponse(rerr))
-					l.span.SetTag("err", rerr.Error())
-					return false
+					rerr = errors.Wrapf(err, "failed to receive any data in %s from %s", l.frameTimeout, storeName)
+				} else {
+					rerr = errors.Wrapf(err, "receive series from %s", storeName)
 				}
 
-				numResponses++
-				bytesProcessed += resp.Size()
+				l.bufferedResponses = append(l.bufferedResponses, storepb.NewWarnSeriesResponse(rerr))
+				l.span.SetTag("err", rerr.Error())
+				return false
+			}
 
-				if resp.GetSeries() != nil && applySharding && !shardMatcher.MatchesZLabels(resp.GetSeries().Labels) {
-					return true
-				}
+			numResponses++
+			bytesProcessed += resp.Size()
 
-				if resp.GetSeries() != nil {
-					seriesStats.Count(resp.GetSeries())
-				}
-
-				l.bufferedResponses = append(l.bufferedResponses, resp)
+			if resp.GetSeries() != nil && applySharding && !shardMatcher.MatchesZLabels(resp.GetSeries().Labels) {
 				return true
 			}
+
+			if resp.GetSeries() != nil {
+				seriesStats.Count(resp.GetSeries())
+			}
+
+			l.bufferedResponses = append(l.bufferedResponses, resp)
+			return true
 		}
+
 		var t *time.Timer
 		if frameTimeout > 0 {
 			t = time.AfterFunc(frameTimeout, closeSeries)
@@ -756,8 +744,7 @@ func newEagerRespSet(
 		if len(l.removeLabels) > 0 {
 			sortWithoutLabels(l.bufferedResponses, l.removeLabels)
 		}
-
-	}(storeName, ret)
+	}(ret)
 
 	return ret
 }
@@ -797,9 +784,11 @@ func sortWithoutLabels(set []*storepb.SeriesResponse, labelsToRemove map[string]
 	})
 }
 
-func (l *eagerRespSet) Close() error {
+func (l *eagerRespSet) Close() {
+	if l.closeSeries != nil {
+		l.closeSeries()
+	}
 	l.shardMatcher.Close()
-	return l.cl.CloseSend()
 }
 
 func (l *eagerRespSet) At() *storepb.SeriesResponse {
@@ -829,7 +818,7 @@ func (l *eagerRespSet) Empty() bool {
 func (l *eagerRespSet) StoreID() string { return l.storeName }
 
 type respSet interface {
-	io.Closer
+	Close()
 	At() *storepb.SeriesResponse
 	Next() bool
 	StoreID() string

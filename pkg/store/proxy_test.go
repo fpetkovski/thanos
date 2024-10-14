@@ -2284,6 +2284,15 @@ func TestProxyStore_NotLeakingOnPrematureFinish(t *testing.T) {
 			},
 		}))
 	})
+	t.Run("client timeout", func(t *testing.T) {
+		ctx := context.Background()
+		testutil.NotOk(t, p.Series(&storepb.SeriesRequest{Matchers: []storepb.LabelMatcher{{}}, PartialResponseStrategy: storepb.PartialResponseStrategy_ABORT}, &mockedSeriesServer{
+			ctx: ctx,
+			send: func(*storepb.SeriesResponse) error {
+				return nil
+			},
+		}))
+	})
 }
 
 type storeServerStub struct {
