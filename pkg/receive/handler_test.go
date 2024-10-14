@@ -256,7 +256,7 @@ func newTestHandlerHashring(
 				listener = bufconn.Listen(1024)
 				handler  = NewCapNProtoHandler(log.NewNopLogger(), writer)
 			)
-			srv := NewCapNProtoServer(listener, handler)
+			srv := NewCapNProtoServer(listener, handler, log.NewNopLogger())
 			client := writecapnp.NewRemoteWriteClient(listener, logger)
 			peer = newPeerWorker(client, prometheus.NewHistogram(prometheus.HistogramOpts{}), 1)
 			closers = append(closers, func() error {
