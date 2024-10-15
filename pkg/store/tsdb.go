@@ -174,7 +174,14 @@ func (s *TSDBStore) Series(r *storepb.SeriesRequest, srv storepb.Store_SeriesSer
 		defer runutil.CloseWithLogOnErr(s.logger, q, "close tsdb chunk querier series")
 	}
 
-	set := q.Select(srv.Context(), true, nil, matchers...)
+	hints := &storage.SelectHints{
+		Start: r.MinTime,
+		End:   r.MaxTime,
+		// The promql-engine will already skip samples that are outside the time range.
+		// No need to trim and re-encode chunks just because of that.
+		DisableTrimming: true,
+	}
+	set := q.Select(srv.Context(), true, hints, matchers...)
 
 	shardMatcher := r.ShardInfo.Matcher(&s.buffers)
 	defer shardMatcher.Close()
