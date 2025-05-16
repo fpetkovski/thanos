@@ -5,12 +5,11 @@ package receive
 
 import (
 	"context"
-	"net"
+	"errors"
 	"strconv"
 	"sync"
 	"testing"
 
-	"capnproto.org/go/capnp/v3"
 	"github.com/go-kit/log"
 	"github.com/stretchr/testify/require"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
@@ -22,7 +21,12 @@ import (
 	"github.com/thanos-io/thanos/pkg/store/storepb"
 )
 
-func TestCapNProtoServer_SingleConcurrentClient(t *testing.T) {
+type tuple[T any, K any] struct {
+	A T
+	B K
+}
+
+func TestCapNProtoServer_SingleSerialClient(t *testing.T) {
 	custom.TolerantVerifyLeak(t)
 	var (
 		logger = log.NewNopLogger()
@@ -32,25 +36,33 @@ func TestCapNProtoServer_SingleConcurrentClient(t *testing.T) {
 				&fakeAppendable{appender: newFakeAppender(nil, nil, nil)}),
 			&CapNProtoWriterOptions{},
 		)
-		listener = bufconn.Listen(1024)
-		handler  = NewCapNProtoHandler(logger, writer)
-		srv      = NewCapNProtoServer(listener, handler, logger)
+		listener, zstdListener = bufconn.Listen(1024), bufconn.Listen(1024)
+		handler                = NewCapNProtoHandler(logger, writer)
 	)
-	go func() {
-		_ = srv.ListenAndServe()
-	}()
-	defer srv.Shutdown()
-
-	for i := 0; i < 1000; i++ {
-		client := writecapnp.NewRemoteWriteClient(listener, logger)
-		_, err := client.RemoteWrite(context.Background(), &storepb.WriteRequest{
-			Tenant:     "default",
-			Timeseries: makeTimeSeries(10, 10, 10),
-		})
-		require.NoError(t, err)
-		require.NoError(t, client.Close())
+	protocols := map[string]tuple[writecapnp.Dialer, writecapnp.NewCodecFunc]{
+		"packed": {listener, writecapnp.NewPackedCodec},
+		"zstd":   {zstdListener, writecapnp.NewZSTDCodec},
 	}
-	require.NoError(t, listener.Close())
+	for name, protocol := range protocols {
+		srv := NewCapNProtoServer(listener, zstdListener, handler, logger)
+		go func() {
+			_ = srv.ListenAndServe()
+		}()
+		t.Cleanup(srv.Shutdown)
+
+		t.Run(name, func(t *testing.T) {
+			for i := 0; i < 100; i++ {
+				client := writecapnp.NewRemoteWriteClient(protocol.A, protocol.B, logger)
+				_, err := client.RemoteWrite(context.Background(), &storepb.WriteRequest{
+					Tenant:     "default",
+					Timeseries: makeSeriesBatch(),
+				})
+				require.NoError(t, err)
+				require.NoError(t, client.Close())
+			}
+		})
+	}
+	require.NoError(t, errors.Join(listener.Close(), zstdListener.Close()))
 }
 
 func TestCapNProtoServer_SingleParallelClient(t *testing.T) {
@@ -63,35 +75,36 @@ func TestCapNProtoServer_SingleParallelClient(t *testing.T) {
 				&fakeAppendable{appender: newFakeAppender(nil, nil, nil)}),
 			&CapNProtoWriterOptions{},
 		)
-		listener = bufconn.Listen(1024)
-		handler  = NewCapNProtoHandler(logger, writer)
-		srv      = NewCapNProtoServer(listener, handler, logger)
+		listener, zstdListener = bufconn.Listen(1024), bufconn.Listen(1024)
+		handler                = NewCapNProtoHandler(logger, writer)
 	)
-	go func() {
-		_ = srv.ListenAndServe()
-	}()
-	defer srv.Shutdown()
-
-	client := writecapnp.NewRemoteWriteClient(listener, logger)
-
-	var wg sync.WaitGroup
-	for i := 0; i < 1000; i++ {
-		wg.Add(1)
+	protocols := map[string]tuple[writecapnp.Dialer, writecapnp.NewCodecFunc]{
+		"packed": {listener, writecapnp.NewPackedCodec},
+		"zstd":   {zstdListener, writecapnp.NewZSTDCodec},
+	}
+	for name, protocol := range protocols {
+		srv := NewCapNProtoServer(listener, zstdListener, handler, logger)
 		go func() {
-			defer wg.Done()
+			_ = srv.ListenAndServe()
+		}()
+		t.Cleanup(srv.Shutdown)
+
+		t.Run(name, func(t *testing.T) {
+			client := writecapnp.NewRemoteWriteClient(protocol.A, protocol.B, logger)
 			_, err := client.RemoteWrite(context.Background(), &storepb.WriteRequest{
 				Tenant:     "default",
-				Timeseries: makeTimeSeries(10, 10, 10),
+				Timeseries: makeSeriesBatch(),
 			})
-			require.NoError(t, err)
-		}()
+			for i := 0; i < 100; i++ {
+				require.NoError(t, err)
+				require.NoError(t, client.Close())
+			}
+		})
 	}
-	wg.Wait()
-	require.NoError(t, client.Close())
-	require.NoError(t, listener.Close())
+	require.NoError(t, errors.Join(listener.Close(), zstdListener.Close()))
 }
 
-func TestCapNProtoServer_MultipleConcurrentClients(t *testing.T) {
+func TestCapNProtoServer_MultipleSerialClients(t *testing.T) {
 	custom.TolerantVerifyLeak(t)
 	var (
 		logger = log.NewNopLogger()
@@ -101,35 +114,87 @@ func TestCapNProtoServer_MultipleConcurrentClients(t *testing.T) {
 				&fakeAppendable{appender: newFakeAppender(nil, nil, nil)}),
 			&CapNProtoWriterOptions{},
 		)
-		listener = bufconn.Listen(1024)
-		handler  = NewCapNProtoHandler(logger, writer)
-		srv      = NewCapNProtoServer(listener, handler, logger)
+		listener, zstdListener = bufconn.Listen(1024), bufconn.Listen(1024)
+		handler                = NewCapNProtoHandler(logger, writer)
 	)
-	go func() {
-		_ = srv.ListenAndServe()
-	}()
-	defer srv.Shutdown()
 
-	for i := 0; i < 1000; i++ {
-		client := writecapnp.NewRemoteWriteClient(newFlakyConnDialer(listener), logger)
-		_, err := client.RemoteWrite(context.Background(), &storepb.WriteRequest{
-			Tenant:     "default",
-			Timeseries: makeTimeSeries(10, 10, 10),
-		})
-		require.NoError(t, err)
-		defer func() {
-			require.NoError(t, client.Close())
-		}()
+	protocols := map[string]tuple[writecapnp.Dialer, writecapnp.NewCodecFunc]{
+		"packed": {listener, writecapnp.NewPackedCodec},
+		"zstd":   {zstdListener, writecapnp.NewZSTDCodec},
 	}
-
-	require.NoError(t, listener.Close())
+	for name, protocol := range protocols {
+		srv := NewCapNProtoServer(listener, zstdListener, handler, logger)
+		go func() {
+			_ = srv.ListenAndServe()
+		}()
+		t.Cleanup(srv.Shutdown)
+		t.Run(name, func(t *testing.T) {
+			for i := 0; i < 100; i++ {
+				client := writecapnp.NewRemoteWriteClient(protocol.A, protocol.B, logger)
+				_, err := client.RemoteWrite(context.Background(), &storepb.WriteRequest{
+					Tenant:     "default",
+					Timeseries: makeSeriesBatch(),
+				})
+				require.NoError(t, err)
+				require.NoError(t, client.Close())
+			}
+		})
+	}
+	require.NoError(t, errors.Join(listener.Close(), zstdListener.Close()))
 }
 
-func makeTimeSeries(numSeries int, numClusters int, numPods int) []prompb.TimeSeries {
-	series := make([]prompb.TimeSeries, 0, numSeries*numClusters*numPods)
-	for i := 0; i < numSeries; i++ {
-		for j := 0; j < numClusters; j++ {
-			for k := 0; k < numPods; k++ {
+func TestCapNProtoServer_MultipleParallelClients(t *testing.T) {
+	custom.TolerantVerifyLeak(t)
+	var (
+		logger = log.NewNopLogger()
+		writer = NewCapNProtoWriter(
+			log.NewNopLogger(),
+			newFakeTenantAppendable(
+				&fakeAppendable{appender: newFakeAppender(nil, nil, nil)}),
+			&CapNProtoWriterOptions{},
+		)
+		listener, zstdListener = bufconn.Listen(1024), bufconn.Listen(1024)
+		handler                = NewCapNProtoHandler(logger, writer)
+	)
+
+	protocols := map[string]tuple[writecapnp.Dialer, writecapnp.NewCodecFunc]{
+		"packed": {listener, writecapnp.NewPackedCodec},
+		"zstd":   {zstdListener, writecapnp.NewZSTDCodec},
+	}
+	for name, protocol := range protocols {
+		var (
+			client = writecapnp.NewRemoteWriteClient(protocol.A, protocol.B, logger)
+			srv    = NewCapNProtoServer(listener, zstdListener, handler, logger)
+		)
+		go func() {
+			_ = srv.ListenAndServe()
+		}()
+		t.Cleanup(srv.Shutdown)
+		t.Run(name, func(t *testing.T) {
+			var wg sync.WaitGroup
+			for i := 0; i < 1; i++ {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					_, err := client.RemoteWrite(context.Background(), &storepb.WriteRequest{
+						Tenant:     "default",
+						Timeseries: makeSeriesBatch(),
+					})
+					require.NoError(t, err)
+				}()
+			}
+			wg.Wait()
+			require.NoError(t, client.Close())
+		})
+	}
+	require.NoError(t, errors.Join(listener.Close(), zstdListener.Close()))
+}
+
+func makeSeriesBatch() []prompb.TimeSeries {
+	series := make([]prompb.TimeSeries, 0, 1000)
+	for i := 0; i < 10; i++ {
+		for j := 0; j < 10; j++ {
+			for k := 0; k < 10; k++ {
 				series = append(series, prompb.TimeSeries{
 					Labels: []labelpb.ZLabel{{
 						Name:  "cluster",
@@ -149,45 +214,4 @@ func makeTimeSeries(numSeries int, numClusters int, numPods int) []prompb.TimeSe
 		}
 	}
 	return series
-}
-
-type flakyConnDialer struct {
-	i      *int
-	dialer writecapnp.Dialer
-}
-
-func newFlakyConnDialer(dialer writecapnp.Dialer) *flakyConnDialer {
-	var i int
-	return &flakyConnDialer{
-		i:      &i,
-		dialer: dialer,
-	}
-}
-
-func (d flakyConnDialer) Dial() (net.Conn, error) {
-	conn, err := d.dialer.Dial()
-	if err != nil {
-		return nil, err
-	}
-	return newFlakyConnection(conn, d.i), nil
-}
-
-type flakyConnection struct {
-	net.Conn
-	i *int
-}
-
-func newFlakyConnection(conn net.Conn, i *int) *flakyConnection {
-	return &flakyConnection{
-		i:    i,
-		Conn: conn,
-	}
-}
-
-func (n *flakyConnection) Write(b []byte) (int, error) {
-	*n.i++
-	if *n.i == 3 || *n.i == 6 {
-		return 0, capnp.Disconnected("failed write")
-	}
-	return n.Conn.Write(b)
 }

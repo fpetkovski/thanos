@@ -1,8 +1,12 @@
+// Copyright (c) The Thanos Authors.
+// Licensed under the Apache License 2.0.
+
 package writecapnp_test
 
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 	"testing"
 
 	"capnproto.org/go/capnp/v3"
@@ -19,7 +23,10 @@ func TestCodec(t *testing.T) {
 
 	arena := capnp.SingleSegment(nil)
 	defer arena.Release()
-	msg, err := makeMessage(arena)
+	msg, err := makeMessage(arena, []prompb.TimeSeries{{
+		Labels:  []labelpb.ZLabel{{Name: "test-name", Value: "test-val"}},
+		Samples: []prompb.Sample{{Value: 1, Timestamp: 2}},
+	}})
 	require.NoError(t, err)
 
 	for range 100 {
@@ -46,7 +53,36 @@ func TestCodec(t *testing.T) {
 	}
 }
 
-func makeMessage(arena *capnp.SingleSegmentArena) (*capnp.Message, error) {
+func BenchmarkCodec(b *testing.B) {
+	arena := capnp.SingleSegment(nil)
+	defer arena.Release()
+	msg, err := makeMessage(arena, makeTimeSeries(10, 10, 10))
+	require.NoError(b, err)
+
+	b.Run("default_codec", func(b *testing.B) {
+		b.ReportAllocs()
+		for range b.N {
+			buffer := bytes.NewBuffer(nil)
+			buffer.Reset()
+			defaultCodec := capnp.NewEncoder(buffer)
+			require.NoError(b, defaultCodec.Encode(msg))
+			b.ReportMetric(float64(buffer.Len()), "default")
+		}
+	})
+	b.Run("zstd_codec", func(b *testing.B) {
+		b.ReportAllocs()
+		buffer := bytes.NewBuffer(nil)
+		zstdCodec, err := writecapnp.NewZSTDCodec(nopCloser{buffer})
+		require.NoError(b, err)
+		for range b.N {
+			buffer.Reset()
+			require.NoError(b, zstdCodec.Encode(msg))
+			b.ReportMetric(float64(buffer.Len()), "compressed_size")
+		}
+	})
+}
+
+func makeMessage(arena *capnp.SingleSegmentArena, ts []prompb.TimeSeries) (*capnp.Message, error) {
 	msg, seg, err := capnp.NewMessage(arena)
 	if err != nil {
 		return nil, err
@@ -55,10 +91,7 @@ func makeMessage(arena *capnp.SingleSegmentArena) (*capnp.Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := writecapnp.BuildInto(wr, "test", []prompb.TimeSeries{{
-		Labels:  []labelpb.ZLabel{{Name: "test-name", Value: "test-val"}},
-		Samples: []prompb.Sample{{Value: 1, Timestamp: 2}},
-	}}); err != nil {
+	if err := writecapnp.BuildInto(wr, "test", ts); err != nil {
 		return nil, err
 	}
 	return msg, nil
@@ -77,4 +110,30 @@ func (c nopCloser) Read(b []byte) (int, error) {
 func (c nopCloser) Close() error {
 	fmt.Println(c.Buffer.String())
 	return nil
+}
+
+func makeTimeSeries(numSeries int, numClusters int, numPods int) []prompb.TimeSeries {
+	series := make([]prompb.TimeSeries, 0, numSeries*numClusters*numPods)
+	for i := 0; i < numSeries; i++ {
+		for j := 0; j < numClusters; j++ {
+			for k := 0; k < numPods; k++ {
+				series = append(series, prompb.TimeSeries{
+					Labels: []labelpb.ZLabel{{
+						Name:  "cluster",
+						Value: strconv.Itoa(j),
+					}, {
+						Name:  "pod",
+						Value: strconv.Itoa(k),
+					}, {
+						Name:  "series",
+						Value: strconv.Itoa(i),
+					}},
+					Samples: []prompb.Sample{
+						{Value: 1, Timestamp: 2},
+					},
+				})
+			}
+		}
+	}
+	return series
 }

@@ -5,6 +5,7 @@ package receive
 
 import (
 	"context"
+	"io"
 	"net"
 
 	"capnproto.org/go/capnp/v3"
@@ -14,36 +15,57 @@ import (
 	"github.com/pkg/errors"
 	"github.com/thanos-io/thanos/pkg/receive/writecapnp"
 	"github.com/thanos-io/thanos/pkg/runutil"
+	"golang.org/x/sync/errgroup"
 )
 
 type CapNProtoServer struct {
-	listener net.Listener
-	server   writecapnp.Writer
-	logger   log.Logger
+	listener     net.Listener
+	zstdListener net.Listener
+
+	server writecapnp.Writer
+	logger log.Logger
 }
 
-func NewCapNProtoServer(listener net.Listener, handler *CapNProtoHandler, logger log.Logger) *CapNProtoServer {
+func NewCapNProtoServer(
+	listener net.Listener,
+	zstdListener net.Listener,
+	handler *CapNProtoHandler,
+	logger log.Logger,
+) *CapNProtoServer {
 	return &CapNProtoServer{
-		listener: listener,
-		server:   writecapnp.Writer_ServerToClient(handler),
-		logger:   logger,
+		listener:     listener,
+		zstdListener: zstdListener,
+		server:       writecapnp.Writer_ServerToClient(handler),
+		logger:       logger,
 	}
 }
 
 func (c *CapNProtoServer) ListenAndServe() error {
-	for {
-		conn, err := c.listener.Accept()
-		if err != nil {
-			return err
-		}
-		codec, err := writecapnp.NewZSTDCodec(conn)
-		if err != nil {
-			return err
-		}
+	var g errgroup.Group
+	g.Go(func() error {
+		return c.listenWithCodec(c.listener, func(closer io.ReadWriteCloser) (rpc.Codec, error) {
+			return writecapnp.NewPackedCodec(closer)
+		})
+	})
+	g.Go(func() error {
+		return c.listenWithCodec(c.zstdListener, writecapnp.NewZSTDCodec)
+	})
+	return g.Wait()
+}
 
+func (c *CapNProtoServer) listenWithCodec(listener net.Listener, newCodecFunc writecapnp.NewCodecFunc) error {
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			return err
+		}
+		codec, err := newCodecFunc(conn)
+		if err != nil {
+			return err
+		}
 		go func() {
 			defer runutil.CloseWithLogOnErr(c.logger, codec, "receive capnp codec")
-			
+
 			rpcConn := rpc.NewConn(rpc.NewTransport(codec), &rpc.Options{
 				// The BootstrapClient is the RPC interface that will be made available
 				// to the remote endpoint by default.

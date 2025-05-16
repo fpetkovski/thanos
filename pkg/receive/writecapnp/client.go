@@ -5,6 +5,7 @@ package writecapnp
 
 import (
 	"context"
+	"io"
 	"net"
 	"sync"
 
@@ -24,6 +25,8 @@ import (
 type Dialer interface {
 	Dial() (net.Conn, error)
 }
+
+type NewCodecFunc func(closer io.ReadWriteCloser) (rpc.Codec, error)
 
 type TCPDialer struct {
 	address string
@@ -48,17 +51,23 @@ func (t TCPDialer) Dial() (net.Conn, error) {
 type RemoteWriteClient struct {
 	mu sync.Mutex
 
-	dialer Dialer
-	codec  rpc.Codec
+	newCodec NewCodecFunc
+	dialer   Dialer
+	codec    rpc.Codec
 
 	writer Writer
 	logger log.Logger
 }
 
-func NewRemoteWriteClient(dialer Dialer, logger log.Logger) *RemoteWriteClient {
+func NewRemoteWriteClient(
+	dialer Dialer,
+	newCodec NewCodecFunc,
+	logger log.Logger,
+) *RemoteWriteClient {
 	return &RemoteWriteClient{
-		dialer: dialer,
-		logger: logger,
+		dialer:   dialer,
+		newCodec: newCodec,
+		logger:   logger,
 	}
 }
 
@@ -130,7 +139,7 @@ func (r *RemoteWriteClient) connect(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to dial peer")
 	}
-	codec, err := NewZSTDCodec(conn)
+	codec, err := r.newCodec(conn)
 	if err != nil {
 		return err
 	}

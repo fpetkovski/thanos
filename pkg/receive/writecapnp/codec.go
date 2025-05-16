@@ -1,3 +1,6 @@
+// Copyright (c) The Thanos Authors.
+// Licensed under the Apache License 2.0.
+
 package writecapnp
 
 import (
@@ -6,8 +9,23 @@ import (
 	"io"
 
 	"capnproto.org/go/capnp/v3"
+	"capnproto.org/go/capnp/v3/rpc"
 	"github.com/klauspost/compress/zstd"
 )
+
+type PackedCodec struct {
+	*capnp.Encoder
+	*capnp.Decoder
+	io.Closer
+}
+
+func NewPackedCodec(rwc io.ReadWriteCloser) (rpc.Codec, error) {
+	return &PackedCodec{
+		Encoder: capnp.NewPackedEncoder(rwc),
+		Decoder: capnp.NewPackedDecoder(rwc),
+		Closer:  rwc,
+	}, nil
+}
 
 type ZSTDCodec struct {
 	rwc io.ReadWriteCloser
@@ -19,7 +37,7 @@ type ZSTDCodec struct {
 	compressed *bytes.Buffer
 }
 
-func NewZSTDCodec(rwc io.ReadWriteCloser) (*ZSTDCodec, error) {
+func NewZSTDCodec(rwc io.ReadWriteCloser) (rpc.Codec, error) {
 	zstdWriter, err := zstd.NewWriter(rwc, zstd.WithEncoderConcurrency(1))
 	if err != nil {
 		return nil, err
@@ -59,5 +77,5 @@ func (z *ZSTDCodec) Decode() (*capnp.Message, error) {
 }
 
 func (z *ZSTDCodec) Close() error {
-	return errors.Join(z.zstdWriter.Flush(), z.zstdWriter.Close(), z.rwc.Close())
+	return errors.Join(z.zstdWriter.Close(), z.rwc.Close())
 }
