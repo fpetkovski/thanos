@@ -12,7 +12,6 @@ import (
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/pkg/errors"
-
 	"github.com/thanos-io/thanos/pkg/receive/writecapnp"
 	"github.com/thanos-io/thanos/pkg/runutil"
 )
@@ -37,10 +36,15 @@ func (c *CapNProtoServer) ListenAndServe() error {
 		if err != nil {
 			return err
 		}
+		codec, err := writecapnp.NewZSTDCodec(conn)
+		if err != nil {
+			return err
+		}
 
 		go func() {
-			defer runutil.CloseWithLogOnErr(c.logger, conn, "receive capnp conn")
-			rpcConn := rpc.NewConn(rpc.NewPackedStreamTransport(conn), &rpc.Options{
+			defer runutil.CloseWithLogOnErr(c.logger, codec, "receive capnp codec")
+			
+			rpcConn := rpc.NewConn(rpc.NewTransport(codec), &rpc.Options{
 				// The BootstrapClient is the RPC interface that will be made available
 				// to the remote endpoint by default.
 				BootstrapClient: capnp.Client(c.server).AddRef(),

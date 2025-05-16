@@ -454,7 +454,7 @@ func runReceive(
 
 	{
 		capNProtoWriter := receive.NewCapNProtoWriter(logger, dbs, &receive.CapNProtoWriterOptions{
-			TooFarInFutureTimeWindow: int64(time.Duration(*conf.tsdbTooFarInFutureTimeWindow)),
+			TooFarInFutureTimeWindow: int64(*conf.tsdbTooFarInFutureTimeWindow),
 		})
 		handler := receive.NewCapNProtoHandler(logger, capNProtoWriter)
 		listener, err := net.Listen("tcp", conf.replicationAddr)

@@ -13,6 +13,7 @@ import (
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/pkg/errors"
+	"github.com/thanos-io/thanos/pkg/runutil"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -48,7 +49,7 @@ type RemoteWriteClient struct {
 	mu sync.Mutex
 
 	dialer Dialer
-	conn   *rpc.Conn
+	codec  rpc.Codec
 
 	writer Writer
 	logger log.Logger
@@ -94,7 +95,7 @@ func (r *RemoteWriteClient) writeWithReconnect(ctx context.Context, numReconnect
 
 	s, err := result.Struct()
 	if err != nil {
-		if numReconnects > 0 && capnp.IsDisconnected(err) {
+		if numReconnects > 0 {
 			level.Warn(r.logger).Log("msg", "rpc failed, reconnecting")
 			if err := r.Close(); err != nil {
 				return nil, err
@@ -121,7 +122,7 @@ func (r *RemoteWriteClient) writeWithReconnect(ctx context.Context, numReconnect
 func (r *RemoteWriteClient) connect(ctx context.Context) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if r.conn != nil {
+	if r.codec != nil {
 		return nil
 	}
 
@@ -129,18 +130,27 @@ func (r *RemoteWriteClient) connect(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to dial peer")
 	}
-	r.conn = rpc.NewConn(rpc.NewPackedStreamTransport(conn), nil)
-	r.writer = Writer(r.conn.Bootstrap(ctx))
+	codec, err := NewZSTDCodec(conn)
+	if err != nil {
+		return err
+	}
+	r.codec = codec
+
+	rpcConn := rpc.NewConn(rpc.NewTransport(r.codec), nil)
+	r.writer = Writer(rpcConn.Bootstrap(ctx))
 	return nil
 }
 
 func (r *RemoteWriteClient) Close() error {
 	r.mu.Lock()
-	if r.conn != nil {
-		conn := r.conn
-		r.conn = nil
-		go conn.Close()
+	defer r.mu.Unlock()
+
+	if r.codec != nil {
+		codec := r.codec
+		r.codec = nil
+		go func() {
+			runutil.CloseWithLogOnErr(r.logger, codec, "capnp codec")
+		}()
 	}
-	r.mu.Unlock()
 	return nil
 }
