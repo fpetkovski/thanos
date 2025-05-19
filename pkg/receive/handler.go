@@ -92,7 +92,7 @@ type ReplicationProtocol string
 const (
 	ProtoReplication         ReplicationProtocol = "protobuf"
 	CapnProtoReplication     ReplicationProtocol = "capnproto"
-	CanpProtoZSTDReplication ReplicationProtocol = "capnproto-zstd"
+	CapnProtoZSTDReplication ReplicationProtocol = "capnproto-zstd"
 )
 
 // Options for the web Handler.
@@ -1217,7 +1217,7 @@ func (p *peerGroup) get(ctx context.Context, endpoint Endpoint) (storepb.Writeab
 		client = storepb.NewWriteableStoreClient(conn)
 	case CapnProtoReplication:
 		client = writecapnp.NewRemoteWriteClient(writecapnp.NewTCPDialer(endpoint.CapNProtoAddress), writecapnp.NewPackedCodec, p.logger)
-	case CanpProtoZSTDReplication:
+	case CapnProtoZSTDReplication:
 		client = writecapnp.NewRemoteWriteClient(writecapnp.NewTCPDialer(endpoint.CapNProtoZSTDAddress), writecapnp.NewZSTDCodec, p.logger)
 	default:
 		return nil, fmt.Errorf("Unknown replication protocol %s", p.replicationProtocol)

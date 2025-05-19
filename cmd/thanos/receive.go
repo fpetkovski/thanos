@@ -939,12 +939,12 @@ func (rc *receiveConfig) registerFlag(cmd extkingpin.FlagClause) {
 	cmd.Flag("receive.replication-factor", "How many times to replicate incoming write requests.").Default("1").Uint64Var(&rc.replicationFactor)
 	cmd.Flag("receive.replication-protocol", "Specifies the protocol for replicating remote-write requests.").
 		Default(string(receive.ProtoReplication)).
-		EnumVar(&rc.replicationProtocol, string(receive.ProtoReplication), string(receive.CapnProtoReplication), string(receive.CanpProtoZSTDReplication))
+		EnumVar(&rc.replicationProtocol, string(receive.ProtoReplication), string(receive.CapnProtoReplication), string(receive.CapnProtoZSTDReplication))
 
 	cmd.Flag("receive.capnproto-replication", "Deprecated: Use receive.replication-protocol. Use Cap'n Proto for replication requests.").Default("false").BoolVar(&rc.useCapNProtoReplication)
 
 	cmd.Flag("receive.capnproto-address", "Address for the Cap'n Proto server.").Default(fmt.Sprintf("0.0.0.0:%s", receive.DefaultCapNProtoPort)).StringVar(&rc.replicationAddr)
-	cmd.Flag("receive.capnproto-zstd-address", "Address for the Cap'n Proto server.").Default(fmt.Sprintf("0.0.0.0:%s", receive.DefaultCapNProtoZSTDPort)).StringVar(&rc.zstdReplicationAddr)
+	cmd.Flag("receive.capnproto-zstd-address", "Address for the Cap'n Proto server with ZSTD compression capabilities.").Default(fmt.Sprintf("0.0.0.0:%s", receive.DefaultCapNProtoZSTDPort)).StringVar(&rc.zstdReplicationAddr)
 
 	rc.forwardTimeout = extkingpin.ModelDuration(cmd.Flag("receive-forward-timeout", "Timeout for each forward request.").Default("5s").Hidden())
 
