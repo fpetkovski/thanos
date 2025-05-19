@@ -92,7 +92,7 @@ type ReplicationProtocol string
 const (
 	ProtoReplication         ReplicationProtocol = "protobuf"
 	CapnProtoReplication     ReplicationProtocol = "capnproto"
-	CanpProtoZSTDReplication ReplicationProtocol = "canproto-zstd"
+	CanpProtoZSTDReplication ReplicationProtocol = "capnproto-zstd"
 )
 
 // Options for the web Handler.
