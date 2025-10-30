@@ -447,7 +447,16 @@ func (e *EndpointSet) getQueryableRefs() map[string]*endpointRef {
 	endpoints := make(map[string]*endpointRef)
 	for addr, er := range e.endpoints {
 		if er.isQueryable() {
-			endpoints[addr] = er
+			endpoints[addr] = &endpointRef{
+				StoreClient: storepb.NewStoreClient(er.cc),
+				cc:          er.cc,
+				addr:        er.addr,
+				isStrict:    er.isStrict,
+				metadata:    er.metadata,
+				status:      er.status,
+				logger:      er.logger,
+				created:     er.created,
+			}
 		}
 	}
 
