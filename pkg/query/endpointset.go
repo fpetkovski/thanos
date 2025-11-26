@@ -369,8 +369,11 @@ func (e *EndpointSet) Update(ctx context.Context) {
 	}
 	for addr, er := range staleRefs {
 		level.Info(er.logger).Log("msg", unhealthyEndpointMessage, "address", er.addr, "extLset", labelpb.PromLabelSetsToString(er.LabelSets()))
-		er.Close()
 		delete(e.endpoints, addr)
+		go func() {
+			<-time.After(time.Minute)
+			er.Close()
+		}()
 	}
 	level.Debug(e.logger).Log("msg", "updated endpoints", "activeEndpoints", len(e.endpoints))
 
