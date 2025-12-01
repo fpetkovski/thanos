@@ -22,6 +22,22 @@ import (
 	"github.com/thanos-io/thanos/pkg/store/storepb"
 )
 
+type connState int
+
+const (
+	connStateDisconnected = iota
+	connStateError
+	connStateConnected
+)
+
+type conn struct {
+	mu sync.RWMutex
+
+	state  connState
+	closer io.Closer
+	writer Writer
+}
+
 type Dialer interface {
 	Dial() (net.Conn, error)
 }
@@ -49,13 +65,10 @@ func (t TCPDialer) Dial() (net.Conn, error) {
 }
 
 type RemoteWriteClient struct {
-	mu sync.Mutex
-
 	newCodec NewCodecFunc
 	dialer   Dialer
-	codec    rpc.Codec
+	conn     *conn
 
-	writer Writer
 	logger log.Logger
 }
 
@@ -68,21 +81,54 @@ func NewRemoteWriteClient(
 		dialer:   dialer,
 		newCodec: newCodec,
 		logger:   logger,
+		conn:     &conn{},
 	}
 }
 
 func (r *RemoteWriteClient) RemoteWrite(ctx context.Context, in *storepb.WriteRequest, _ ...grpc.CallOption) (*storepb.WriteResponse, error) {
-	return r.writeWithReconnect(ctx, 2, in)
-}
-
-func (r *RemoteWriteClient) writeWithReconnect(ctx context.Context, numReconnects int, in *storepb.WriteRequest) (*storepb.WriteResponse, error) {
-	if err := r.connect(ctx); err != nil {
+	const numAttempts = 3
+	var (
+		resp    Writer_write_Results
+		release func()
+		err     error
+	)
+	for range numAttempts {
+		if err := r.conn.connect(ctx, r.logger, r.dialer, r.newCodec); err != nil {
+			return nil, err
+		}
+		if resp, release, err = r.write(ctx, in); err == nil {
+			break
+		}
+		r.conn.setStateError()
+		level.Warn(r.logger).Log("msg", "rpc failed, reconnecting", "err", err.Error())
+	}
+	if err != nil {
 		return nil, err
 	}
+	defer release()
+
+	switch resp.Error() {
+	case WriteError_unavailable:
+		return nil, status.Error(codes.Unavailable, "rpc failed")
+	case WriteError_alreadyExists:
+		return nil, status.Error(codes.AlreadyExists, "rpc failed")
+	case WriteError_invalidArgument:
+		return nil, status.Error(codes.InvalidArgument, "rpc failed")
+	case WriteError_internal:
+		return nil, status.Error(codes.Internal, "rpc failed")
+	default:
+		return &storepb.WriteResponse{}, nil
+	}
+}
+
+func (r *RemoteWriteClient) write(ctx context.Context, in *storepb.WriteRequest) (Writer_write_Results, func(), error) {
+	r.conn.mu.RLock()
+	defer r.conn.mu.RUnlock()
+
 	arena := capnp.SingleSegment(nil)
 	defer arena.Release()
 
-	result, release := r.writer.Write(ctx, func(params Writer_write_Params) error {
+	result, release := r.conn.writer.Write(ctx, func(params Writer_write_Params) error {
 		_, seg, err := capnp.NewMessage(arena)
 		if err != nil {
 			return err
@@ -100,66 +146,66 @@ func (r *RemoteWriteClient) writeWithReconnect(ctx context.Context, numReconnect
 		}
 		return BuildInto(wr, in.Tenant, in.Timeseries)
 	})
-	defer release()
 
-	s, err := result.Struct()
-	if err != nil {
-		if numReconnects > 0 {
-			level.Warn(r.logger).Log("msg", "rpc failed, reconnecting", "err", err.Error())
-			if err := r.Close(); err != nil {
-				return nil, err
-			}
-			numReconnects--
-			return r.writeWithReconnect(ctx, numReconnects, in)
-		}
-		return nil, errors.Wrap(err, "failed writing to peer")
-	}
-	switch s.Error() {
-	case WriteError_unavailable:
-		return nil, status.Error(codes.Unavailable, "rpc failed")
-	case WriteError_alreadyExists:
-		return nil, status.Error(codes.AlreadyExists, "rpc failed")
-	case WriteError_invalidArgument:
-		return nil, status.Error(codes.InvalidArgument, "rpc failed")
-	case WriteError_internal:
-		return nil, status.Error(codes.Internal, "rpc failed")
-	default:
-		return &storepb.WriteResponse{}, nil
-	}
+	resp, err := result.Struct()
+	return resp, release, err
 }
 
-func (r *RemoteWriteClient) connect(ctx context.Context) error {
+func (r *conn) setStateError() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if r.codec != nil {
+
+	r.state = connStateError
+}
+
+func (r *conn) connect(ctx context.Context, logger log.Logger, dialer Dialer, newCodec NewCodecFunc) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	switch r.state {
+	case connStateConnected:
 		return nil
+	case connStateError:
+		r.close(logger)
+		fallthrough
+	case connStateDisconnected:
+		cc, err := dialer.Dial()
+		if err != nil {
+			return errors.Wrap(err, "failed to dial peer")
+		}
+		codec, err := newCodec(cc)
+		if err != nil {
+			return err
+		}
+		r.closer = codec
+
+		rpcConn := rpc.NewConn(rpc.NewTransport(codec), nil)
+		r.writer = Writer(rpcConn.Bootstrap(ctx))
+		r.state = connStateConnected
 	}
 
-	conn, err := r.dialer.Dial()
-	if err != nil {
-		return errors.Wrap(err, "failed to dial peer")
-	}
-	codec, err := r.newCodec(conn)
-	if err != nil {
-		return err
-	}
-	r.codec = codec
-
-	rpcConn := rpc.NewConn(rpc.NewTransport(r.codec), nil)
-	r.writer = Writer(rpcConn.Bootstrap(ctx))
 	return nil
 }
 
 func (r *RemoteWriteClient) Close() error {
+	r.conn.closeLocked(r.logger)
+	return nil
+}
+
+func (r *conn) closeLocked(logger log.Logger) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if r.codec != nil {
-		codec := r.codec
-		r.codec = nil
+	r.close(logger)
+}
+
+func (r *conn) close(logger log.Logger) {
+	if r.state != connStateDisconnected {
+		codec := r.closer
+		r.closer = nil
 		go func() {
-			runutil.CloseWithLogOnErr(r.logger, codec, "capnp codec")
+			runutil.CloseWithLogOnErr(logger, codec, "capnp closer")
 		}()
 	}
-	return nil
+	r.state = connStateDisconnected
 }

@@ -31,7 +31,7 @@ type CapNProtoServer struct {
 func NewCapNProtoServer(
 	listener net.Listener,
 	zstdListener net.Listener,
-	handler *CapNProtoHandler,
+	handler writecapnp.Writer_Server,
 	logger log.Logger,
 ) *CapNProtoServer {
 	return &CapNProtoServer{
