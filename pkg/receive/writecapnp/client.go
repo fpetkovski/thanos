@@ -105,7 +105,7 @@ func (r *RemoteWriteClient) writeWithReconnect(ctx context.Context, numReconnect
 	s, err := result.Struct()
 	if err != nil {
 		if numReconnects > 0 {
-			level.Warn(r.logger).Log("msg", "rpc failed, reconnecting")
+			level.Warn(r.logger).Log("msg", "rpc failed, reconnecting", "err", err.Error())
 			if err := r.Close(); err != nil {
 				return nil, err
 			}
