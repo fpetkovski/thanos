@@ -33,9 +33,10 @@ const (
 type conn struct {
 	mu sync.RWMutex
 
-	state  connState
-	closer io.Closer
-	writer Writer
+	state      connState
+	generation uint64 // Incremented on each reconnect to track connection instances
+	closer     io.Closer
+	writer     Writer
 }
 
 type Dialer interface {
@@ -88,18 +89,20 @@ func NewRemoteWriteClient(
 func (r *RemoteWriteClient) RemoteWrite(ctx context.Context, in *storepb.WriteRequest, _ ...grpc.CallOption) (*storepb.WriteResponse, error) {
 	const numAttempts = 3
 	var (
-		resp    Writer_write_Results
-		release func()
-		err     error
+		resp       Writer_write_Results
+		release    func()
+		err        error
+		generation uint64
 	)
 	for range numAttempts {
-		if err := r.conn.connect(ctx, r.logger, r.dialer, r.newCodec); err != nil {
+		generation, err = r.conn.connect(ctx, r.logger, r.dialer, r.newCodec)
+		if err != nil {
 			return nil, err
 		}
 		if resp, release, err = r.write(ctx, in); err == nil {
 			break
 		}
-		r.conn.setStateError()
+		r.conn.setStateErrorIfGeneration(generation)
 		level.Warn(r.logger).Log("msg", "rpc failed, reconnecting", "err", err.Error())
 	}
 	if err != nil {
@@ -151,40 +154,46 @@ func (r *RemoteWriteClient) write(ctx context.Context, in *storepb.WriteRequest)
 	return resp, release, err
 }
 
-func (r *conn) setStateError() {
+func (r *conn) setStateErrorIfGeneration(generation uint64) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	r.state = connStateError
+	// Only set error state if we're still on the same connection generation. This
+	// prevents marking a newly established connection as errored due to a failure
+	// from a previous connection.
+	if r.generation == generation {
+		r.state = connStateError
+	}
 }
 
-func (r *conn) connect(ctx context.Context, logger log.Logger, dialer Dialer, newCodec NewCodecFunc) error {
+func (r *conn) connect(ctx context.Context, logger log.Logger, dialer Dialer, newCodec NewCodecFunc) (uint64, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	switch r.state {
 	case connStateConnected:
-		return nil
+		return r.generation, nil
 	case connStateError:
 		r.close(logger)
 		fallthrough
 	case connStateDisconnected:
 		cc, err := dialer.Dial()
 		if err != nil {
-			return errors.Wrap(err, "failed to dial peer")
+			return 0, errors.Wrap(err, "failed to dial peer")
 		}
 		codec, err := newCodec(cc)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		r.closer = codec
 
 		rpcConn := rpc.NewConn(rpc.NewTransport(codec), nil)
 		r.writer = Writer(rpcConn.Bootstrap(ctx))
 		r.state = connStateConnected
+		r.generation++
 	}
 
-	return nil
+	return r.generation, nil
 }
 
 func (r *RemoteWriteClient) Close() error {
