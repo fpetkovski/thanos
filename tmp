@@ -1,0 +1,1931 @@
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":5,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.18640069Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":11,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.188214165Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":10,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.189570514Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":9,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.192253604Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":3,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.194768367Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":11,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.19598235Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":9,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.26169995Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":9,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.263152386Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":15,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.264653717Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":10,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.26746051Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":7,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.268567966Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":3,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.269727482Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":10,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.273332525Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":11,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.274450536Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":11,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.275525487Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":12,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.322546336Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":12,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.323962074Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":6,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.324997255Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":6,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.377135154Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":11,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.384237676Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":12,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:29.3856359Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:33.383481168Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:33.385190381Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:33.387896481Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:33.394320039Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:33.395820914Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:33.423246875Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:33.425311152Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:33.426532984Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:33.427775869Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":15,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:35.779164721Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":17,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:35.779404185Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":16,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:35.781193139Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":2,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:35.799373745Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":5,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:35.799616547Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":7,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:35.801169388Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":2,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:35.845500288Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":9,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:42.918509567Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":10,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:42.920497391Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":9,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:42.921662489Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"storefront-us-ea1d-ty4","ts":"2025-12-01T16:47:48.649273743Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":3,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:51.868566184Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:51.872242894Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":4,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:51.874438841Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":11,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:52.836766771Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":9,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:52.876964154Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":3,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:52.878218388Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":11,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:52.879387778Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":6,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:52.884576158Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":8,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:52.885601239Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":7,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:52.887394663Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":6,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:52.917724312Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":5,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:52.919037934Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":10,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:52.921198899Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":9,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:52.958387633Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":12,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:52.959676984Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":9,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:52.96484223Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":4,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:52.966172814Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":15,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:52.96787046Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":7,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:52.969094628Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":5,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:52.971073626Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":8,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:52.996757836Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":13,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:52.9989379Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":10,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.000013507Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":7,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.020997923Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":9,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.022157323Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":9,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.024438184Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":12,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.053005959Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":12,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.054189842Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":6,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.055062117Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":3,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.071574346Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":2,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.117796566Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":3,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.119105524Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":4,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.120112536Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":4,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.136281134Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":4,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.137358219Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":6,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.138461068Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":5,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.182511447Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":3,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.184765147Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":5,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.1866358Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":3,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.227003651Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":4,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.228455318Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":3,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.229652049Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":3,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.251231184Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":5,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.253291987Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":6,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.255012211Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.320659143Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.324025295Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":9,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.340042571Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":3,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.344511213Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":2,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:53.345823057Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":6,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:55.81302567Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":7,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:55.814590714Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":3,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:47:55.816032549Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":2,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:02.77744125Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":3,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:02.779184184Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":4,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:02.784447138Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":6,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:05.466999692Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":8,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:05.468407877Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":4,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:05.470514938Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Unavailable desc = transport is closing","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:09.985887762Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Unavailable desc = transport is closing","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:10.044601505Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Unavailable desc = transport is closing","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:10.045138464Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":5,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:10.103248555Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":6,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:10.109758989Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":5,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:10.110904503Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":2,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:10.449314173Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"storefront-us-ea1d-ty4","ts":"2025-12-01T16:48:13.453960147Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"storefront-us-ea1d-ty4","ts":"2025-12-01T16:48:13.459522955Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"mysql-storefront-us-ea1-ak1","ts":"2025-12-01T16:48:15.960397507Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:16.118566831Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:16.122559547Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:16.133526129Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:16.141099657Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:16.142670475Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:16.144700983Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:16.177985737Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:16.232850303Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:21.341127181Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":2,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:21.872212577Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:22.817705817Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:22.817918382Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:22.818223774Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:22.818475535Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:22.818906754Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:22.819802603Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:22.834335313Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:22.95902375Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":2,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:25.393866437Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":3,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:25.394748437Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":9,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:25.481722861Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":9,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:25.482922541Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":7,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:25.488395818Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":11,"tenant":"mysql-storefront-us-ea1-ak1","ts":"2025-12-01T16:48:25.585861487Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":6,"tenant":"mysql-storefront-us-ea1-ak1","ts":"2025-12-01T16:48:25.58596921Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:29.464027973Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:29.465454893Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:29.49124821Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:29.495009096Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:29.498094149Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:29.502050036Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:29.515883235Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:29.524234306Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:29.536650559Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:29.536864834Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:29.536802798Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:29.538680302Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:29.5402483Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:29.541396854Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:29.542903525Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:29.555864592Z"}
+{"caller":"proxy.go:382","component":"proxy","err":"rpc error: code = Canceled desc = context canceled","level":"error","msg":"failed to send series","ts":"2025-12-01T16:48:29.558662462Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:34.228886858Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":2,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:34.542711675Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":4,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:34.543877058Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":3,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:34.545085985Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":10,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:35.774709528Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":9,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:35.775847715Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":9,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:37.272358503Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":12,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:37.272477705Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":3,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:37.27285911Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":6,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:38.284392678Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":15,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:38.287102877Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":5,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:38.288443572Z"}
+{"caller":"writer_errors.go:132","component":"receive","level":"warn","msg":"Error on ingesting out-of-order samples","numDropped":1,"tenant":"ci-us-ea1-jt3","ts":"2025-12-01T16:48:45.385288537Z"}
+doRecordGoroutineProfile gp1=42018809649
+fatal error: cannot read stack of running goroutine
+
+goroutine 42018829224 gp=0xc5d2695180 m=38 mp=0xc1abc88a08 [running]:
+runtime.throw({0x2ca6f60?, 0x800cb00084851?})
+	/usr/local/go/src/runtime/panic.go:1067 +0x48 fp=0xc2eb805478 sp=0xc2eb805448 pc=0x4764a8
+runtime.doRecordGoroutineProfile(0xc794f08000?, {0xc20bce8000?, 0x400?, 0x53c0080?})
+	/usr/local/go/src/runtime/mprof.go:1542 +0x14c fp=0xc2eb8054d0 sp=0xc2eb805478 pc=0x43558c
+runtime.tryRecordGoroutineProfile(0xc794a43880, {0xc20bce8000, 0x80, 0x80}, 0x3623cf0)
+	/usr/local/go/src/runtime/mprof.go:1525 +0xc5 fp=0xc2eb805508 sp=0xc2eb8054d0 pc=0x435385
+runtime.goroutineProfileWithLabelsConcurrent.func2(0x196937e4c278b5?)
+	/usr/local/go/src/runtime/mprof.go:1440 +0x26 fp=0xc2eb805540 sp=0xc2eb805508 pc=0x4351e6
+runtime.forEachGRace(0xc2eb8055d8)
+	/usr/local/go/src/runtime/proc.go:709 +0x49 fp=0xc2eb805570 sp=0xc2eb805540 pc=0x440c29
+runtime.goroutineProfileWithLabelsConcurrent({0xc378e86000, 0xce2, 0xce2}, {0xc9a347d508, 0xce2, 0xce2})
+	/usr/local/go/src/runtime/mprof.go:1439 +0x40b fp=0xc2eb805658 sp=0xc2eb805570 pc=0x43506b
+runtime.goroutineProfileWithLabels({0xc378e86000?, 0xc0045ae6c8?, 0x478869?}, {0xc9a347d508?, 0x25f09c0?, 0x416501?})
+	/usr/local/go/src/runtime/mprof.go:1315 +0x31 fp=0xc2eb805698 sp=0xc2eb805658 pc=0x434bb1
+runtime.pprof_goroutineProfileWithLabels({0xc378e86000?, 0x2c4674d?, 0x275b560?}, {0xc9a347d508?, 0x7e9933?, 0xc2ba4a3f80?})
+	/usr/local/go/src/runtime/mprof.go:1306 +0x1d fp=0xc2eb8056d8 sp=0xc2eb805698 pc=0x47549d
+runtime/pprof.writeRuntimeProfile({0x3a61e80, 0xc2cad52b60}, 0x0, {0x2c4023d, 0x9}, 0x36273c0)
+	/usr/local/go/src/runtime/pprof/pprof.go:793 +0xb1 fp=0xc2eb805740 sp=0xc2eb8056d8 pc=0x1829ed1
+runtime/pprof.writeGoroutine({0x3a61e80?, 0xc2cad52b60?}, 0x20?)
+	/usr/local/go/src/runtime/pprof/pprof.go:752 +0x45 fp=0xc2eb805780 sp=0xc2eb805740 pc=0x1829d05
+runtime/pprof.(*Profile).WriteTo(0x297ae60?, {0x3a61e80?, 0xc2cad52b60?}, 0x13?)
+	/usr/local/go/src/runtime/pprof/pprof.go:374 +0x14b fp=0xc2eb805880 sp=0xc2eb805780 pc=0x1826b2b
+net/http/pprof.handler.ServeHTTP({0xcb2c494851, 0x9}, {0x3a79a00, 0xc2cad52b60}, 0xc6359bd540)
+	/usr/local/go/src/net/http/pprof/pprof.go:272 +0x52f fp=0xc2eb805938 sp=0xc2eb805880 pc=0x1840a6f
+net/http/pprof.Index({0x3a79a00, 0xc2cad52b60}, 0xc6359bd540?)
+	/usr/local/go/src/net/http/pprof/pprof.go:388 +0xde fp=0xc2eb805af0 sp=0xc2eb805938 pc=0x184151e
+net/http.HandlerFunc.ServeHTTP(0xc000bee0e0?, {0x3a79a00?, 0xc2cad52b60?}, 0x7f2d96?)
+	/usr/local/go/src/net/http/server.go:2220 +0x29 fp=0xc2eb805b18 sp=0xc2eb805af0 pc=0x7f9bc9
+net/http.(*ServeMux).ServeHTTP(0x46fc99?, {0x3a79a00, 0xc2cad52b60}, 0xc6359bd540)
+	/usr/local/go/src/net/http/server.go:2747 +0x1ca fp=0xc2eb805b68 sp=0xc2eb805b18 pc=0x7fbaca
+net/http.serverHandler.ServeHTTP({0xc4c346eba0?}, {0x3a79a00?, 0xc2cad52b60?}, 0x6?)
+	/usr/local/go/src/net/http/server.go:3210 +0x8e fp=0xc2eb805b98 sp=0xc2eb805b68 pc=0x81a26e
+net/http.(*conn).serve(0xc7dff72000, {0x3a844d0, 0xc001195e90})
+	/usr/local/go/src/net/http/server.go:2092 +0x5d0 fp=0xc2eb805fb8 sp=0xc2eb805b98 pc=0x7f8570
+net/http.(*Server).Serve.gowrap3()
+	/usr/local/go/src/net/http/server.go:3360 +0x28 fp=0xc2eb805fe0 sp=0xc2eb805fb8 pc=0x7fdaa8
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc2eb805fe8 sp=0xc2eb805fe0 pc=0x47eac1
+created by net/http.(*Server).Serve in goroutine 93
+	/usr/local/go/src/net/http/server.go:3360 +0x485
+
+goroutine 1 gp=0xc0000061c0 m=nil [chan receive, 14420 minutes]:
+runtime.gopark(0x1180008?, 0x7cc8766e5d98?, 0x20?, 0x0?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000d2db08 sp=0xc000d2dae8 pc=0x4765ce
+runtime.chanrecv(0xc000915340, 0xc001065c00, 0x1)
+	/usr/local/go/src/runtime/chan.go:639 +0x41c fp=0xc000d2db80 sp=0xc000d2db08 pc=0x40a05c
+runtime.chanrecv1(0x10?, 0xc?)
+	/usr/local/go/src/runtime/chan.go:489 +0x12 fp=0xc000d2dba8 sp=0xc000d2db80 pc=0x409c12
+github.com/oklog/run.(*Group).Run(0xc00014a5b8)
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:43 +0x145 fp=0xc000d2dc20 sp=0xc000d2dba8 pc=0x6585a5
+main.main()
+	/go/src/github.com/thanos-io/thanos/cmd/thanos/main.go:168 +0x1998 fp=0xc000d2df50 sp=0xc000d2dc20 pc=0x23dfff8
+runtime.main()
+	/usr/local/go/src/runtime/proc.go:272 +0x28b fp=0xc000d2dfe0 sp=0xc000d2df50 pc=0x43fcab
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000d2dfe8 sp=0xc000d2dfe0 pc=0x47eac1
+
+goroutine 2 gp=0xc000006700 m=nil [force gc (idle), 14420 minutes]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000098fa8 sp=0xc000098f88 pc=0x4765ce
+runtime.goparkunlock(...)
+	/usr/local/go/src/runtime/proc.go:430
+runtime.forcegchelper()
+	/usr/local/go/src/runtime/proc.go:337 +0xb3 fp=0xc000098fe0 sp=0xc000098fa8 pc=0x43fff3
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000098fe8 sp=0xc000098fe0 pc=0x47eac1
+created by runtime.init.7 in goroutine 1
+	/usr/local/go/src/runtime/proc.go:325 +0x1a
+
+goroutine 3 gp=0xc000006c40 m=nil [GC sweep wait]:
+runtime.gopark(0x5411501?, 0x0?, 0x0?, 0x0?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000099780 sp=0xc000099760 pc=0x4765ce
+runtime.goparkunlock(...)
+	/usr/local/go/src/runtime/proc.go:430
+runtime.bgsweep(0xc0000ba000)
+	/usr/local/go/src/runtime/mgcsweep.go:317 +0xdf fp=0xc0000997c8 sp=0xc000099780 pc=0x42785f
+runtime.gcenable.gowrap1()
+	/usr/local/go/src/runtime/mgc.go:203 +0x25 fp=0xc0000997e0 sp=0xc0000997c8 pc=0x41be65
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc0000997e8 sp=0xc0000997e0 pc=0x47eac1
+created by runtime.gcenable in goroutine 1
+	/usr/local/go/src/runtime/mgc.go:203 +0x66
+
+goroutine 4 gp=0xc000006e00 m=nil [GC scavenge wait]:
+runtime.gopark(0xadc19?, 0x458d0?, 0x0?, 0x0?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000099f78 sp=0xc000099f58 pc=0x4765ce
+runtime.goparkunlock(...)
+	/usr/local/go/src/runtime/proc.go:430
+runtime.(*scavengerState).park(0x5415b80)
+	/usr/local/go/src/runtime/mgcscavenge.go:425 +0x49 fp=0xc000099fa8 sp=0xc000099f78 pc=0x425229
+runtime.bgscavenge(0xc0000ba000)
+	/usr/local/go/src/runtime/mgcscavenge.go:658 +0x59 fp=0xc000099fc8 sp=0xc000099fa8 pc=0x4257b9
+runtime.gcenable.gowrap2()
+	/usr/local/go/src/runtime/mgc.go:204 +0x25 fp=0xc000099fe0 sp=0xc000099fc8 pc=0x41be05
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000099fe8 sp=0xc000099fe0 pc=0x47eac1
+created by runtime.gcenable in goroutine 1
+	/usr/local/go/src/runtime/mgc.go:204 +0xa5
+
+goroutine 17 gp=0xc000104380 m=nil [finalizer wait, 13 minutes]:
+runtime.gopark(0x0?, 0xc5c01220c0?, 0x40?, 0x0?, 0x1000000010?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc0d4b09e20 sp=0xc0d4b09e00 pc=0x4765ce
+runtime.runfinq()
+	/usr/local/go/src/runtime/mfinal.go:193 +0x107 fp=0xc0d4b09fe0 sp=0xc0d4b09e20 pc=0x41ae67
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc0d4b09fe8 sp=0xc0d4b09fe0 pc=0x47eac1
+created by runtime.createfing in goroutine 1
+	/usr/local/go/src/runtime/mfinal.go:163 +0x3d
+
+goroutine 5 gp=0xc000007340 m=nil [GC worker (idle)]:
+runtime.gopark(0x543c9c0?, 0x1?, 0xed?, 0xcd?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc00009a738 sp=0xc00009a718 pc=0x4765ce
+runtime.gcBgMarkWorker(0xc000182000)
+	/usr/local/go/src/runtime/mgc.go:1363 +0xe9 fp=0xc00009a7c8 sp=0xc00009a738 pc=0x41e189
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/usr/local/go/src/runtime/mgc.go:1279 +0x25 fp=0xc00009a7e0 sp=0xc00009a7c8 pc=0x41e065
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc00009a7e8 sp=0xc00009a7e0 pc=0x47eac1
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/usr/local/go/src/runtime/mgc.go:1279 +0x105
+
+goroutine 18 gp=0xc000104540 m=nil [GC worker (idle)]:
+runtime.gopark(0x196937416034a0?, 0x1?, 0x43?, 0xbe?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000094738 sp=0xc000094718 pc=0x4765ce
+runtime.gcBgMarkWorker(0xc000182000)
+	/usr/local/go/src/runtime/mgc.go:1363 +0xe9 fp=0xc0000947c8 sp=0xc000094738 pc=0x41e189
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/usr/local/go/src/runtime/mgc.go:1279 +0x25 fp=0xc0000947e0 sp=0xc0000947c8 pc=0x41e065
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc0000947e8 sp=0xc0000947e0 pc=0x47eac1
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/usr/local/go/src/runtime/mgc.go:1279 +0x105
+
+goroutine 33 gp=0xc00056c000 m=nil [GC worker (idle)]:
+runtime.gopark(0x196937490fa87f?, 0x1?, 0x22?, 0x36?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000572738 sp=0xc000572718 pc=0x4765ce
+runtime.gcBgMarkWorker(0xc000182000)
+	/usr/local/go/src/runtime/mgc.go:1363 +0xe9 fp=0xc0005727c8 sp=0xc000572738 pc=0x41e189
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/usr/local/go/src/runtime/mgc.go:1279 +0x25 fp=0xc0005727e0 sp=0xc0005727c8 pc=0x41e065
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc0005727e8 sp=0xc0005727e0 pc=0x47eac1
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/usr/local/go/src/runtime/mgc.go:1279 +0x105
+
+goroutine 6 gp=0xc000007500 m=nil [GC worker (idle)]:
+runtime.gopark(0x196937b55e6abc?, 0x1?, 0x40?, 0x1d?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc00009af38 sp=0xc00009af18 pc=0x4765ce
+runtime.gcBgMarkWorker(0xc000182000)
+	/usr/local/go/src/runtime/mgc.go:1363 +0xe9 fp=0xc00009afc8 sp=0xc00009af38 pc=0x41e189
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/usr/local/go/src/runtime/mgc.go:1279 +0x25 fp=0xc00009afe0 sp=0xc00009afc8 pc=0x41e065
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc00009afe8 sp=0xc00009afe0 pc=0x47eac1
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/usr/local/go/src/runtime/mgc.go:1279 +0x105
+
+goroutine 19 gp=0xc000104a80 m=nil [GC worker (idle)]:
+runtime.gopark(0x196937b6330bca?, 0x3?, 0x27?, 0xd1?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000094f38 sp=0xc000094f18 pc=0x4765ce
+runtime.gcBgMarkWorker(0xc000182000)
+	/usr/local/go/src/runtime/mgc.go:1363 +0xe9 fp=0xc000094fc8 sp=0xc000094f38 pc=0x41e189
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/usr/local/go/src/runtime/mgc.go:1279 +0x25 fp=0xc000094fe0 sp=0xc000094fc8 pc=0x41e065
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000094fe8 sp=0xc000094fe0 pc=0x47eac1
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/usr/local/go/src/runtime/mgc.go:1279 +0x105
+
+goroutine 20 gp=0xc000104c40 m=nil [GC worker (idle)]:
+runtime.gopark(0x196937b27c02ff?, 0x1?, 0x42?, 0x63?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000095738 sp=0xc000095718 pc=0x4765ce
+runtime.gcBgMarkWorker(0xc000182000)
+	/usr/local/go/src/runtime/mgc.go:1363 +0xe9 fp=0xc0000957c8 sp=0xc000095738 pc=0x41e189
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/usr/local/go/src/runtime/mgc.go:1279 +0x25 fp=0xc0000957e0 sp=0xc0000957c8 pc=0x41e065
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc0000957e8 sp=0xc0000957e0 pc=0x47eac1
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/usr/local/go/src/runtime/mgc.go:1279 +0x105
+
+goroutine 21 gp=0xc000104e00 m=nil [GC worker (idle), 1 minutes]:
+runtime.gopark(0x19692281c9ccff?, 0x3?, 0xa2?, 0xca?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000095f38 sp=0xc000095f18 pc=0x4765ce
+runtime.gcBgMarkWorker(0xc000182000)
+	/usr/local/go/src/runtime/mgc.go:1363 +0xe9 fp=0xc000095fc8 sp=0xc000095f38 pc=0x41e189
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/usr/local/go/src/runtime/mgc.go:1279 +0x25 fp=0xc000095fe0 sp=0xc000095fc8 pc=0x41e065
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000095fe8 sp=0xc000095fe0 pc=0x47eac1
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/usr/local/go/src/runtime/mgc.go:1279 +0x105
+
+goroutine 22 gp=0xc000104fc0 m=nil [GC worker (idle)]:
+runtime.gopark(0x196937bce3449d?, 0x1?, 0x7a?, 0x44?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000096738 sp=0xc000096718 pc=0x4765ce
+runtime.gcBgMarkWorker(0xc000182000)
+	/usr/local/go/src/runtime/mgc.go:1363 +0xe9 fp=0xc0000967c8 sp=0xc000096738 pc=0x41e189
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/usr/local/go/src/runtime/mgc.go:1279 +0x25 fp=0xc0000967e0 sp=0xc0000967c8 pc=0x41e065
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc0000967e8 sp=0xc0000967e0 pc=0x47eac1
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/usr/local/go/src/runtime/mgc.go:1279 +0x105
+
+goroutine 23 gp=0xc000105180 m=nil [GC worker (idle)]:
+runtime.gopark(0x196937bcdef291?, 0x3?, 0x89?, 0x51?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000096f38 sp=0xc000096f18 pc=0x4765ce
+runtime.gcBgMarkWorker(0xc000182000)
+	/usr/local/go/src/runtime/mgc.go:1363 +0xe9 fp=0xc000096fc8 sp=0xc000096f38 pc=0x41e189
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/usr/local/go/src/runtime/mgc.go:1279 +0x25 fp=0xc000096fe0 sp=0xc000096fc8 pc=0x41e065
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000096fe8 sp=0xc000096fe0 pc=0x47eac1
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/usr/local/go/src/runtime/mgc.go:1279 +0x105
+
+goroutine 24 gp=0xc000105340 m=nil [GC worker (idle)]:
+runtime.gopark(0x196937bcde7f51?, 0x3?, 0x62?, 0xb5?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000097738 sp=0xc000097718 pc=0x4765ce
+runtime.gcBgMarkWorker(0xc000182000)
+	/usr/local/go/src/runtime/mgc.go:1363 +0xe9 fp=0xc0000977c8 sp=0xc000097738 pc=0x41e189
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/usr/local/go/src/runtime/mgc.go:1279 +0x25 fp=0xc0000977e0 sp=0xc0000977c8 pc=0x41e065
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc0000977e8 sp=0xc0000977e0 pc=0x47eac1
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/usr/local/go/src/runtime/mgc.go:1279 +0x105
+
+goroutine 25 gp=0xc000105500 m=nil [GC worker (idle)]:
+runtime.gopark(0x543c9c0?, 0x1?, 0x3f?, 0x67?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000097f38 sp=0xc000097f18 pc=0x4765ce
+runtime.gcBgMarkWorker(0xc000182000)
+	/usr/local/go/src/runtime/mgc.go:1363 +0xe9 fp=0xc000097fc8 sp=0xc000097f38 pc=0x41e189
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/usr/local/go/src/runtime/mgc.go:1279 +0x25 fp=0xc000097fe0 sp=0xc000097fc8 pc=0x41e065
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000097fe8 sp=0xc000097fe0 pc=0x47eac1
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/usr/local/go/src/runtime/mgc.go:1279 +0x105
+
+goroutine 26 gp=0xc0001056c0 m=nil [GC worker (idle)]:
+runtime.gopark(0x196937bcdc6b07?, 0x3?, 0x44?, 0x21?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc00056e738 sp=0xc00056e718 pc=0x4765ce
+runtime.gcBgMarkWorker(0xc000182000)
+	/usr/local/go/src/runtime/mgc.go:1363 +0xe9 fp=0xc00056e7c8 sp=0xc00056e738 pc=0x41e189
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/usr/local/go/src/runtime/mgc.go:1279 +0x25 fp=0xc00056e7e0 sp=0xc00056e7c8 pc=0x41e065
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc00056e7e8 sp=0xc00056e7e0 pc=0x47eac1
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/usr/local/go/src/runtime/mgc.go:1279 +0x105
+
+goroutine 27 gp=0xc000105880 m=nil [GC worker (idle)]:
+runtime.gopark(0x196937bce5d1f5?, 0x3?, 0xcc?, 0x46?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc00056ef38 sp=0xc00056ef18 pc=0x4765ce
+runtime.gcBgMarkWorker(0xc000182000)
+	/usr/local/go/src/runtime/mgc.go:1363 +0xe9 fp=0xc00056efc8 sp=0xc00056ef38 pc=0x41e189
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/usr/local/go/src/runtime/mgc.go:1279 +0x25 fp=0xc00056efe0 sp=0xc00056efc8 pc=0x41e065
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc00056efe8 sp=0xc00056efe0 pc=0x47eac1
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/usr/local/go/src/runtime/mgc.go:1279 +0x105
+
+goroutine 49 gp=0xc000584000 m=nil [GC worker (idle)]:
+runtime.gopark(0x543c9c0?, 0x1?, 0x9e?, 0x9c?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc00058a738 sp=0xc00058a718 pc=0x4765ce
+runtime.gcBgMarkWorker(0xc000182000)
+	/usr/local/go/src/runtime/mgc.go:1363 +0xe9 fp=0xc00058a7c8 sp=0xc00058a738 pc=0x41e189
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/usr/local/go/src/runtime/mgc.go:1279 +0x25 fp=0xc00058a7e0 sp=0xc00058a7c8 pc=0x41e065
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc00058a7e8 sp=0xc00058a7e0 pc=0x47eac1
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/usr/local/go/src/runtime/mgc.go:1279 +0x105
+
+goroutine 34 gp=0xc00056c1c0 m=nil [GC worker (idle), 24 minutes]:
+runtime.gopark(0x1967e5b11072f0?, 0x3?, 0x44?, 0xf9?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000572f38 sp=0xc000572f18 pc=0x4765ce
+runtime.gcBgMarkWorker(0xc000182000)
+	/usr/local/go/src/runtime/mgc.go:1363 +0xe9 fp=0xc000572fc8 sp=0xc000572f38 pc=0x41e189
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/usr/local/go/src/runtime/mgc.go:1279 +0x25 fp=0xc000572fe0 sp=0xc000572fc8 pc=0x41e065
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000572fe8 sp=0xc000572fe0 pc=0x47eac1
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/usr/local/go/src/runtime/mgc.go:1279 +0x105
+
+goroutine 35 gp=0xc00056c380 m=nil [GC worker (idle)]:
+runtime.gopark(0x543c9c0?, 0x1?, 0x8f?, 0xf0?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000573738 sp=0xc000573718 pc=0x4765ce
+runtime.gcBgMarkWorker(0xc000182000)
+	/usr/local/go/src/runtime/mgc.go:1363 +0xe9 fp=0xc0005737c8 sp=0xc000573738 pc=0x41e189
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/usr/local/go/src/runtime/mgc.go:1279 +0x25 fp=0xc0005737e0 sp=0xc0005737c8 pc=0x41e065
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc0005737e8 sp=0xc0005737e0 pc=0x47eac1
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/usr/local/go/src/runtime/mgc.go:1279 +0x105
+
+goroutine 7 gp=0xc00056da40 m=nil [select, 14420 minutes]:
+runtime.gopark(0xc00056f728?, 0x2?, 0x0?, 0x0?, 0xc00056f70c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc00011fda8 sp=0xc00011fd88 pc=0x4765ce
+runtime.selectgo(0xc00011ff28, 0xc00056f708, 0x0?, 0x0, 0x0?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc00011fed0 sp=0xc00011fda8 pc=0x451f25
+github.com/baidubce/bce-sdk-go/util/log.NewLogger.func1()
+	/go/pkg/mod/github.com/baidubce/bce-sdk-go@v0.9.111/util/log/logger.go:375 +0xa5 fp=0xc00011ffe0 sp=0xc00011fed0 pc=0xb04c65
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc00011ffe8 sp=0xc00011ffe0 pc=0x47eac1
+created by github.com/baidubce/bce-sdk-go/util/log.NewLogger in goroutine 1
+	/go/pkg/mod/github.com/baidubce/bce-sdk-go@v0.9.111/util/log/logger.go:368 +0x116
+
+goroutine 8 gp=0xc0006056c0 m=nil [select]:
+runtime.gopark(0xc000120f78?, 0x3?, 0xf0?, 0x8a?, 0xc000120f72?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000120e10 sp=0xc000120df0 pc=0x4765ce
+runtime.selectgo(0xc000120f78, 0xc000120f6c, 0xc000069880?, 0x0, 0x0?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc000120f38 sp=0xc000120e10 pc=0x451f25
+go.opencensus.io/stats/view.(*worker).start(0xc000069880)
+	/go/pkg/mod/go.opencensus.io@v0.24.0/stats/view/worker.go:292 +0x9f fp=0xc000120fc8 sp=0xc000120f38 pc=0x18bec3f
+go.opencensus.io/stats/view.init.0.gowrap1()
+	/go/pkg/mod/go.opencensus.io@v0.24.0/stats/view/worker.go:34 +0x25 fp=0xc000120fe0 sp=0xc000120fc8 pc=0x18bdfa5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000120fe8 sp=0xc000120fe0 pc=0x47eac1
+created by go.opencensus.io/stats/view.init.0 in goroutine 1
+	/go/pkg/mod/go.opencensus.io@v0.24.0/stats/view/worker.go:34 +0x8d
+
+goroutine 9 gp=0xc000605880 m=nil [chan receive]:
+runtime.gopark(0xc00056ff60?, 0x598a65?, 0xc0?, 0xe9?, 0x3abab20?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc00056ff18 sp=0xc00056fef8 pc=0x4765ce
+runtime.chanrecv(0xc000118c40, 0x0, 0x1)
+	/usr/local/go/src/runtime/chan.go:639 +0x41c fp=0xc00056ff90 sp=0xc00056ff18 pc=0x40a05c
+runtime.chanrecv1(0x0?, 0x0?)
+	/usr/local/go/src/runtime/chan.go:489 +0x12 fp=0xc00056ffb8 sp=0xc00056ff90 pc=0x409c12
+runtime.unique_runtime_registerUniqueMapCleanup.func1(...)
+	/usr/local/go/src/runtime/mgc.go:1732
+runtime.unique_runtime_registerUniqueMapCleanup.gowrap1()
+	/usr/local/go/src/runtime/mgc.go:1735 +0x2f fp=0xc00056ffe0 sp=0xc00056ffb8 pc=0x41ee6f
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc00056ffe8 sp=0xc00056ffe0 pc=0x47eac1
+created by unique.runtime_registerUniqueMapCleanup in goroutine 1
+	/usr/local/go/src/runtime/mgc.go:1730 +0x96
+
+goroutine 92 gp=0xc00056ddc0 m=nil [runnable]:
+runtime.Gosched(...)
+	/usr/local/go/src/runtime/proc.go:353
+runtime.gcAssistAlloc(0xc00056ddc0)
+	/usr/local/go/src/runtime/mgcmark.go:564 +0x26f fp=0xc13772ac58 sp=0xc13772abf8 pc=0x420b0f
+runtime.deductAssistCredit(0xccdd2f8000?)
+	/usr/local/go/src/runtime/malloc.go:1349 +0x54 fp=0xc13772ac80 sp=0xc13772ac58 pc=0x411434
+runtime.mallocgc(0x140048, 0x288f060, 0x1)
+	/usr/local/go/src/runtime/malloc.go:1037 +0xde fp=0xc13772ad20 sp=0xc13772ac80 pc=0x470a1e
+runtime.newobject(0xccdd2d8000?)
+	/usr/local/go/src/runtime/malloc.go:1386 +0x25 fp=0xc13772ad48 sp=0xc13772ad20 pc=0x411525
+github.com/klauspost/compress/zstd.encoderOptions.encoder({0x1, 0x2, 0x0, 0x0, 0x20000, 0x800000, 0x1, 0x0, 0x0, 0x0, ...})
+	/go/pkg/mod/github.com/klauspost/compress@v1.17.11/zstd/encoder_options.go:60 +0x11d fp=0xc13772ad68 sp=0xc13772ad48 pc=0x153121d
+github.com/klauspost/compress/zstd.(*Encoder).Reset(0xc932be23c0, {0x7cc61b6d5548, 0xc9d487a628})
+	/go/pkg/mod/github.com/klauspost/compress@v1.17.11/zstd/encoder.go:119 +0x29a fp=0xc13772adf8 sp=0xc13772ad68 pc=0x152e71a
+github.com/klauspost/compress/zstd.NewWriter({0x7cc61b6d5548, 0xc9d487a628}, {0xc13772aef0, 0x1, 0x0?})
+	/go/pkg/mod/github.com/klauspost/compress@v1.17.11/zstd/encoder.go:78 +0x14a fp=0xc13772ae70 sp=0xc13772adf8 pc=0x152e24a
+github.com/thanos-io/thanos/pkg/receive/writecapnp.NewZSTDCodec({0x7cc61b6d5518, 0xc9d487a628})
+	/go/src/github.com/thanos-io/thanos/pkg/receive/writecapnp/codec.go:41 +0x7e fp=0xc13772af08 sp=0xc13772ae70 pc=0x22e359e
+github.com/thanos-io/thanos/pkg/receive.(*CapNProtoServer).listenWithCodec(0xc000dbe380, {0x3a7a810, 0xc000dbe300}, 0x3624d38)
+	/go/src/github.com/thanos-io/thanos/pkg/receive/capnp_server.go:64 +0x79 fp=0xc13772af48 sp=0xc13772af08 pc=0x231e919
+github.com/thanos-io/thanos/pkg/receive.(*CapNProtoServer).ListenAndServe.func2()
+	/go/src/github.com/thanos-io/thanos/pkg/receive/capnp_server.go:53 +0x26 fp=0xc13772af78 sp=0xc13772af48 pc=0x231e846
+golang.org/x/sync/errgroup.(*Group).Go.func1()
+	/go/pkg/mod/golang.org/x/sync@v0.11.0/errgroup/errgroup.go:78 +0x50 fp=0xc13772afe0 sp=0xc13772af78 pc=0x95fc90
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc13772afe8 sp=0xc13772afe0 pc=0x47eac1
+created by golang.org/x/sync/errgroup.(*Group).Go in goroutine 167
+	/go/pkg/mod/golang.org/x/sync@v0.11.0/errgroup/errgroup.go:75 +0x96
+
+goroutine 91 gp=0xc000684700 m=nil [IO wait, 14420 minutes]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000587ca8 sp=0xc000587c88 pc=0x4765ce
+runtime.netpollblock(0x0?, 0x408246?, 0x0?)
+	/usr/local/go/src/runtime/netpoll.go:575 +0xf7 fp=0xc000587ce0 sp=0xc000587ca8 pc=0x4385d7
+internal/poll.runtime_pollWait(0x7cc876918578, 0x72)
+	/usr/local/go/src/runtime/netpoll.go:351 +0x85 fp=0xc000587d00 sp=0xc000587ce0 pc=0x4758c5
+internal/poll.(*pollDesc).wait(0xc000dc0200?, 0x0?, 0x0)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:84 +0x27 fp=0xc000587d28 sp=0xc000587d00 pc=0x4fd707
+internal/poll.(*pollDesc).waitRead(...)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:89
+internal/poll.(*FD).Accept(0xc000dc0200)
+	/usr/local/go/src/internal/poll/fd_unix.go:620 +0x295 fp=0xc000587dd0 sp=0xc000587d28 pc=0x502ad5
+net.(*netFD).accept(0xc000dc0200)
+	/usr/local/go/src/net/fd_unix.go:172 +0x29 fp=0xc000587e88 sp=0xc000587dd0 pc=0x5b2bc9
+net.(*TCPListener).accept(0xc000dbe2c0)
+	/usr/local/go/src/net/tcpsock_posix.go:159 +0x1e fp=0xc000587ed8 sp=0xc000587e88 pc=0x5cc2be
+net.(*TCPListener).Accept(0xc000dbe2c0)
+	/usr/local/go/src/net/tcpsock.go:372 +0x30 fp=0xc000587f08 sp=0xc000587ed8 pc=0x5cb490
+github.com/thanos-io/thanos/pkg/receive.(*CapNProtoServer).listenWithCodec(0xc000dbe380, {0x3a7a810, 0xc000dbe2c0}, 0x3624d00)
+	/go/src/github.com/thanos-io/thanos/pkg/receive/capnp_server.go:60 +0x51 fp=0xc000587f48 sp=0xc000587f08 pc=0x231e8f1
+github.com/thanos-io/thanos/pkg/receive.(*CapNProtoServer).ListenAndServe.func1()
+	/go/src/github.com/thanos-io/thanos/pkg/receive/capnp_server.go:48 +0x25 fp=0xc000587f78 sp=0xc000587f48 pc=0x231e885
+golang.org/x/sync/errgroup.(*Group).Go.func1()
+	/go/pkg/mod/golang.org/x/sync@v0.11.0/errgroup/errgroup.go:78 +0x50 fp=0xc000587fe0 sp=0xc000587f78 pc=0x95fc90
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000587fe8 sp=0xc000587fe0 pc=0x47eac1
+created by golang.org/x/sync/errgroup.(*Group).Go in goroutine 167
+	/go/pkg/mod/golang.org/x/sync@v0.11.0/errgroup/errgroup.go:75 +0x96
+
+goroutine 93 gp=0xc000585180 m=nil [IO wait]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000d2f9f8 sp=0xc000d2f9d8 pc=0x4765ce
+runtime.netpollblock(0xc000d2fa48?, 0x408246?, 0x0?)
+	/usr/local/go/src/runtime/netpoll.go:575 +0xf7 fp=0xc000d2fa30 sp=0xc000d2f9f8 pc=0x4385d7
+internal/poll.runtime_pollWait(0x7cc876918368, 0x72)
+	/usr/local/go/src/runtime/netpoll.go:351 +0x85 fp=0xc000d2fa50 sp=0xc000d2fa30 pc=0x4758c5
+internal/poll.(*pollDesc).wait(0xc000cee480?, 0x900000036?, 0x0)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:84 +0x27 fp=0xc000d2fa78 sp=0xc000d2fa50 pc=0x4fd707
+internal/poll.(*pollDesc).waitRead(...)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:89
+internal/poll.(*FD).Accept(0xc000cee480)
+	/usr/local/go/src/internal/poll/fd_unix.go:620 +0x295 fp=0xc000d2fb20 sp=0xc000d2fa78 pc=0x502ad5
+net.(*netFD).accept(0xc000cee480)
+	/usr/local/go/src/net/fd_unix.go:172 +0x29 fp=0xc000d2fbd8 sp=0xc000d2fb20 pc=0x5b2bc9
+net.(*TCPListener).accept(0xc000cea680)
+	/usr/local/go/src/net/tcpsock_posix.go:159 +0x1e fp=0xc000d2fc28 sp=0xc000d2fbd8 pc=0x5cc2be
+net.(*TCPListener).Accept(0xc000cea680)
+	/usr/local/go/src/net/tcpsock.go:372 +0x30 fp=0xc000d2fc58 sp=0xc000d2fc28 pc=0x5cb490
+net/http.(*onceCloseListener).Accept(0xc7dff72000?)
+	<autogenerated>:1 +0x24 fp=0xc000d2fc70 sp=0xc000d2fc58 pc=0x8268c4
+net/http.(*Server).Serve(0xc000bd91d0, {0x3a7a810, 0xc000cea680})
+	/usr/local/go/src/net/http/server.go:3330 +0x30c fp=0xc000d2fda0 sp=0xc000d2fc70 pc=0x7fd6ac
+github.com/prometheus/exporter-toolkit/web.Serve({0x3a7a810, 0xc000cea680}, 0xc000bd91d0, 0xc000cf0558, 0xc00119edc0)
+	/go/pkg/mod/github.com/prometheus/exporter-toolkit@v0.13.2/web/tls_config.go:351 +0x756 fp=0xc000d2ff40 sp=0xc000d2fda0 pc=0x1870c76
+github.com/prometheus/exporter-toolkit/web.ServeMultiple.func1()
+	/go/pkg/mod/github.com/prometheus/exporter-toolkit@v0.13.2/web/tls_config.go:274 +0x27 fp=0xc000d2ff78 sp=0xc000d2ff40 pc=0x186ff87
+golang.org/x/sync/errgroup.(*Group).Go.func1()
+	/go/pkg/mod/golang.org/x/sync@v0.11.0/errgroup/errgroup.go:78 +0x50 fp=0xc000d2ffe0 sp=0xc000d2ff78 pc=0x95fc90
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000d2ffe8 sp=0xc000d2ffe0 pc=0x47eac1
+created by golang.org/x/sync/errgroup.(*Group).Go in goroutine 163
+	/go/pkg/mod/golang.org/x/sync@v0.11.0/errgroup/errgroup.go:75 +0x96
+
+goroutine 158 gp=0xc000604a80 m=nil [chan receive, 14420 minutes]:
+runtime.gopark(0x26b9c20?, 0xc000b75d00?, 0x48?, 0x7f?, 0x4b41f9?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000cf7eb8 sp=0xc000cf7e98 pc=0x4765ce
+runtime.chanrecv(0xc000e44e00, 0x0, 0x1)
+	/usr/local/go/src/runtime/chan.go:639 +0x41c fp=0xc000cf7f30 sp=0xc000cf7eb8 pc=0x40a05c
+runtime.chanrecv1(0xc0011d5540?, 0x408dd7?)
+	/usr/local/go/src/runtime/chan.go:489 +0x12 fp=0xc000cf7f58 sp=0xc000cf7f30 pc=0x409c12
+main.main.func2()
+	/go/src/github.com/thanos-io/thanos/cmd/thanos/main.go:128 +0x2d fp=0xc000cf7f88 sp=0xc000cf7f58 pc=0x23e05cd
+github.com/oklog/run.(*Group).Run.func1({0xc00014a7c8?, 0xc000968ba0?})
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:38 +0x29 fp=0xc000cf7fc0 sp=0xc000cf7f88 pc=0x6586e9
+github.com/oklog/run.(*Group).Run.gowrap1()
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:39 +0x28 fp=0xc000cf7fe0 sp=0xc000cf7fc0 pc=0x658688
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000cf7fe8 sp=0xc000cf7fe0 pc=0x47eac1
+created by github.com/oklog/run.(*Group).Run in goroutine 1
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:37 +0x5a
+
+goroutine 159 gp=0xc000604c40 m=nil [select, 14418 minutes]:
+runtime.gopark(0xc0b33cbee8?, 0x2?, 0xa0?, 0xc0?, 0xc0b33cbe2c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc2179bbcc8 sp=0xc2179bbca8 pc=0x4765ce
+runtime.selectgo(0xc2179bbee8, 0xc0b33cbe28, 0x2?, 0x0, 0x0?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc2179bbdf0 sp=0xc2179bbcc8 pc=0x451f25
+main.startTSDBAndUpload.func1()
+	/go/src/github.com/thanos-io/thanos/cmd/thanos/receive.go:656 +0x1be fp=0xc2179bbf88 sp=0xc2179bbdf0 pc=0x23fbdde
+github.com/oklog/run.(*Group).Run.func1({0xc000bb2630?, 0xc000a7b7f0?})
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:38 +0x29 fp=0xc2179bbfc0 sp=0xc2179bbf88 pc=0x6586e9
+github.com/oklog/run.(*Group).Run.gowrap1()
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:39 +0x28 fp=0xc2179bbfe0 sp=0xc2179bbfc0 pc=0x658688
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc2179bbfe8 sp=0xc2179bbfe0 pc=0x47eac1
+created by github.com/oklog/run.(*Group).Run in goroutine 1
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:37 +0x5a
+
+goroutine 160 gp=0xc000604e00 m=nil [select]:
+runtime.gopark(0xc0045ade98?, 0x3?, 0x6?, 0x0?, 0xc0045ade02?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc0045adca0 sp=0xc0045adc80 pc=0x4765ce
+runtime.selectgo(0xc0045ade98, 0xc0045addfc, 0x0?, 0x0, 0x0?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc0045addc8 sp=0xc0045adca0 pc=0x451f25
+main.startTSDBAndUpload.func4()
+	/go/src/github.com/thanos-io/thanos/cmd/thanos/receive.go:752 +0x209 fp=0xc0045adf88 sp=0xc0045addc8 pc=0x23fae49
+github.com/oklog/run.(*Group).Run.func1({0xc000bf8000?, 0xc000a7b9c0?})
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:38 +0x29 fp=0xc0045adfc0 sp=0xc0045adf88 pc=0x6586e9
+github.com/oklog/run.(*Group).Run.gowrap1()
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:39 +0x28 fp=0xc0045adfe0 sp=0xc0045adfc0 pc=0x658688
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc0045adfe8 sp=0xc0045adfe0 pc=0x47eac1
+created by github.com/oklog/run.(*Group).Run in goroutine 1
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:37 +0x5a
+
+goroutine 161 gp=0xc000605340 m=nil [chan receive, 14420 minutes]:
+runtime.gopark(0x0?, 0xc001080360?, 0x0?, 0x0?, 0xc000cf96e0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000cf9690 sp=0xc000cf9670 pc=0x4765ce
+runtime.chanrecv(0xc000ba2c40, 0x0, 0x1)
+	/usr/local/go/src/runtime/chan.go:639 +0x41c fp=0xc000cf9708 sp=0xc000cf9690 pc=0x40a05c
+runtime.chanrecv1(0xd40010?, 0xc000cf9750?)
+	/usr/local/go/src/runtime/chan.go:489 +0x12 fp=0xc000cf9730 sp=0xc000cf9708 pc=0x409c12
+main.setupHashring.func3()
+	/go/src/github.com/thanos-io/thanos/cmd/thanos/receive.go:549 +0x66 fp=0xc000cf9788 sp=0xc000cf9730 pc=0x23fa106
+github.com/oklog/run.(*Group).Run.func1({0xc000bf6360?, 0xc000a7b9d0?})
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:38 +0x29 fp=0xc000cf97c0 sp=0xc000cf9788 pc=0x6586e9
+github.com/oklog/run.(*Group).Run.gowrap1()
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:39 +0x28 fp=0xc000cf97e0 sp=0xc000cf97c0 pc=0x658688
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000cf97e8 sp=0xc000cf97e0 pc=0x47eac1
+created by github.com/oklog/run.(*Group).Run in goroutine 1
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:37 +0x5a
+
+goroutine 162 gp=0xc000605500 m=nil [select, 14420 minutes]:
+runtime.gopark(0xc000121f08?, 0x2?, 0x0?, 0x55?, 0xc000121e5c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000121cf8 sp=0xc000121cd8 pc=0x4765ce
+runtime.selectgo(0xc000121f08, 0xc000121e58, 0x2?, 0x0, 0x1?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc000121e20 sp=0xc000121cf8 pc=0x451f25
+main.setupHashring.func5()
+	/go/src/github.com/thanos-io/thanos/cmd/thanos/receive.go:564 +0x176 fp=0xc000121f88 sp=0xc000121e20 pc=0x23f9bd6
+github.com/oklog/run.(*Group).Run.func1({0xc000914770?, 0xc000a7b9e0?})
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:38 +0x29 fp=0xc000121fc0 sp=0xc000121f88 pc=0x6586e9
+github.com/oklog/run.(*Group).Run.gowrap1()
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:39 +0x28 fp=0xc000121fe0 sp=0xc000121fc0 pc=0x658688
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000121fe8 sp=0xc000121fe0 pc=0x47eac1
+created by github.com/oklog/run.(*Group).Run in goroutine 1
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:37 +0x5a
+
+goroutine 163 gp=0xc000605a40 m=nil [semacquire, 14420 minutes]:
+runtime.gopark(0xc000c07d58?, 0x41658b?, 0x0?, 0x0?, 0x470ffd?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000c07d00 sp=0xc000c07ce0 pc=0x4765ce
+runtime.goparkunlock(...)
+	/usr/local/go/src/runtime/proc.go:430
+runtime.semacquire1(0xc000cea6d0, 0x0, 0x1, 0x0, 0x12)
+	/usr/local/go/src/runtime/sema.go:178 +0x225 fp=0xc000c07d68 sp=0xc000c07d00 pc=0x452fc5
+sync.runtime_Semacquire(0xc000cf05a0?)
+	/usr/local/go/src/runtime/sema.go:71 +0x25 fp=0xc000c07da0 sp=0xc000c07d68 pc=0x477b45
+sync.(*WaitGroup).Wait(0x2a25fe0?)
+	/usr/local/go/src/sync/waitgroup.go:118 +0x48 fp=0xc000c07dc8 sp=0xc000c07da0 pc=0x48d548
+golang.org/x/sync/errgroup.(*Group).Wait(0xc000cea6c0)
+	/go/pkg/mod/golang.org/x/sync@v0.11.0/errgroup/errgroup.go:56 +0x25 fp=0xc000c07de8 sp=0xc000c07dc8 pc=0x95fb25
+github.com/prometheus/exporter-toolkit/web.ServeMultiple({0xc00119edd0, 0x1, 0x7ffe98e1b48d?}, 0xc000bd91d0, 0xc000cf0558, 0xc00119edc0)
+	/go/pkg/mod/github.com/prometheus/exporter-toolkit@v0.13.2/web/tls_config.go:277 +0x117 fp=0xc000c07e30 sp=0xc000c07de8 pc=0x186fef7
+github.com/prometheus/exporter-toolkit/web.ListenAndServe(0xc000bd91d0, 0xc000cf0558, 0xc00119edc0)
+	/go/pkg/mod/github.com/prometheus/exporter-toolkit@v0.13.2/web/tls_config.go:325 +0x412 fp=0xc000c07ed0 sp=0xc000c07e30 pc=0x18703b2
+github.com/thanos-io/thanos/pkg/server/http.(*Server).ListenAndServe(0xc0009148c0)
+	/go/src/github.com/thanos-io/thanos/pkg/server/http/http.go:86 +0x245 fp=0xc000c07f58 sp=0xc000c07ed0 pc=0x1874a05
+main.runReceive.func1()
+	/go/src/github.com/thanos-io/thanos/cmd/thanos/receive.go:311 +0x3a fp=0xc000c07f88 sp=0xc000c07f58 pc=0x23f8f3a
+github.com/oklog/run.(*Group).Run.func1({0xc00015a560?, 0xc00015a640?})
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:38 +0x29 fp=0xc000c07fc0 sp=0xc000c07f88 pc=0x6586e9
+github.com/oklog/run.(*Group).Run.gowrap1()
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:39 +0x28 fp=0xc000c07fe0 sp=0xc000c07fc0 pc=0x658688
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000c07fe8 sp=0xc000c07fe0 pc=0x47eac1
+created by github.com/oklog/run.(*Group).Run in goroutine 1
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:37 +0x5a
+
+goroutine 164 gp=0xc000dc6000 m=nil [IO wait]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc001107a98 sp=0xc001107a78 pc=0x4765ce
+runtime.netpollblock(0xc001107ae8?, 0x408246?, 0x0?)
+	/usr/local/go/src/runtime/netpoll.go:575 +0xf7 fp=0xc001107ad0 sp=0xc001107a98 pc=0x4385d7
+internal/poll.runtime_pollWait(0x7cc876918260, 0x72)
+	/usr/local/go/src/runtime/netpoll.go:351 +0x85 fp=0xc001107af0 sp=0xc001107ad0 pc=0x4758c5
+internal/poll.(*pollDesc).wait(0xc000cee700?, 0x900000036?, 0x0)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:84 +0x27 fp=0xc001107b18 sp=0xc001107af0 pc=0x4fd707
+internal/poll.(*pollDesc).waitRead(...)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:89
+internal/poll.(*FD).Accept(0xc000cee700)
+	/usr/local/go/src/internal/poll/fd_unix.go:620 +0x295 fp=0xc001107bc0 sp=0xc001107b18 pc=0x502ad5
+net.(*netFD).accept(0xc000cee700)
+	/usr/local/go/src/net/fd_unix.go:172 +0x29 fp=0xc001107c78 sp=0xc001107bc0 pc=0x5b2bc9
+net.(*TCPListener).accept(0xc000cea7c0)
+	/usr/local/go/src/net/tcpsock_posix.go:159 +0x1e fp=0xc001107cc8 sp=0xc001107c78 pc=0x5cc2be
+net.(*TCPListener).Accept(0xc000cea7c0)
+	/usr/local/go/src/net/tcpsock.go:372 +0x30 fp=0xc001107cf8 sp=0xc001107cc8 pc=0x5cb490
+google.golang.org/grpc.(*Server).Serve(0xc000bd2400, {0x3a7a810, 0xc000cea7c0})
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:875 +0x46c fp=0xc001107e58 sp=0xc001107cf8 pc=0xcc0b0c
+github.com/thanos-io/thanos/pkg/server/grpc.(*Server).ListenAndServe(0xc000ad3040)
+	/go/src/github.com/thanos-io/thanos/pkg/server/grpc/grpc.go:163 +0x18d fp=0xc001107ef8 sp=0xc001107e58 pc=0x224402d
+main.runReceive.func5()
+	/go/src/github.com/thanos-io/thanos/cmd/thanos/receive.go:386 +0x15e fp=0xc001107f88 sp=0xc001107ef8 pc=0x23f85fe
+github.com/oklog/run.(*Group).Run.func1({0xc000dbe100?, 0xc000b9c100?})
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:38 +0x29 fp=0xc001107fc0 sp=0xc001107f88 pc=0x6586e9
+github.com/oklog/run.(*Group).Run.gowrap1()
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:39 +0x28 fp=0xc001107fe0 sp=0xc001107fc0 pc=0x658688
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc001107fe8 sp=0xc001107fe0 pc=0x47eac1
+created by github.com/oklog/run.(*Group).Run in goroutine 1
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:37 +0x5a
+
+goroutine 165 gp=0xc000dc61c0 m=nil [IO wait]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc575191a80 sp=0xc575191a60 pc=0x4765ce
+runtime.netpollblock(0x0?, 0x408246?, 0x0?)
+	/usr/local/go/src/runtime/netpoll.go:575 +0xf7 fp=0xc575191ab8 sp=0xc575191a80 pc=0x4385d7
+internal/poll.runtime_pollWait(0x7cc876918470, 0x72)
+	/usr/local/go/src/runtime/netpoll.go:351 +0x85 fp=0xc575191ad8 sp=0xc575191ab8 pc=0x4758c5
+internal/poll.(*pollDesc).wait(0xc000d54000?, 0xc575191c30?, 0x0)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:84 +0x27 fp=0xc575191b00 sp=0xc575191ad8 pc=0x4fd707
+internal/poll.(*pollDesc).waitRead(...)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:89
+internal/poll.(*FD).Accept(0xc000d54000)
+	/usr/local/go/src/internal/poll/fd_unix.go:620 +0x295 fp=0xc575191ba8 sp=0xc575191b00 pc=0x502ad5
+net.(*netFD).accept(0xc000d54000)
+	/usr/local/go/src/net/fd_unix.go:172 +0x29 fp=0xc575191c60 sp=0xc575191ba8 pc=0x5b2bc9
+net.(*TCPListener).accept(0xc000982180)
+	/usr/local/go/src/net/tcpsock_posix.go:159 +0x1e fp=0xc575191cb0 sp=0xc575191c60 pc=0x5cc2be
+net.(*TCPListener).Accept(0xc000982180)
+	/usr/local/go/src/net/tcpsock.go:372 +0x30 fp=0xc575191ce0 sp=0xc575191cb0 pc=0x5cb490
+github.com/mwitkow/go-conntrack.(*connTrackListener).Accept(0xc000d0c048)
+	/go/pkg/mod/github.com/mwitkow/go-conntrack@v0.0.0-20190716064945-2f068394615f/listener_wrapper.go:100 +0x5c fp=0xc575191d38 sp=0xc575191ce0 pc=0x12a7d5c
+net/http.(*onceCloseListener).Accept(0xc88393ac60?)
+	<autogenerated>:1 +0x24 fp=0xc575191d50 sp=0xc575191d38 pc=0x8268c4
+net/http.(*Server).Serve(0xc000d1e1e0, {0x3a7d470, 0xc000d0c048})
+	/usr/local/go/src/net/http/server.go:3330 +0x30c fp=0xc575191e80 sp=0xc575191d50 pc=0x7fd6ac
+github.com/thanos-io/thanos/pkg/receive.(*Handler).Run(0xc000bee000)
+	/go/src/github.com/thanos-io/thanos/pkg/receive/handler.go:383 +0x5b7 fp=0xc575191f58 sp=0xc575191e80 pc=0x2325477
+main.runReceive.func7()
+	/go/src/github.com/thanos-io/thanos/cmd/thanos/receive.go:401 +0x17 fp=0xc575191f88 sp=0xc575191f58 pc=0x23f82d7
+github.com/oklog/run.(*Group).Run.func1({0xc000ce7000?, 0xc000ce7010?})
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:38 +0x29 fp=0xc575191fc0 sp=0xc575191f88 pc=0x6586e9
+github.com/oklog/run.(*Group).Run.gowrap1()
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:39 +0x28 fp=0xc575191fe0 sp=0xc575191fc0 pc=0x658688
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc575191fe8 sp=0xc575191fe0 pc=0x47eac1
+created by github.com/oklog/run.(*Group).Run in goroutine 1
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:37 +0x5a
+
+goroutine 166 gp=0xc000dc6380 m=nil [select]:
+runtime.gopark(0xc134a1feb0?, 0x2?, 0x60?, 0x8a?, 0xc134a1fe94?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc134a1fd30 sp=0xc134a1fd10 pc=0x4765ce
+runtime.selectgo(0xc134a1feb0, 0xc134a1fe90, 0xc000df7ee8?, 0x0, 0xc000d884c8?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc134a1fe58 sp=0xc134a1fd30 pc=0x451f25
+github.com/thanos-io/thanos/pkg/runutil.Repeat(0xc000d884b0?, 0xc000118380, 0xc134a1ff40)
+	/go/src/github.com/thanos-io/thanos/pkg/runutil/runutil.go:77 +0xc9 fp=0xc134a1fef8 sp=0xc134a1fe58 pc=0x15a3049
+main.runReceive.func11()
+	/go/src/github.com/thanos-io/thanos/cmd/thanos/receive.go:430 +0xb3 fp=0xc134a1ff88 sp=0xc134a1fef8 pc=0x23f7c53
+github.com/oklog/run.(*Group).Run.func1({0xc000dbe1c0?, 0xc000ce7030?})
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:38 +0x29 fp=0xc134a1ffc0 sp=0xc134a1ff88 pc=0x6586e9
+github.com/oklog/run.(*Group).Run.gowrap1()
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:39 +0x28 fp=0xc134a1ffe0 sp=0xc134a1ffc0 pc=0x658688
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc134a1ffe8 sp=0xc134a1ffe0 pc=0x47eac1
+created by github.com/oklog/run.(*Group).Run in goroutine 1
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:37 +0x5a
+
+goroutine 167 gp=0xc000dc6540 m=nil [semacquire, 14420 minutes]:
+runtime.gopark(0x0?, 0x0?, 0x20?, 0x7?, 0x470ffd?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000df8660 sp=0xc000df8640 pc=0x4765ce
+runtime.goparkunlock(...)
+	/usr/local/go/src/runtime/proc.go:430
+runtime.semacquire1(0xc000cea4d0, 0x0, 0x1, 0x0, 0x12)
+	/usr/local/go/src/runtime/sema.go:178 +0x225 fp=0xc000df86c8 sp=0xc000df8660 pc=0x452fc5
+sync.runtime_Semacquire(0xc000cf0510?)
+	/usr/local/go/src/runtime/sema.go:71 +0x25 fp=0xc000df8700 sp=0xc000df86c8 pc=0x477b45
+sync.(*WaitGroup).Wait(0x2838cc0?)
+	/usr/local/go/src/sync/waitgroup.go:118 +0x48 fp=0xc000df8728 sp=0xc000df8700 pc=0x48d548
+golang.org/x/sync/errgroup.(*Group).Wait(0xc000cea4c0)
+	/go/pkg/mod/golang.org/x/sync@v0.11.0/errgroup/errgroup.go:56 +0x25 fp=0xc000df8748 sp=0xc000df8728 pc=0x95fb25
+github.com/thanos-io/thanos/pkg/receive.(*CapNProtoServer).ListenAndServe(0xc000dbe380)
+	/go/src/github.com/thanos-io/thanos/pkg/receive/capnp_server.go:55 +0xbc fp=0xc000df8770 sp=0xc000df8748 pc=0x231e7fc
+main.runReceive.func15()
+	/go/src/github.com/thanos-io/thanos/cmd/thanos/receive.go:478 +0x17 fp=0xc000df8788 sp=0xc000df8770 pc=0x23f79f7
+github.com/oklog/run.(*Group).Run.func1({0xc000ce7190?, 0xc000dbe3c0?})
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:38 +0x29 fp=0xc000df87c0 sp=0xc000df8788 pc=0x6586e9
+github.com/oklog/run.(*Group).Run.gowrap1()
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:39 +0x28 fp=0xc000df87e0 sp=0xc000df87c0 pc=0x658688
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000df87e8 sp=0xc000df87e0 pc=0x47eac1
+created by github.com/oklog/run.(*Group).Run in goroutine 1
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:37 +0x5a
+
+goroutine 168 gp=0xc000dc6700 m=nil [select, 14420 minutes]:
+runtime.gopark(0xc000c08ee0?, 0x2?, 0x1?, 0x44?, 0xc000c08eac?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000c08d50 sp=0xc000c08d30 pc=0x4765ce
+runtime.selectgo(0xc000c08ee0, 0xc000c08ea8, 0x2?, 0x0, 0x0?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc000c08e78 sp=0xc000c08d50 pc=0x451f25
+main.interrupt({0x3a61120, 0xc0011c5e40}, 0xc000ba3490)
+	/go/src/github.com/thanos-io/thanos/cmd/thanos/main.go:179 +0xee fp=0xc000c08f60 sp=0xc000c08e78 pc=0x23e0a6e
+main.main.func4()
+	/go/src/github.com/thanos-io/thanos/cmd/thanos/main.go:152 +0x1f fp=0xc000c08f88 sp=0xc000c08f60 pc=0x23e03ff
+github.com/oklog/run.(*Group).Run.func1({0xc000b9c300?, 0xc000ce7260?})
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:38 +0x29 fp=0xc000c08fc0 sp=0xc000c08f88 pc=0x6586e9
+github.com/oklog/run.(*Group).Run.gowrap1()
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:39 +0x28 fp=0xc000c08fe0 sp=0xc000c08fc0 pc=0x658688
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000c08fe8 sp=0xc000c08fe0 pc=0x47eac1
+created by github.com/oklog/run.(*Group).Run in goroutine 1
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:37 +0x5a
+
+goroutine 169 gp=0xc000dc68c0 m=nil [select, 14420 minutes]:
+runtime.gopark(0xc000df96e8?, 0x2?, 0x3f?, 0x83?, 0xc000df96a4?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000df9548 sp=0xc000df9528 pc=0x4765ce
+runtime.selectgo(0xc000df96e8, 0xc000df96a0, 0x1?, 0x0, 0x0?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc000df9670 sp=0xc000df9548 pc=0x451f25
+main.reload({0x3a61120, 0xc0011c5e40}, 0xc000ba3500, 0xc00061e5b0)
+	/go/src/github.com/thanos-io/thanos/cmd/thanos/main.go:192 +0xe5 fp=0xc000df9758 sp=0xc000df9670 pc=0x23e0d25
+main.main.func6()
+	/go/src/github.com/thanos-io/thanos/cmd/thanos/main.go:162 +0x25 fp=0xc000df9788 sp=0xc000df9758 pc=0x23e0385
+github.com/oklog/run.(*Group).Run.func1({0xc000dad260?, 0xc000ce7270?})
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:38 +0x29 fp=0xc000df97c0 sp=0xc000df9788 pc=0x6586e9
+github.com/oklog/run.(*Group).Run.gowrap1()
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:39 +0x28 fp=0xc000df97e0 sp=0xc000df97c0 pc=0x658688
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000df97e8 sp=0xc000df97e0 pc=0x47eac1
+created by github.com/oklog/run.(*Group).Run in goroutine 1
+	/go/pkg/mod/github.com/oklog/run@v1.1.0/group.go:37 +0x5a
+
+goroutine 170 gp=0xc000dc6a80 m=nil [select, 14420 minutes, locked to thread]:
+runtime.gopark(0xc000df9fa8?, 0x2?, 0x8?, 0x0?, 0xc000df9f94?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000df9e30 sp=0xc000df9e10 pc=0x4765ce
+runtime.selectgo(0xc000df9fa8, 0xc000df9f90, 0x0?, 0x0, 0x0?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc000df9f58 sp=0xc000df9e30 pc=0x451f25
+runtime.ensureSigM.func1()
+	/usr/local/go/src/runtime/signal_unix.go:1060 +0x19f fp=0xc000df9fe0 sp=0xc000df9f58 pc=0x46d8ff
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000df9fe8 sp=0xc000df9fe0 pc=0x47eac1
+created by runtime.ensureSigM in goroutine 169
+	/usr/local/go/src/runtime/signal_unix.go:1043 +0xc8
+
+goroutine 171 gp=0xc000dc6fc0 m=3 mp=0xc00009ee08 [syscall, 14420 minutes]:
+runtime.notetsleepg(0x543b580, 0xffffffffffffffff)
+	/usr/local/go/src/runtime/lock_futex.go:246 +0x29 fp=0xc000cf67a0 sp=0xc000cf6778 pc=0x410449
+os/signal.signal_recv()
+	/usr/local/go/src/runtime/sigqueue.go:152 +0x29 fp=0xc000cf67c0 sp=0xc000cf67a0 pc=0x478689
+os/signal.loop()
+	/usr/local/go/src/os/signal/signal_unix.go:23 +0x13 fp=0xc000cf67e0 sp=0xc000cf67c0 pc=0x6582b3
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000cf67e8 sp=0xc000cf67e0 pc=0x47eac1
+created by os/signal.Notify.func1.1 in goroutine 169
+	/usr/local/go/src/os/signal/signal.go:151 +0x1f
+
+goroutine 2281 gp=0xc0006848c0 m=nil [select, 18 minutes]:
+runtime.gopark(0xc000570f78?, 0x2?, 0x80?, 0xf7?, 0xc000570f6c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000570e10 sp=0xc000570df0 pc=0x4765ce
+runtime.selectgo(0xc000570f78, 0xc000570f68, 0x5000104?, 0x0, 0xffffffffffffffff?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc000570f38 sp=0xc000570e10 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc06af6a790)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc000570fc8 sp=0xc000570f38 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc000570fe0 sp=0xc000570fc8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000570fe8 sp=0xc000570fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 177
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 2840 gp=0xc000684a80 m=nil [select, 18 minutes]:
+runtime.gopark(0xc000df7778?, 0x2?, 0x80?, 0xf7?, 0xc000df776c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000df7610 sp=0xc000df75f0 pc=0x4765ce
+runtime.selectgo(0xc000df7778, 0xc000df7768, 0x4000105?, 0x0, 0xffffffffffffffff?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc000df7738 sp=0xc000df7610 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc119e97a20)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc000df77c8 sp=0xc000df7738 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc000df77e0 sp=0xc000df77c8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000df77e8 sp=0xc000df77e0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 189
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 2582 gp=0xc000685180 m=nil [select, 18 minutes]:
+runtime.gopark(0xc000cf9f78?, 0x2?, 0x80?, 0xf7?, 0xc000cf9f6c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000cf9e10 sp=0xc000cf9df0 pc=0x4765ce
+runtime.selectgo(0xc000cf9f78, 0xc000cf9f68, 0x1000100?, 0x0, 0xffffffffffffffff?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc000cf9f38 sp=0xc000cf9e10 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc10870a4d0)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc000cf9fc8 sp=0xc000cf9f38 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc000cf9fe0 sp=0xc000cf9fc8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000cf9fe8 sp=0xc000cf9fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 77
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 5054 gp=0xc000685500 m=nil [select, 18 minutes]:
+runtime.gopark(0xc00009b778?, 0x2?, 0x80?, 0xf7?, 0xc00009b76c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc00009b610 sp=0xc00009b5f0 pc=0x4765ce
+runtime.selectgo(0xc00009b778, 0xc00009b768, 0x3000106?, 0x0, 0xffffffffffffffff?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc00009b738 sp=0xc00009b610 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc055dfcb00)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc00009b7c8 sp=0xc00009b738 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc00009b7e0 sp=0xc00009b7c8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc00009b7e8 sp=0xc00009b7e0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 180
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 5296 gp=0xc0006856c0 m=nil [select, 18 minutes]:
+runtime.gopark(0xc000df2778?, 0x2?, 0x80?, 0xf7?, 0xc000df276c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000df2610 sp=0xc000df25f0 pc=0x4765ce
+runtime.selectgo(0xc000df2778, 0xc000df2768, 0x2000107?, 0x0, 0xffffffffffffffff?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc000df2738 sp=0xc000df2610 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc05d694d10)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc000df27c8 sp=0xc000df2738 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc000df27e0 sp=0xc000df27c8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000df27e8 sp=0xc000df27e0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 195
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 4788 gp=0xc000685c00 m=nil [select, 18 minutes]:
+runtime.gopark(0xc000571f78?, 0x2?, 0x80?, 0xf7?, 0xc000571f6c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000571e10 sp=0xc000571df0 pc=0x4765ce
+runtime.selectgo(0xc000571f78, 0xc000571f68, 0x7000102?, 0x0, 0xffffffffffffffff?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc000571f38 sp=0xc000571e10 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc03290bce0)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc000571fc8 sp=0xc000571f38 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc000571fe0 sp=0xc000571fc8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000571fe8 sp=0xc000571fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 179
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 4018 gp=0xc0010c4000 m=nil [select, 18 minutes]:
+runtime.gopark(0xc0010cdf78?, 0x2?, 0x80?, 0xf7?, 0xc0010cdf6c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc0010cde10 sp=0xc0010cddf0 pc=0x4765ce
+runtime.selectgo(0xc0010cdf78, 0xc0010cdf68, 0x4000105?, 0x0, 0xffffffffffffffff?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc0010cdf38 sp=0xc0010cde10 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc025e26f20)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc0010cdfc8 sp=0xc0010cdf38 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc0010cdfe0 sp=0xc0010cdfc8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc0010cdfe8 sp=0xc0010cdfe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 190
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 18096 gp=0xc0010c41c0 m=nil [select, 18 minutes]:
+runtime.gopark(0xc0010cef78?, 0x2?, 0x80?, 0xf7?, 0xc0010cef6c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc0010cee10 sp=0xc0010cedf0 pc=0x4765ce
+runtime.selectgo(0xc0010cef78, 0xc0010cef68, 0x4000105?, 0x0, 0xffffffffffffffff?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc0010cef38 sp=0xc0010cee10 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc19d820630)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc0010cefc8 sp=0xc0010cef38 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc0010cefe0 sp=0xc0010cefc8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc0010cefe8 sp=0xc0010cefe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 192
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 2033 gp=0xc0010c4540 m=nil [select, 6 minutes]:
+runtime.gopark(0xc000cf8778?, 0x2?, 0x80?, 0xf7?, 0xc000cf876c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000cf8610 sp=0xc000cf85f0 pc=0x4765ce
+runtime.selectgo(0xc000cf8778, 0xc000cf8768, 0x0?, 0x0, 0x2?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc000cf8738 sp=0xc000cf8610 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc02187e370)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc000cf87c8 sp=0xc000cf8738 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc000cf87e0 sp=0xc000cf87c8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000cf87e8 sp=0xc000cf87e0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 76
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 4277 gp=0xc0010c48c0 m=nil [select, 18 minutes]:
+runtime.gopark(0xc0010ce778?, 0x2?, 0x80?, 0xf7?, 0xc0010ce76c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc0010ce610 sp=0xc0010ce5f0 pc=0x4765ce
+runtime.selectgo(0xc0010ce778, 0xc0010ce768, 0x3000106?, 0x0, 0xffffffffffffffff?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc0010ce738 sp=0xc0010ce610 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc027213970)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc0010ce7c8 sp=0xc0010ce738 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc0010ce7e0 sp=0xc0010ce7c8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc0010ce7e8 sp=0xc0010ce7e0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 191
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 4518 gp=0xc0010c4a80 m=nil [select, 18 minutes]:
+runtime.gopark(0xc000df4778?, 0x2?, 0x80?, 0xf7?, 0xc000df476c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000df4610 sp=0xc000df45f0 pc=0x4765ce
+runtime.selectgo(0xc000df4778, 0xc000df4768, 0x7000102?, 0x0, 0xffffffffffffffff?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc000df4738 sp=0xc000df4610 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc02b5253f0)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc000df47c8 sp=0xc000df4738 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc000df47e0 sp=0xc000df47c8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000df47e8 sp=0xc000df47e0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 183
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 18339 gp=0xc0010c4c40 m=nil [select, 18 minutes]:
+runtime.gopark(0xc00058d778?, 0x2?, 0x80?, 0xf7?, 0xc00058d76c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc00058d610 sp=0xc00058d5f0 pc=0x4765ce
+runtime.selectgo(0xc00058d778, 0xc00058d768, 0x4000105?, 0x0, 0xffffffffffffffff?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc00058d738 sp=0xc00058d610 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc1a7c09550)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc00058d7c8 sp=0xc00058d738 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc00058d7e0 sp=0xc00058d7c8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc00058d7e8 sp=0xc00058d7e0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 78
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 20657 gp=0xc0010c4e00 m=nil [select, 18 minutes]:
+runtime.gopark(0xc000df4f78?, 0x2?, 0x80?, 0xf7?, 0xc000df4f6c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000df4e10 sp=0xc000df4df0 pc=0x4765ce
+runtime.selectgo(0xc000df4f78, 0xc000df4f68, 0x5000104?, 0x0, 0xffffffffffffffff?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc000df4f38 sp=0xc000df4e10 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc00e4b2370)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc000df4fc8 sp=0xc000df4f38 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc000df4fe0 sp=0xc000df4fc8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000df4fe8 sp=0xc000df4fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 184
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 42018828653 gp=0xc0010c4fc0 m=nil [runnable]:
+google.golang.org/grpc.(*Server).serveStreams.func2.1()
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1016 fp=0xc1eb7a4fe0 sp=0xc1eb7a4fd8 pc=0xcc1fa0
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc1eb7a4fe8 sp=0xc1eb7a4fe0 pc=0x47eac1
+created by google.golang.org/grpc.(*Server).serveStreams.func2 in goroutine 41975156265
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1030 +0x125
+
+goroutine 5554 gp=0xc0010c5180 m=nil [select, 18 minutes]:
+runtime.gopark(0xc00009bf78?, 0x2?, 0x80?, 0xf7?, 0xc00009bf6c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc00009be10 sp=0xc00009bdf0 pc=0x4765ce
+runtime.selectgo(0xc00009bf78, 0xc00009bf68, 0x4000105?, 0x0, 0xffffffffffffffff?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc00009bf38 sp=0xc00009be10 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc005342420)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc00009bfc8 sp=0xc00009bf38 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc00009bfe0 sp=0xc00009bfc8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc00009bfe8 sp=0xc00009bfe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 181
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 249 gp=0xc001118000 m=nil [select, 14420 minutes]:
+runtime.gopark(0xc000571778?, 0x2?, 0x0?, 0x0?, 0xc00057176c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000571610 sp=0xc0005715f0 pc=0x4765ce
+runtime.selectgo(0xc000571778, 0xc000571768, 0x8000101?, 0x0, 0xffffffffffffffff?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc000571738 sp=0xc000571610 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc00111c0b0)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc0005717c8 sp=0xc000571738 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc0005717e0 sp=0xc0005717c8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc0005717e8 sp=0xc0005717e0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 178
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 17723 gp=0xc0011188c0 m=nil [select]:
+runtime.gopark(0xc1523adf40?, 0x3?, 0x60?, 0x0?, 0xc1523adec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc12f513d48 sp=0xc12f513d28 pc=0x4765ce
+runtime.selectgo(0xc12f513f40, 0xc1523adebc, 0xc02a0647d0?, 0x0, 0x3?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc12f513e70 sp=0xc12f513d48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc0bbed5680, {0x3a84508, 0xc02a0647d0})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc12f513fb8 sp=0xc12f513e70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc12f513fe0 sp=0xc12f513fb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc12f513fe8 sp=0xc12f513fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 182
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 42018827798 gp=0xc001119500 m=nil [runnable]:
+github.com/thanos-io/thanos/pkg/store.newLazyRespSet.gowrap1()
+	/go/src/github.com/thanos-io/thanos/pkg/store/proxy_heap.go:389 fp=0xc261d097e0 sp=0xc261d097d8 pc=0x1f071e0
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc261d097e8 sp=0xc261d097e0 pc=0x47eac1
+created by github.com/thanos-io/thanos/pkg/store.newLazyRespSet in goroutine 42018825177
+	/go/src/github.com/thanos-io/thanos/pkg/store/proxy_heap.go:389 +0x395
+
+goroutine 42018827380 gp=0xc001119c00 m=nil [runnable]:
+github.com/thanos-io/thanos/pkg/store.newLazyRespSet.gowrap1()
+	/go/src/github.com/thanos-io/thanos/pkg/store/proxy_heap.go:389 fp=0xc40c5127e0 sp=0xc40c5127d8 pc=0x1f071e0
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc40c5127e8 sp=0xc40c5127e0 pc=0x47eac1
+created by github.com/thanos-io/thanos/pkg/store.newLazyRespSet in goroutine 42018825117
+	/go/src/github.com/thanos-io/thanos/pkg/store/proxy_heap.go:389 +0x395
+
+goroutine 5505 gp=0xc001119dc0 m=nil [select]:
+runtime.gopark(0xc12d479f40?, 0x3?, 0x60?, 0x0?, 0xc12d479ec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc135082d48 sp=0xc135082d28 pc=0x4765ce
+runtime.selectgo(0xc135082f40, 0xc12d479ebc, 0xc0a1ad31d0?, 0x0, 0x59?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc135082e70 sp=0xc135082d48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc0a759ac60, {0x3a84508, 0xc0a1ad31d0})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc135082fb8 sp=0xc135082e70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc135082fe0 sp=0xc135082fb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc135082fe8 sp=0xc135082fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 195
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 42018829507 gp=0xc001a14380 m=nil [runnable]:
+google.golang.org/grpc.(*Server).serveStreams.func2.1()
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1016 fp=0xc12bf54fe0 sp=0xc12bf54fd8 pc=0xcc1fa0
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc12bf54fe8 sp=0xc12bf54fe0 pc=0x47eac1
+created by google.golang.org/grpc.(*Server).serveStreams.func2 in goroutine 41902298876
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1030 +0x125
+
+goroutine 41858953128 gp=0xc001a14a80 m=nil [select, 49 minutes]:
+runtime.gopark(0xc3a238a740?, 0x4?, 0x60?, 0x0?, 0xc3a238a6c0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc3a238a550 sp=0xc3a238a530 pc=0x4765ce
+runtime.selectgo(0xc3a238a740, 0xc3a238a6b8, 0xc3a238a6e0?, 0x0, 0xc7588d3b30?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc3a238a678 sp=0xc3a238a550 pc=0x451f25
+google.golang.org/grpc/internal/transport.(*http2Server).keepalive(0xc63f382300)
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/http2_server.go:1168 +0x1f3 fp=0xc3a238a7c8 sp=0xc3a238a678 pc=0xc76913
+google.golang.org/grpc/internal/transport.NewServerTransport.gowrap1()
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/http2_server.go:356 +0x25 fp=0xc3a238a7e0 sp=0xc3a238a7c8 pc=0xc6f6c5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc3a238a7e8 sp=0xc3a238a7e0 pc=0x47eac1
+created by google.golang.org/grpc/internal/transport.NewServerTransport in goroutine 41858953126
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/http2_server.go:356 +0x1945
+
+goroutine 42018826868 gp=0xc001a15180 m=nil [runnable]:
+github.com/thanos-io/thanos/pkg/store.newLazyRespSet.gowrap1()
+	/go/src/github.com/thanos-io/thanos/pkg/store/proxy_heap.go:389 fp=0xc2f08ce7e0 sp=0xc2f08ce7d8 pc=0x1f071e0
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc2f08ce7e8 sp=0xc2f08ce7e0 pc=0x47eac1
+created by github.com/thanos-io/thanos/pkg/store.newLazyRespSet in goroutine 42018823015
+	/go/src/github.com/thanos-io/thanos/pkg/store/proxy_heap.go:389 +0x395
+
+goroutine 3738 gp=0xc001b00380 m=nil [select, 18 minutes]:
+runtime.gopark(0xc000df5778?, 0x2?, 0x80?, 0xf7?, 0xc000df576c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000df5610 sp=0xc000df55f0 pc=0x4765ce
+runtime.selectgo(0xc000df5778, 0xc000df5768, 0x1000100?, 0x0, 0xffffffffffffffff?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc000df5738 sp=0xc000df5610 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc11f6322c0)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc000df57c8 sp=0xc000df5738 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc000df57e0 sp=0xc000df57c8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000df57e8 sp=0xc000df57e0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 185
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 15983 gp=0xc000ae88c0 m=nil [select]:
+runtime.gopark(0xc28a565f40?, 0x3?, 0x60?, 0x0?, 0xc28a565ec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc4f9a3dd48 sp=0xc4f9a3dd28 pc=0x4765ce
+runtime.selectgo(0xc4f9a3df40, 0xc28a565ebc, 0xc07d952cd0?, 0x0, 0x86?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc4f9a3de70 sp=0xc4f9a3dd48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc0f2bc3680, {0x3a84508, 0xc07d952cd0})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc4f9a3dfb8 sp=0xc4f9a3de70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc4f9a3dfe0 sp=0xc4f9a3dfb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc4f9a3dfe8 sp=0xc4f9a3dfe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 79
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 17548 gp=0xc000ae8fc0 m=nil [select, 18 minutes]:
+runtime.gopark(0xc000df3f78?, 0x2?, 0x80?, 0xf7?, 0xc000df3f6c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000df3e10 sp=0xc000df3df0 pc=0x4765ce
+runtime.selectgo(0xc000df3f78, 0xc000df3f68, 0x2000107?, 0x0, 0xffffffffffffffff?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc000df3f38 sp=0xc000df3e10 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc0c355b970)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc000df3fc8 sp=0xc000df3f38 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc000df3fe0 sp=0xc000df3fc8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000df3fe8 sp=0xc000df3fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 182
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 370 gp=0xc000dc7500 m=nil [select]:
+runtime.gopark(0xc0d858df40?, 0x3?, 0x60?, 0x0?, 0xc0d858dec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc0d858dd48 sp=0xc0d858dd28 pc=0x4765ce
+runtime.selectgo(0xc0d858df40, 0xc0d858debc, 0xc000df0640?, 0x0, 0x2?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc0d858de70 sp=0xc0d858dd48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc0be1d8900, {0x3a84508, 0xc000df0640})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc0d858dfb8 sp=0xc0d858de70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc0d858dfe0 sp=0xc0d858dfb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc0d858dfe8 sp=0xc0d858dfe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 187
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 541 gp=0xc000dc76c0 m=nil [select, 2 minutes]:
+runtime.gopark(0xc00190cf78?, 0x2?, 0x80?, 0xf7?, 0xc00190cf6c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc00190ce10 sp=0xc00190cdf0 pc=0x4765ce
+runtime.selectgo(0xc00190cf78, 0xc00190cf68, 0x0?, 0x0, 0x2?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc00190cf38 sp=0xc00190ce10 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc000934bb0)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc00190cfc8 sp=0xc00190cf38 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc00190cfe0 sp=0xc00190cfc8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc00190cfe8 sp=0xc00190cfe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 194
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 111 gp=0xc000dc7880 m=nil [select]:
+runtime.gopark(0xc1589a9f40?, 0x3?, 0x60?, 0x0?, 0xc1589a9ec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc1adbc6d48 sp=0xc1adbc6d28 pc=0x4765ce
+runtime.selectgo(0xc1adbc6f40, 0xc1589a9ebc, 0xc000e0c230?, 0x0, 0x452d60?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc1adbc6e70 sp=0xc1adbc6d48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc000e3c360, {0x3a84508, 0xc000e0c230})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc1adbc6fb8 sp=0xc1adbc6e70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc1adbc6fe0 sp=0xc1adbc6fb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc1adbc6fe8 sp=0xc1adbc6fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 178
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 1033 gp=0xc000dc7a40 m=nil [select, 4 minutes]:
+runtime.gopark(0xc000df6778?, 0x2?, 0x80?, 0xf7?, 0xc000df676c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000df6610 sp=0xc000df65f0 pc=0x4765ce
+runtime.selectgo(0xc000df6778, 0xc000df6768, 0x0?, 0x0, 0x2?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc000df6738 sp=0xc000df6610 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc0bde0d970)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc000df67c8 sp=0xc000df6738 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc000df67e0 sp=0xc000df67c8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000df67e8 sp=0xc000df67e0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 187
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 719 gp=0xc000dc7dc0 m=nil [select]:
+runtime.gopark(0xc2de961f40?, 0x3?, 0x60?, 0x0?, 0xc2de961ec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc6e1ea1d48 sp=0xc6e1ea1d28 pc=0x4765ce
+runtime.selectgo(0xc6e1ea1f40, 0xc2de961ebc, 0xc0011d4a00?, 0x0, 0x5fa?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc6e1ea1e70 sp=0xc6e1ea1d48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc000a06900, {0x3a84508, 0xc0011d4a00})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc6e1ea1fb8 sp=0xc6e1ea1e70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc6e1ea1fe0 sp=0xc6e1ea1fb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc6e1ea1fe8 sp=0xc6e1ea1fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 194
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 41860471817 gp=0xc0010c5880 m=nil [select]:
+runtime.gopark(0xc16fd87ea8?, 0x2?, 0xe9?, 0x1?, 0xc16fd87e7c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc16fd87d20 sp=0xc16fd87d00 pc=0x4765ce
+runtime.selectgo(0xc16fd87ea8, 0xc16fd87e78, 0xc79287?, 0x0, 0xc367846000?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc16fd87e48 sp=0xc16fd87d20 pc=0x451f25
+google.golang.org/grpc/internal/transport.(*controlBuffer).get(0xc36704a870, 0x1)
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/controlbuf.go:418 +0x113 fp=0xc16fd87ed8 sp=0xc16fd87e48 pc=0xc58e13
+google.golang.org/grpc/internal/transport.(*loopyWriter).run(0xc3670209a0)
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/controlbuf.go:551 +0x7b fp=0xc16fd87f38 sp=0xc16fd87ed8 pc=0xc5955b
+google.golang.org/grpc/internal/transport.NewServerTransport.func2()
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/http2_server.go:335 +0xe9 fp=0xc16fd87fe0 sp=0xc16fd87f38 pc=0xc6f7e9
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc16fd87fe8 sp=0xc16fd87fe0 pc=0x47eac1
+created by google.golang.org/grpc/internal/transport.NewServerTransport in goroutine 41860472486
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/http2_server.go:332 +0x18fe
+
+goroutine 1777 gp=0xc0be26ae00 m=nil [select, 18 minutes]:
+runtime.gopark(0xc000df6f78?, 0x2?, 0x80?, 0xf7?, 0xc000df6f6c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000df6e10 sp=0xc000df6df0 pc=0x4765ce
+runtime.selectgo(0xc000df6f78, 0xc000df6f68, 0x6000103?, 0x0, 0xffffffffffffffff?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc000df6f38 sp=0xc000df6e10 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc0058fb340)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc000df6fc8 sp=0xc000df6f38 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc000df6fe0 sp=0xc000df6fc8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc000df6fe8 sp=0xc000df6fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 188
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 42018825444 gp=0xc0e3ec4540 m=nil [coroutine]:
+runtime.corostart()
+	/usr/local/go/src/runtime/coro.go:66 fp=0xc3c83dbfe0 sp=0xc3c83dbfd8 pc=0x40a780
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc3c83dbfe8 sp=0xc3c83dbfe0 pc=0x47eac1
+created by iter.Pull2[...] in goroutine 42018825355
+	/usr/local/go/src/iter/iter.go:367 +0x192
+
+goroutine 2493 gp=0xc0fed74540 m=nil [select]:
+runtime.gopark(0xc379987f40?, 0x3?, 0x60?, 0x0?, 0xc379987ec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc79684bd48 sp=0xc79684bd28 pc=0x4765ce
+runtime.selectgo(0xc79684bf40, 0xc379987ebc, 0xc0119b89b0?, 0x0, 0x2?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc79684be70 sp=0xc79684bd48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc0a3388a20, {0x3a84508, 0xc0119b89b0})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc79684bfb8 sp=0xc79684be70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc79684bfe0 sp=0xc79684bfb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc79684bfe8 sp=0xc79684bfe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 189
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 42016698880 gp=0xc0fbad96c0 m=nil [IO wait]:
+runtime.gopark(0xc1b1757a10?, 0x449700?, 0x20?, 0xa7?, 0xb?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc1b1757a08 sp=0xc1b17579e8 pc=0x4765ce
+runtime.netpollblock(0x49aab8?, 0x408246?, 0x0?)
+	/usr/local/go/src/runtime/netpoll.go:575 +0xf7 fp=0xc1b1757a40 sp=0xc1b1757a08 pc=0x4385d7
+internal/poll.runtime_pollWait(0x7cc71585ff98, 0x72)
+	/usr/local/go/src/runtime/netpoll.go:351 +0x85 fp=0xc1b1757a60 sp=0xc1b1757a40 pc=0x4758c5
+internal/poll.(*pollDesc).wait(0xc3489ae100?, 0xc3566a4000?, 0x0)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:84 +0x27 fp=0xc1b1757a88 sp=0xc1b1757a60 pc=0x4fd707
+internal/poll.(*pollDesc).waitRead(...)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:89
+internal/poll.(*FD).Read(0xc3489ae100, {0xc3566a4000, 0x8000, 0x8000})
+	/usr/local/go/src/internal/poll/fd_unix.go:165 +0x27a fp=0xc1b1757b20 sp=0xc1b1757a88 pc=0x4fe9fa
+net.(*netFD).Read(0xc3489ae100, {0xc3566a4000?, 0x60100000000?, 0x8?})
+	/usr/local/go/src/net/fd_posix.go:55 +0x25 fp=0xc1b1757b68 sp=0xc1b1757b20 pc=0x5b0c05
+net.(*conn).Read(0xc3e7871140, {0xc3566a4000?, 0x601?, 0x7cc61dfc1688?})
+	/usr/local/go/src/net/net.go:189 +0x45 fp=0xc1b1757bb0 sp=0xc1b1757b68 pc=0x5c2825
+net.(*TCPConn).Read(0x7cc8bd5043c8?, {0xc3566a4000?, 0x100b1757c90?, 0x7cc59fff3ae8?})
+	<autogenerated>:1 +0x25 fp=0xc1b1757be0 sp=0xc1b1757bb0 pc=0x5d6e45
+bufio.(*Reader).Read(0xc34898b2c0, {0xc6914bcd60, 0x9, 0x411525?})
+	/usr/local/go/src/bufio/bufio.go:241 +0x197 fp=0xc1b1757c18 sp=0xc1b1757be0 pc=0x58a477
+io.ReadAtLeast({0x3a60e60, 0xc34898b2c0}, {0xc6914bcd60, 0x9, 0x9}, 0x9)
+	/usr/local/go/src/io/io.go:335 +0x90 fp=0xc1b1757c60 sp=0xc1b1757c18 pc=0x4f2e10
+io.ReadFull(...)
+	/usr/local/go/src/io/io.go:354
+golang.org/x/net/http2.readFrameHeader({0xc6914bcd60, 0x9, 0xc428a24050?}, {0x3a60e60?, 0xc34898b2c0?})
+	/go/pkg/mod/golang.org/x/net@v0.35.0/http2/frame.go:237 +0x65 fp=0xc1b1757cb0 sp=0xc1b1757c60 pc=0x9a09c5
+golang.org/x/net/http2.(*Framer).ReadFrame(0xc6914bcd20)
+	/go/pkg/mod/golang.org/x/net@v0.35.0/http2/frame.go:501 +0x85 fp=0xc1b1757d58 sp=0xc1b1757cb0 pc=0x9a1105
+google.golang.org/grpc/internal/transport.(*http2Server).HandleStreams(0xc924e94180, {0x3a844d0, 0xc7c9048900}, 0xc7c9048930)
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/http2_server.go:645 +0x15d fp=0xc1b1757e88 sp=0xc1b1757d58 pc=0xc726fd
+google.golang.org/grpc.(*Server).serveStreams(0xc000bd2400, {0x3a84498?, 0x5439d20?}, {0x3a9d380, 0xc924e94180}, {0x3a99558?, 0xc3e7871140?})
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1013 +0x396 fp=0xc1b1757f70 sp=0xc1b1757e88 pc=0xcc1db6
+google.golang.org/grpc.(*Server).handleRawConn.func1()
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:949 +0x56 fp=0xc1b1757fe0 sp=0xc1b1757f70 pc=0xcc1576
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc1b1757fe8 sp=0xc1b1757fe0 pc=0x47eac1
+created by google.golang.org/grpc.(*Server).handleRawConn in goroutine 42016698877
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:948 +0x1c6
+
+goroutine 17474 gp=0xc006a5a380 m=nil [select]:
+runtime.gopark(0xc1aa46bf40?, 0x3?, 0x60?, 0x0?, 0xc1aa46bec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc9eb944d48 sp=0xc9eb944d28 pc=0x4765ce
+runtime.selectgo(0xc9eb944f40, 0xc1aa46bebc, 0xc1167ba960?, 0x0, 0x3?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc9eb944e70 sp=0xc9eb944d48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc18732d560, {0x3a84508, 0xc1167ba960})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc9eb944fb8 sp=0xc9eb944e70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc9eb944fe0 sp=0xc9eb944fb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc9eb944fe8 sp=0xc9eb944fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 192
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 10073 gp=0xc015e2ac40 m=nil [select, 4 minutes]:
+runtime.gopark(0xc00056f778?, 0x2?, 0x80?, 0xf7?, 0xc00056f76c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc00056f610 sp=0xc00056f5f0 pc=0x4765ce
+runtime.selectgo(0xc00056f778, 0xc00056f768, 0x7000102?, 0x0, 0xffffffffffffffff?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc00056f738 sp=0xc00056f610 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc0e2ea3810)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc00056f7c8 sp=0xc00056f738 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc00056f7e0 sp=0xc00056f7c8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc00056f7e8 sp=0xc00056f7e0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 79
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 1952 gp=0xc016751880 m=nil [select]:
+runtime.gopark(0xc133fabf40?, 0x3?, 0x60?, 0x0?, 0xc133fabec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc05f704d48 sp=0xc05f704d28 pc=0x4765ce
+runtime.selectgo(0xc05f704f40, 0xc133fabebc, 0xc0e3d8d3b0?, 0x0, 0x3?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc05f704e70 sp=0xc05f704d48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc01144efc0, {0x3a84508, 0xc0e3d8d3b0})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc05f704fb8 sp=0xc05f704e70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc05f704fe0 sp=0xc05f704fb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc05f704fe8 sp=0xc05f704fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 188
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 4909 gp=0xc019869340 m=nil [select]:
+runtime.gopark(0xc322d6bf40?, 0x3?, 0x60?, 0x0?, 0xc322d6bec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc134a22d48 sp=0xc134a22d28 pc=0x4765ce
+runtime.selectgo(0xc134a22f40, 0xc322d6bebc, 0xc048f7cc30?, 0x0, 0x3?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc134a22e70 sp=0xc134a22d48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc063824240, {0x3a84508, 0xc048f7cc30})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc134a22fb8 sp=0xc134a22e70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc134a22fe0 sp=0xc134a22fb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc134a22fe8 sp=0xc134a22fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 179
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 42018825174 gp=0xc019934540 m=nil [sync.Cond.Wait]:
+runtime.gopark(0x415c8d?, 0x40?, 0x8?, 0xbc?, 0xc2b84b18c0?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc033256de0 sp=0xc033256dc0 pc=0x4765ce
+runtime.goparkunlock(...)
+	/usr/local/go/src/runtime/proc.go:430
+sync.runtime_notifyListWait(0xc2639fea90, 0x0)
+	/usr/local/go/src/runtime/sema.go:587 +0x159 fp=0xc033256e30 sp=0xc033256de0 pc=0x477eb9
+sync.(*Cond).Wait(0xc033256e98?)
+	/usr/local/go/src/sync/cond.go:71 +0x85 fp=0xc033256e70 sp=0xc033256e30 pc=0x489ea5
+github.com/thanos-io/thanos/pkg/store.(*lazyRespSet).Empty(0xc710c81c30)
+	/go/src/github.com/thanos-io/thanos/pkg/store/proxy_heap.go:301 +0xc5 fp=0xc033256ea8 sp=0xc033256e70 pc=0x1f06985
+github.com/thanos-io/thanos/pkg/store.NewProxyResponseHeap({0xc2639fea00, 0x4, 0x4?})
+	/go/src/github.com/thanos-io/thanos/pkg/store/proxy_heap.go:229 +0xbd fp=0xc033256f20 sp=0xc033256ea8 pc=0x1f066bd
+github.com/thanos-io/thanos/pkg/store.(*ProxyStore).Series(0xc000ad2f00, 0xc367d5fae0, {0x3a930a0, 0xc78b7bf2e0})
+	/go/src/github.com/thanos-io/thanos/pkg/store/proxy.go:370 +0x1465 fp=0xc0332571f0 sp=0xc033256f20 pc=0x1f01e65
+github.com/thanos-io/thanos/pkg/store.(*instrumentedStoreServer).Series(0xc000bf66f0, 0xc367d5fae0, {0x3a93190, 0xc3faac01b0})
+	/go/src/github.com/thanos-io/thanos/pkg/store/telemetry.go:124 +0x9a fp=0xc033257228 sp=0xc0332571f0 pc=0x1f0c8da
+github.com/thanos-io/thanos/pkg/store.(*limitedStoreServer).Series(0xc000bf67b0, 0xc367d5fae0, {0x3a95f80, 0xc2b84c3850})
+	/go/src/github.com/thanos-io/thanos/pkg/store/limiter.go:141 +0x171 fp=0xc033257298 sp=0xc033257228 pc=0x1ef7311
+github.com/thanos-io/thanos/pkg/store.(*ReadWriteTSDBStore).Series(0x15998bf?, 0x10?, {0x3a95f80?, 0xc2b84c3850?})
+	<autogenerated>:1 +0x2e fp=0xc0332572c8 sp=0xc033257298 pc=0x1f1496e
+github.com/thanos-io/thanos/pkg/store.(*recoverableStoreServer).Series(0xc54d0abe90?, 0x2b1afa0?, {0x3a95f80?, 0xc2b84c3850?})
+	/go/src/github.com/thanos-io/thanos/pkg/store/recover.go:28 +0x6c fp=0xc033257338 sp=0xc0332572c8 pc=0x1f0a7ec
+github.com/thanos-io/thanos/pkg/store/storepb._Store_Series_Handler({0x2853c00, 0xc00015b320}, {0x3a8fb88, 0xc54d0abe90})
+	/go/src/github.com/thanos-io/thanos/pkg/store/storepb/rpc.pb.go:981 +0x107 fp=0xc033257378 sp=0xc033257338 pc=0x17ec607
+github.com/thanos-io/thanos/pkg/server/grpc.New.StreamServerInterceptor.func23({0x2853c00, 0xc00015b320}, {0x3a8fb88, 0xc54d0abe90}, 0xc2b84c94d0, 0x3625080)
+	/go/pkg/mod/github.com/grpc-ecosystem/go-grpc-middleware/v2@v2.1.0/interceptors/selector/selector.go:52 +0x1fa fp=0xc033257490 sp=0xc033257378 pc=0x224209a
+google.golang.org/grpc.getChainStreamHandler.func1({0x2853c00, 0xc00015b320}, {0x3a8fb88, 0xc54d0abe90})
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1515 +0xb2 fp=0xc0332574f8 sp=0xc033257490 pc=0xcc5f52
+github.com/thanos-io/thanos/pkg/server/grpc.New.StreamServerInterceptor.func21({0x2853c00, 0xc00015b320}, {0x3a8fb88, 0xc54d0abe90}, 0xc2b84c94d0, 0xc2639fe940)
+	/go/pkg/mod/github.com/grpc-ecosystem/go-grpc-middleware/v2@v2.1.0/interceptors/selector/selector.go:52 +0x1fa fp=0xc033257610 sp=0xc0332574f8 pc=0x22425fa
+google.golang.org/grpc.getChainStreamHandler.func1({0x2853c00, 0xc00015b320}, {0x3a8fb88, 0xc54d0abe90})
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1515 +0xb2 fp=0xc033257678 sp=0xc033257610 pc=0xcc5f52
+github.com/thanos-io/thanos/pkg/tracing/tracing_middleware.StreamServerInterceptor.StreamServerInterceptor.func1({0x2853c00, 0xc00015b320}, {0x3a8e998, 0xc78b7bf280}, 0xc2b84c94d0, 0xc2639fe900)
+	/go/src/github.com/thanos-io/thanos/pkg/tracing/interceptors/server.go:40 +0x264 fp=0xc0332577c0 sp=0xc033257678 pc=0x159cbc4
+github.com/thanos-io/thanos/pkg/tracing.StreamServerInterceptor.func1({0x2853c00, 0xc00015b320}, {0x3a8ef20, 0xc2b84c94e8}, 0xc2b84c94d0, 0xc2639fe900)
+	/go/src/github.com/thanos-io/thanos/pkg/tracing/grpc.go:42 +0xf7 fp=0xc033257820 sp=0xc0332577c0 pc=0x159da37
+google.golang.org/grpc.getChainStreamHandler.func1({0x2853c00, 0xc00015b320}, {0x3a8ef20, 0xc2b84c94e8})
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1515 +0xb2 fp=0xc033257888 sp=0xc033257820 pc=0xcc5f52
+github.com/thanos-io/thanos/pkg/server/grpc.New.(*ServerMetrics).StreamServerInterceptor.func19({0x2853c00, 0xc00015b320}, {0x3a8ecc0, 0xc2b849d860}, 0xc2b84c94d0, 0xc2639fe8c0)
+	/go/pkg/mod/github.com/grpc-ecosystem/go-grpc-prometheus@v1.2.0/server_metrics.go:121 +0xd2 fp=0xc0332578e0 sp=0xc033257888 pc=0x2242b92
+google.golang.org/grpc.getChainStreamHandler.func1({0x2853c00, 0xc00015b320}, {0x3a8ecc0, 0xc2b849d860})
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1515 +0xb2 fp=0xc033257948 sp=0xc0332578e0 pc=0xcc5f52
+github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery.StreamServerInterceptor.func1({0x2853c00?, 0xc00015b320?}, {0x3a8ecc0?, 0xc2b849d860?}, 0xc2b84c94d0?, 0x3625080?)
+	/go/pkg/mod/github.com/grpc-ecosystem/go-grpc-middleware/v2@v2.1.0/interceptors/recovery/interceptors.go:48 +0x82 fp=0xc0332579c0 sp=0xc033257948 pc=0x2234562
+google.golang.org/grpc.getChainStreamHandler.func1({0x2853c00, 0xc00015b320}, {0x3a8ecc0, 0xc2b849d860})
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1515 +0xb2 fp=0xc033257a28 sp=0xc0332579c0 pc=0xcc5f52
+github.com/thanos-io/thanos/pkg/server/grpc.New.NewStreamServerRequestIDInterceptor.func17({0x2853c00, 0xc00015b320}, {0x3a8ecc0, 0xc2b849d860}, 0xc2b84c94d0?, 0xc2639fe840)
+	/go/src/github.com/thanos-io/thanos/pkg/server/grpc/request_id.go:52 +0xca fp=0xc033257a60 sp=0xc033257a28 pc=0x2244aea
+google.golang.org/grpc.NewServer.chainStreamServerInterceptors.chainStreamInterceptors.func2({0x2853c00, 0xc00015b320}, {0x3a8ecc0, 0xc2b849d860}, 0xc2b84c94d0, 0xc2b84c37b0?)
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1506 +0x85 fp=0xc033257ab0 sp=0xc033257a60 pc=0xcbf845
+google.golang.org/grpc.(*Server).processStreamingRPC(0xc000bd2400, {0x3a844d0, 0xc54d0abce0}, {0x3a9d380, 0xc4de34bc80}, 0xc3e7c11680, 0xc000bf6f30, 0x53e14c0, 0x0)
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1670 +0x11e7 fp=0xc033257da8 sp=0xc033257ab0 pc=0xcc7187
+google.golang.org/grpc.(*Server).handleStream(0xc000bd2400, {0x3a9d380, 0xc4de34bc80}, 0xc3e7c11680)
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1784 +0xe3a fp=0xc033257f78 sp=0xc033257da8 pc=0xcc8d9a
+google.golang.org/grpc.(*Server).serveStreams.func2.1()
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1019 +0x7f fp=0xc033257fe0 sp=0xc033257f78 pc=0xcc201f
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc033257fe8 sp=0xc033257fe0 pc=0x47eac1
+created by google.golang.org/grpc.(*Server).serveStreams.func2 in goroutine 41942831955
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1030 +0x125
+
+goroutine 41854264750 gp=0xc019934a80 m=nil [IO wait]:
+runtime.gopark(0xc31b010a10?, 0x449700?, 0xe0?, 0x4a?, 0xb?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc31b010a08 sp=0xc31b0109e8 pc=0x4765ce
+runtime.netpollblock(0x49aab8?, 0x408246?, 0x0?)
+	/usr/local/go/src/runtime/netpoll.go:575 +0xf7 fp=0xc31b010a40 sp=0xc31b010a08 pc=0x4385d7
+internal/poll.runtime_pollWait(0x7cc6103df038, 0x72)
+	/usr/local/go/src/runtime/netpoll.go:351 +0x85 fp=0xc31b010a60 sp=0xc31b010a40 pc=0x4758c5
+internal/poll.(*pollDesc).wait(0xc5938da000?, 0xc08258a000?, 0x0)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:84 +0x27 fp=0xc31b010a88 sp=0xc31b010a60 pc=0x4fd707
+internal/poll.(*pollDesc).waitRead(...)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:89
+internal/poll.(*FD).Read(0xc5938da000, {0xc08258a000, 0x8000, 0x8000})
+	/usr/local/go/src/internal/poll/fd_unix.go:165 +0x27a fp=0xc31b010b20 sp=0xc31b010a88 pc=0x4fe9fa
+net.(*netFD).Read(0xc5938da000, {0xc08258a000?, 0x40ffd0?, 0x7cc8bd514ed8?})
+	/usr/local/go/src/net/fd_posix.go:55 +0x25 fp=0xc31b010b68 sp=0xc31b010b20 pc=0x5b0c05
+net.(*conn).Read(0xc6ceaedb58, {0xc08258a000?, 0xc2bacf0e58?, 0xc31b010c38?})
+	/usr/local/go/src/net/net.go:189 +0x45 fp=0xc31b010bb0 sp=0xc31b010b68 pc=0x5c2825
+net.(*TCPConn).Read(0x288c680?, {0xc08258a000?, 0xc6c1b649c0?, 0x2bbc900?})
+	<autogenerated>:1 +0x25 fp=0xc31b010be0 sp=0xc31b010bb0 pc=0x5d6e45
+bufio.(*Reader).Read(0xc3392561e0, {0xc58f933540, 0x9, 0x0?})
+	/usr/local/go/src/bufio/bufio.go:241 +0x197 fp=0xc31b010c18 sp=0xc31b010be0 pc=0x58a477
+io.ReadAtLeast({0x3a60e60, 0xc3392561e0}, {0xc58f933540, 0x9, 0x9}, 0x9)
+	/usr/local/go/src/io/io.go:335 +0x90 fp=0xc31b010c60 sp=0xc31b010c18 pc=0x4f2e10
+io.ReadFull(...)
+	/usr/local/go/src/io/io.go:354
+golang.org/x/net/http2.readFrameHeader({0xc58f933540, 0x9, 0xc31b010d48?}, {0x3a60e60?, 0xc3392561e0?})
+	/go/pkg/mod/golang.org/x/net@v0.35.0/http2/frame.go:237 +0x65 fp=0xc31b010cb0 sp=0xc31b010c60 pc=0x9a09c5
+golang.org/x/net/http2.(*Framer).ReadFrame(0xc58f933500)
+	/go/pkg/mod/golang.org/x/net@v0.35.0/http2/frame.go:501 +0x85 fp=0xc31b010d58 sp=0xc31b010cb0 pc=0x9a1105
+google.golang.org/grpc/internal/transport.(*http2Server).HandleStreams(0xc4e0bc5080, {0x3a844d0, 0xc561730b10}, 0xc561730b40)
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/http2_server.go:645 +0x15d fp=0xc31b010e88 sp=0xc31b010d58 pc=0xc726fd
+google.golang.org/grpc.(*Server).serveStreams(0xc000bd2400, {0x3a84498?, 0x5439d20?}, {0x3a9d380, 0xc4e0bc5080}, {0x3a99558?, 0xc6ceaedb58?})
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1013 +0x396 fp=0xc31b010f70 sp=0xc31b010e88 pc=0xcc1db6
+google.golang.org/grpc.(*Server).handleRawConn.func1()
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:949 +0x56 fp=0xc31b010fe0 sp=0xc31b010f70 pc=0xcc1576
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc31b010fe8 sp=0xc31b010fe0 pc=0x47eac1
+created by google.golang.org/grpc.(*Server).handleRawConn in goroutine 41854264898
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:948 +0x1c6
+
+goroutine 2216 gp=0xc11ef82c40 m=nil [select]:
+runtime.gopark(0xc01389df40?, 0x3?, 0x60?, 0x0?, 0xc01389dec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc9eb945d48 sp=0xc9eb945d28 pc=0x4765ce
+runtime.selectgo(0xc9eb945f40, 0xc01389debc, 0xc01a6ac3c0?, 0x0, 0x1057?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc9eb945e70 sp=0xc9eb945d48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc00eb6dd40, {0x3a84508, 0xc01a6ac3c0})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc9eb945fb8 sp=0xc9eb945e70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc9eb945fe0 sp=0xc9eb945fb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc9eb945fe8 sp=0xc9eb945fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 76
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 6979 gp=0xc11ef82e00 m=nil [select]:
+runtime.gopark(0xc06141bf40?, 0x3?, 0x60?, 0x0?, 0xc06141bec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc4f9a37d48 sp=0xc4f9a37d28 pc=0x4765ce
+runtime.selectgo(0xc4f9a37f40, 0xc06141bebc, 0xc064c424b0?, 0x0, 0x2?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc4f9a37e70 sp=0xc4f9a37d48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc064c4ea20, {0x3a84508, 0xc064c424b0})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc4f9a37fb8 sp=0xc4f9a37e70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc4f9a37fe0 sp=0xc4f9a37fb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc4f9a37fe8 sp=0xc4f9a37fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 80
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 2533 gp=0xc11fb98540 m=nil [select]:
+runtime.gopark(0xc03411ff40?, 0x3?, 0x60?, 0x0?, 0xc03411fec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc720599d48 sp=0xc720599d28 pc=0x4765ce
+runtime.selectgo(0xc720599f40, 0xc03411febc, 0xc0011d4cd0?, 0x0, 0x100000000000000?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc720599e70 sp=0xc720599d48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc10eba5b00, {0x3a84508, 0xc0011d4cd0})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc720599fb8 sp=0xc720599e70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc720599fe0 sp=0xc720599fb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc720599fe8 sp=0xc720599fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 177
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 2791 gp=0xc0f7724a80 m=nil [select]:
+runtime.gopark(0xc032ff7f40?, 0x3?, 0x60?, 0x0?, 0xc032ff7ec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc135083d48 sp=0xc135083d28 pc=0x4765ce
+runtime.selectgo(0xc135083f40, 0xc032ff7ebc, 0xc00f92abe0?, 0x0, 0x357?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc135083e70 sp=0xc135083d48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc07d455d40, {0x3a84508, 0xc00f92abe0})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc135083fb8 sp=0xc135083e70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc135083fe0 sp=0xc135083fb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc135083fe8 sp=0xc135083fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 77
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 18015 gp=0xc0f7724c40 m=nil [select]:
+runtime.gopark(0xc31720df40?, 0x3?, 0x60?, 0x0?, 0xc31720dec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc7798fdd48 sp=0xc7798fdd28 pc=0x4765ce
+runtime.selectgo(0xc7798fdf40, 0xc31720debc, 0xc0ef41e5f0?, 0x0, 0x2?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc7798fde70 sp=0xc7798fdd48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc1623277a0, {0x3a84508, 0xc0ef41e5f0})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc7798fdfb8 sp=0xc7798fde70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc7798fdfe0 sp=0xc7798fdfb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc7798fdfe8 sp=0xc7798fdfe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 186
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 3969 gp=0xc0f6fd2fc0 m=nil [select]:
+runtime.gopark(0xc140a8df40?, 0x3?, 0x60?, 0x0?, 0xc140a8dec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xcb1cdf1d48 sp=0xcb1cdf1d28 pc=0x4765ce
+runtime.selectgo(0xcb1cdf1f40, 0xc140a8debc, 0xc048f7c730?, 0x0, 0x2?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xcb1cdf1e70 sp=0xcb1cdf1d48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc025a0ed80, {0x3a84508, 0xc048f7c730})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xcb1cdf1fb8 sp=0xcb1cdf1e70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xcb1cdf1fe0 sp=0xcb1cdf1fb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xcb1cdf1fe8 sp=0xcb1cdf1fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 185
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 42018825299 gp=0xc01b52e380 m=nil [coroutine]:
+runtime.corostart()
+	/usr/local/go/src/runtime/coro.go:66 fp=0xc165e4d7e0 sp=0xc165e4d7d8 pc=0x40a780
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc165e4d7e8 sp=0xc165e4d7e0 pc=0x47eac1
+created by iter.Pull2[...] in goroutine 42018822677
+	/usr/local/go/src/iter/iter.go:367 +0x192
+
+goroutine 1973 gp=0xc01b52e700 m=nil [select]:
+runtime.gopark(0xc133faff40?, 0x3?, 0x60?, 0x0?, 0xc133fafec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc4f9c75d48 sp=0xc4f9c75d28 pc=0x4765ce
+runtime.selectgo(0xc4f9c75f40, 0xc133fafebc, 0xc0a1bf8c30?, 0x0, 0x2?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc4f9c75e70 sp=0xc4f9c75d48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc04e2b3440, {0x3a84508, 0xc0a1bf8c30})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc4f9c75fb8 sp=0xc4f9c75e70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc4f9c75fe0 sp=0xc4f9c75fb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc4f9c75fe8 sp=0xc4f9c75fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 181
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 41921206204 gp=0xc01b52e8c0 m=nil [runnable]:
+runtime.gopark(0xc0263f5ea8?, 0x2?, 0xa9?, 0x1?, 0xc0263f5e7c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc0263f5d20 sp=0xc0263f5d00 pc=0x4765ce
+runtime.selectgo(0xc0263f5ea8, 0xc0263f5e78, 0xc79287?, 0x0, 0xc156c9c000?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc0263f5e48 sp=0xc0263f5d20 pc=0x451f25
+google.golang.org/grpc/internal/transport.(*controlBuffer).get(0xc155f57e00, 0x1)
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/controlbuf.go:418 +0x113 fp=0xc0263f5ed8 sp=0xc0263f5e48 pc=0xc58e13
+google.golang.org/grpc/internal/transport.(*loopyWriter).run(0xc1559c0460)
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/controlbuf.go:551 +0x7b fp=0xc0263f5f38 sp=0xc0263f5ed8 pc=0xc5955b
+google.golang.org/grpc/internal/transport.NewServerTransport.func2()
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/http2_server.go:335 +0xe9 fp=0xc0263f5fe0 sp=0xc0263f5f38 pc=0xc6f7e9
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc0263f5fe8 sp=0xc0263f5fe0 pc=0x47eac1
+created by google.golang.org/grpc/internal/transport.NewServerTransport in goroutine 41921206150
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/http2_server.go:332 +0x18fe
+
+goroutine 41963000124 gp=0xc01b52f340 m=nil [IO wait]:
+runtime.gopark(0xc41f369a10?, 0x449700?, 0xb0?, 0x13?, 0xb?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc41f369a08 sp=0xc41f3699e8 pc=0x4765ce
+runtime.netpollblock(0x49aab8?, 0x408246?, 0x0?)
+	/usr/local/go/src/runtime/netpoll.go:575 +0xf7 fp=0xc41f369a40 sp=0xc41f369a08 pc=0x4385d7
+internal/poll.runtime_pollWait(0x7cc6103b1498, 0x72)
+	/usr/local/go/src/runtime/netpoll.go:351 +0x85 fp=0xc41f369a60 sp=0xc41f369a40 pc=0x4758c5
+internal/poll.(*pollDesc).wait(0xc5b3ff6100?, 0xc5b4d8e000?, 0x0)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:84 +0x27 fp=0xc41f369a88 sp=0xc41f369a60 pc=0x4fd707
+internal/poll.(*pollDesc).waitRead(...)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:89
+internal/poll.(*FD).Read(0xc5b3ff6100, {0xc5b4d8e000, 0x8000, 0x8000})
+	/usr/local/go/src/internal/poll/fd_unix.go:165 +0x27a fp=0xc41f369b20 sp=0xc41f369a88 pc=0x4fe9fa
+net.(*netFD).Read(0xc5b3ff6100, {0xc5b4d8e000?, 0x60100000000?, 0x8?})
+	/usr/local/go/src/net/fd_posix.go:55 +0x25 fp=0xc41f369b68 sp=0xc41f369b20 pc=0x5b0c05
+net.(*conn).Read(0xc440c5f780, {0xc5b4d8e000?, 0x601?, 0x7cc253084848?})
+	/usr/local/go/src/net/net.go:189 +0x45 fp=0xc41f369bb0 sp=0xc41f369b68 pc=0x5c2825
+net.(*TCPConn).Read(0x7cc8bd515838?, {0xc5b4d8e000?, 0x1001f369c90?, 0x7cc362be9bb0?})
+	<autogenerated>:1 +0x25 fp=0xc41f369be0 sp=0xc41f369bb0 pc=0x5d6e45
+bufio.(*Reader).Read(0xc5b3ff2600, {0xc5a3ce90e0, 0x9, 0x411525?})
+	/usr/local/go/src/bufio/bufio.go:241 +0x197 fp=0xc41f369c18 sp=0xc41f369be0 pc=0x58a477
+io.ReadAtLeast({0x3a60e60, 0xc5b3ff2600}, {0xc5a3ce90e0, 0x9, 0x9}, 0x9)
+	/usr/local/go/src/io/io.go:335 +0x90 fp=0xc41f369c60 sp=0xc41f369c18 pc=0x4f2e10
+io.ReadFull(...)
+	/usr/local/go/src/io/io.go:354
+golang.org/x/net/http2.readFrameHeader({0xc5a3ce90e0, 0x9, 0xc617429710?}, {0x3a60e60?, 0xc5b3ff2600?})
+	/go/pkg/mod/golang.org/x/net@v0.35.0/http2/frame.go:237 +0x65 fp=0xc41f369cb0 sp=0xc41f369c60 pc=0x9a09c5
+golang.org/x/net/http2.(*Framer).ReadFrame(0xc5a3ce90a0)
+	/go/pkg/mod/golang.org/x/net@v0.35.0/http2/frame.go:501 +0x85 fp=0xc41f369d58 sp=0xc41f369cb0 pc=0x9a1105
+google.golang.org/grpc/internal/transport.(*http2Server).HandleStreams(0xc5b3fde480, {0x3a844d0, 0xc6a3c8d230}, 0xc6a3c8d2c0)
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/http2_server.go:645 +0x15d fp=0xc41f369e88 sp=0xc41f369d58 pc=0xc726fd
+google.golang.org/grpc.(*Server).serveStreams(0xc000bd2400, {0x3a84498?, 0x5439d20?}, {0x3a9d380, 0xc5b3fde480}, {0x3a99558?, 0xc440c5f780?})
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1013 +0x396 fp=0xc41f369f70 sp=0xc41f369e88 pc=0xcc1db6
+google.golang.org/grpc.(*Server).handleRawConn.func1()
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:949 +0x56 fp=0xc41f369fe0 sp=0xc41f369f70 pc=0xcc1576
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc41f369fe8 sp=0xc41f369fe0 pc=0x47eac1
+created by google.golang.org/grpc.(*Server).handleRawConn in goroutine 41962999644
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:948 +0x1c6
+
+goroutine 42018829895 gp=0xc01947d180 m=nil [coroutine]:
+runtime.corostart()
+	/usr/local/go/src/runtime/coro.go:66 fp=0xc1eb7a97e0 sp=0xc1eb7a97d8 pc=0x40a780
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc1eb7a97e8 sp=0xc1eb7a97e0 pc=0x47eac1
+created by iter.Pull2[...] in goroutine 42018829836
+	/usr/local/go/src/iter/iter.go:367 +0x192
+
+goroutine 42018828544 gp=0xc01947d340 m=nil [runnable]:
+github.com/thanos-io/thanos/pkg/store.newLazyRespSet.gowrap1()
+	/go/src/github.com/thanos-io/thanos/pkg/store/proxy_heap.go:389 fp=0xc0d6de27e0 sp=0xc0d6de27d8 pc=0x1f071e0
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc0d6de27e8 sp=0xc0d6de27e0 pc=0x47eac1
+created by github.com/thanos-io/thanos/pkg/store.newLazyRespSet in goroutine 42018824187
+	/go/src/github.com/thanos-io/thanos/pkg/store/proxy_heap.go:389 +0x395
+
+goroutine 4197 gp=0xc01947da40 m=nil [select]:
+runtime.gopark(0xc0dd425f40?, 0x3?, 0x60?, 0x0?, 0xc0dd425ec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc12b04fd48 sp=0xc12b04fd28 pc=0x4765ce
+runtime.selectgo(0xc12b04ff40, 0xc0dd425ebc, 0xc0e3d8dd60?, 0x0, 0x46?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc12b04fe70 sp=0xc12b04fd48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc10dec6120, {0x3a84508, 0xc0e3d8dd60})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc12b04ffb8 sp=0xc12b04fe70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc12b04ffe0 sp=0xc12b04ffb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc12b04ffe8 sp=0xc12b04ffe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 191
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 4228 gp=0xc01a23cc40 m=nil [select]:
+runtime.gopark(0xc0d77a1f40?, 0x3?, 0x60?, 0x0?, 0xc0d77a1ec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc1ac7d5d48 sp=0xc1ac7d5d28 pc=0x4765ce
+runtime.selectgo(0xc1ac7d5f40, 0xc0d77a1ebc, 0xc00ee1b1d0?, 0x0, 0x452d60?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc1ac7d5e70 sp=0xc1ac7d5d48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc10b99c5a0, {0x3a84508, 0xc00ee1b1d0})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc1ac7d5fb8 sp=0xc1ac7d5e70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc1ac7d5fe0 sp=0xc1ac7d5fb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc1ac7d5fe8 sp=0xc1ac7d5fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 190
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 5247 gp=0xc01e45ee00 m=nil [select]:
+runtime.gopark(0xc1aa467f40?, 0x3?, 0x60?, 0x0?, 0xc1aa467ec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc12b049d48 sp=0xc12b049d28 pc=0x4765ce
+runtime.selectgo(0xc12b049f40, 0xc1aa467ebc, 0xc0295a3770?, 0x0, 0x2?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc12b049e70 sp=0xc12b049d48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc09f22e360, {0x3a84508, 0xc0295a3770})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc12b049fb8 sp=0xc12b049e70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc12b049fe0 sp=0xc12b049fb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc12b049fe8 sp=0xc12b049fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 180
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 4739 gp=0xc01e7bbc00 m=nil [select]:
+runtime.gopark(0xc062469f40?, 0x3?, 0x60?, 0x0?, 0xc062469ec2?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc9eb946d48 sp=0xc9eb946d28 pc=0x4765ce
+runtime.selectgo(0xc9eb946f40, 0xc062469ebc, 0xc000df1220?, 0x0, 0x2?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc9eb946e70 sp=0xc9eb946d48 pc=0x451f25
+github.com/prometheus/prometheus/tsdb.(*DB).run(0xc11043ac60, {0x3a84508, 0xc000df1220})
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1089 +0x172 fp=0xc9eb946fb8 sp=0xc9eb946e70 pc=0x1647a52
+github.com/prometheus/prometheus/tsdb.open.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x28 fp=0xc9eb946fe0 sp=0xc9eb946fb8 pc=0x1647068
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc9eb946fe8 sp=0xc9eb946fe0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb.open in goroutine 183
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/db.go:1036 +0x158e
+
+goroutine 42010501229 gp=0xc0f77fbc00 m=nil [IO wait]:
+runtime.gopark(0xc399475a10?, 0x449700?, 0xf0?, 0x78?, 0xb?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc399475a08 sp=0xc3994759e8 pc=0x4765ce
+runtime.netpollblock(0x49aab8?, 0x408246?, 0x0?)
+	/usr/local/go/src/runtime/netpoll.go:575 +0xf7 fp=0xc399475a40 sp=0xc399475a08 pc=0x4385d7
+internal/poll.runtime_pollWait(0x7cc4eddcdea8, 0x72)
+	/usr/local/go/src/runtime/netpoll.go:351 +0x85 fp=0xc399475a60 sp=0xc399475a40 pc=0x4758c5
+internal/poll.(*pollDesc).wait(0xca08a47080?, 0xc2ed734000?, 0x0)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:84 +0x27 fp=0xc399475a88 sp=0xc399475a60 pc=0x4fd707
+internal/poll.(*pollDesc).waitRead(...)
+	/usr/local/go/src/internal/poll/fd_poll_runtime.go:89
+internal/poll.(*FD).Read(0xca08a47080, {0xc2ed734000, 0x8000, 0x8000})
+	/usr/local/go/src/internal/poll/fd_unix.go:165 +0x27a fp=0xc399475b20 sp=0xc399475a88 pc=0x4fe9fa
+net.(*netFD).Read(0xca08a47080, {0xc2ed734000?, 0x1060100000000?, 0x8?})
+	/usr/local/go/src/net/fd_posix.go:55 +0x25 fp=0xc399475b68 sp=0xc399475b20 pc=0x5b0c05
+net.(*conn).Read(0xc3fbb15f68, {0xc2ed734000?, 0x800010601?, 0x0?})
+	/usr/local/go/src/net/net.go:189 +0x45 fp=0xc399475bb0 sp=0xc399475b68 pc=0x5c2825
+net.(*TCPConn).Read(0x0?, {0xc2ed734000?, 0xc399475c08?, 0x47aaad?})
+	<autogenerated>:1 +0x25 fp=0xc399475be0 sp=0xc399475bb0 pc=0x5d6e45
+bufio.(*Reader).Read(0xc0af8a3c20, {0xca03959000, 0x9, 0xc3631dbc08?})
+	/usr/local/go/src/bufio/bufio.go:241 +0x197 fp=0xc399475c18 sp=0xc399475be0 pc=0x58a477
+io.ReadAtLeast({0x3a60e60, 0xc0af8a3c20}, {0xca03959000, 0x9, 0x9}, 0x9)
+	/usr/local/go/src/io/io.go:335 +0x90 fp=0xc399475c60 sp=0xc399475c18 pc=0x4f2e10
+io.ReadFull(...)
+	/usr/local/go/src/io/io.go:354
+golang.org/x/net/http2.readFrameHeader({0xca03959000, 0x9, 0xc4edf37cf8?}, {0x3a60e60?, 0xc0af8a3c20?})
+	/go/pkg/mod/golang.org/x/net@v0.35.0/http2/frame.go:237 +0x65 fp=0xc399475cb0 sp=0xc399475c60 pc=0x9a09c5
+golang.org/x/net/http2.(*Framer).ReadFrame(0xca03958fc0)
+	/go/pkg/mod/golang.org/x/net@v0.35.0/http2/frame.go:501 +0x85 fp=0xc399475d58 sp=0xc399475cb0 pc=0x9a1105
+google.golang.org/grpc/internal/transport.(*http2Server).HandleStreams(0xca02119980, {0x3a844d0, 0xc56edd9a10}, 0xc56edd9a40)
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/http2_server.go:645 +0x15d fp=0xc399475e88 sp=0xc399475d58 pc=0xc726fd
+google.golang.org/grpc.(*Server).serveStreams(0xc000bd2400, {0x3a84498?, 0x5439d20?}, {0x3a9d380, 0xca02119980}, {0x3a99558?, 0xc3fbb15f68?})
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1013 +0x396 fp=0xc399475f70 sp=0xc399475e88 pc=0xcc1db6
+google.golang.org/grpc.(*Server).handleRawConn.func1()
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:949 +0x56 fp=0xc399475fe0 sp=0xc399475f70 pc=0xcc1576
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc399475fe8 sp=0xc399475fe0 pc=0x47eac1
+created by google.golang.org/grpc.(*Server).handleRawConn in goroutine 42010501226
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:948 +0x1c6
+
+goroutine 41887913939 gp=0xc0fbe341c0 m=nil [runnable]:
+runtime.gopark(0xc12d731ea8?, 0x2?, 0x93?, 0x3?, 0xc12d731e7c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc12d731d20 sp=0xc12d731d00 pc=0x4765ce
+runtime.selectgo(0xc12d731ea8, 0xc12d731e78, 0xc79287?, 0x0, 0xc238e94000?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc12d731e48 sp=0xc12d731d20 pc=0x451f25
+google.golang.org/grpc/internal/transport.(*controlBuffer).get(0xc238d9f400, 0x1)
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/controlbuf.go:418 +0x113 fp=0xc12d731ed8 sp=0xc12d731e48 pc=0xc58e13
+google.golang.org/grpc/internal/transport.(*loopyWriter).run(0xc23ad4b490)
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/controlbuf.go:551 +0x7b fp=0xc12d731f38 sp=0xc12d731ed8 pc=0xc5955b
+google.golang.org/grpc/internal/transport.NewServerTransport.func2()
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/http2_server.go:335 +0xe9 fp=0xc12d731fe0 sp=0xc12d731f38 pc=0xc6f7e9
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc12d731fe8 sp=0xc12d731fe0 pc=0x47eac1
+created by google.golang.org/grpc/internal/transport.NewServerTransport in goroutine 41887907178
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/http2_server.go:332 +0x18fe
+
+goroutine 42018828540 gp=0xc0b9046380 m=nil [runnable]:
+github.com/thanos-io/thanos/pkg/store.newLazyRespSet.gowrap1()
+	/go/src/github.com/thanos-io/thanos/pkg/store/proxy_heap.go:389 fp=0xc22c472fe0 sp=0xc22c472fd8 pc=0x1f071e0
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc22c472fe8 sp=0xc22c472fe0 pc=0x47eac1
+created by github.com/thanos-io/thanos/pkg/store.newLazyRespSet in goroutine 42018824186
+	/go/src/github.com/thanos-io/thanos/pkg/store/proxy_heap.go:389 +0x395
+
+goroutine 8422 gp=0xc0b90468c0 m=nil [select, 18 minutes]:
+runtime.gopark(0xc000570778?, 0x2?, 0x80?, 0xf7?, 0xc00057076c?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc000570610 sp=0xc0005705f0 pc=0x4765ce
+runtime.selectgo(0xc000570778, 0xc000570768, 0x1000100?, 0x0, 0xffffffffffffffff?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc000570738 sp=0xc000570610 pc=0x451f25
+github.com/prometheus/prometheus/tsdb/wlog.(*WL).run(0xc107faa840)
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:416 +0x96 fp=0xc0005707c8 sp=0xc000570738 pc=0x1631a36
+github.com/prometheus/prometheus/tsdb/wlog.NewSize.gowrap1()
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x25 fp=0xc0005707e0 sp=0xc0005707c8 pc=0x16318a5
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc0005707e8 sp=0xc0005707e0 pc=0x47eac1
+created by github.com/prometheus/prometheus/tsdb/wlog.NewSize in goroutine 80
+	/go/pkg/mod/github.com/andrejbranch/prometheus@v0.0.0-20250512145821-bfb71f85f9e8/tsdb/wlog/wlog.go:375 +0x5f8
+
+goroutine 42018829745 gp=0xc065dedc00 m=nil [runnable]:
+google.golang.org/grpc.(*Server).serveStreams.func2.1()
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1016 fp=0xc2f132dfe0 sp=0xc2f132dfd8 pc=0xcc1fa0
+runtime.goexit({})
+	/usr/local/go/src/runtime/asm_amd64.s:1700 +0x1 fp=0xc2f132dfe8 sp=0xc2f132dfe0 pc=0x47eac1
+created by google.golang.org/grpc.(*Server).serveStreams.func2 in goroutine 41885170138
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1030 +0x125
+
+goroutine 42018804464 gp=0xc11fb99340 m=nil [select]:
+runtime.gopark(0xc05fd32be8?, 0x2?, 0x40?, 0x72?, 0xc05fd32bcc?)
+	/usr/local/go/src/runtime/proc.go:424 +0xce fp=0xc05fd32a70 sp=0xc05fd32a50 pc=0x4765ce
+runtime.selectgo(0xc05fd32be8, 0xc05fd32bc8, 0x5439d20?, 0x0, 0xc1abc88a08?, 0x1)
+	/usr/local/go/src/runtime/select.go:335 +0x7a5 fp=0xc05fd32b98 sp=0xc05fd32a70 pc=0x451f25
+google.golang.org/grpc/internal/transport.(*writeQuota).get(...)
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/flowcontrol.go:59
+google.golang.org/grpc/internal/transport.(*http2Server).Write(0xc7689c9b00, 0xc613f7de60, {0xcadf146170, 0x5, 0x5}, {0xc2ba255200, 0x2c2, 0x2c2}, 0x0?)
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/internal/transport/http2_server.go:1132 +0x1ee fp=0xc05fd32c18 sp=0xc05fd32b98 pc=0xc7664e
+google.golang.org/grpc.(*serverStream).SendMsg(0xc28f784870, {0x2b6d900, 0xc2a1663c60})
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/stream.go:1656 +0x26c fp=0xc05fd32d98 sp=0xc05fd32c18 pc=0xcd42ec
+github.com/thanos-io/thanos/pkg/server/grpc.(*streamWithContext).SendMsg(0x4a7d28?, {0x2b6d900?, 0xc2a1663c60?})
+	<autogenerated>:1 +0x2e fp=0xc05fd32dc0 sp=0xc05fd32d98 pc=0x2244fce
+github.com/grpc-ecosystem/go-grpc-prometheus.(*monitoredServerStream).SendMsg(0xc28f7c4480, {0x2b6d900?, 0xc2a1663c60?})
+	/go/pkg/mod/github.com/grpc-ecosystem/go-grpc-prometheus@v1.2.0/server_metrics.go:156 +0x2d fp=0xc05fd32df8 sp=0xc05fd32dc0 pc=0x2232a6d
+github.com/grpc-ecosystem/go-grpc-middleware/v2.(*WrappedServerStream).SendMsg(0x13?, {0x2b6d900?, 0xc2a1663c60?})
+	<autogenerated>:1 +0x2e fp=0xc05fd32e20 sp=0xc05fd32df8 pc=0x1598f0e
+github.com/thanos-io/thanos/pkg/tracing/interceptors.(*monitoredServerStream).SendMsg(0xc4c7d1ddd0, {0x2b6d900, 0xc2a1663c60})
+	/go/src/github.com/thanos-io/thanos/pkg/tracing/interceptors/server.go:69 +0x54 fp=0xc05fd32e88 sp=0xc05fd32e20 pc=0x1599794
+github.com/thanos-io/thanos/pkg/store/storepb.(*storeSeriesServer).Send(0x3a89980?, 0xc28f7c4a08?)
+	/go/src/github.com/thanos-io/thanos/pkg/store/storepb/rpc.pb.go:994 +0x25 fp=0xc05fd32eb0 sp=0xc05fd32e88 pc=0x17ec685
+github.com/thanos-io/thanos/pkg/store.(*limitedServer).Send(0xc4c7d1de90, 0xc2a1663c60)
+	/go/src/github.com/thanos-io/thanos/pkg/store/limiter.go:178 +0xce fp=0xc05fd32f00 sp=0xc05fd32eb0 pc=0x1ef744e
+github.com/thanos-io/thanos/pkg/store.(*instrumentedServer).Send(0xc79947f060, 0xc2a1663c60)
+	/go/src/github.com/thanos-io/thanos/pkg/store/telemetry.go:145 +0x2c fp=0xc05fd32f20 sp=0xc05fd32f00 pc=0x1f0c98c
+github.com/thanos-io/thanos/pkg/store.(*ProxyStore).Series(0xc000ad2f00, 0xc639931d60, {0x3a930a0, 0xc79947f060})
+	/go/src/github.com/thanos-io/thanos/pkg/store/proxy.go:381 +0x1538 fp=0xc05fd331f0 sp=0xc05fd32f20 pc=0x1f01f38
+github.com/thanos-io/thanos/pkg/store.(*instrumentedStoreServer).Series(0xc000bf66f0, 0xc639931d60, {0x3a93190, 0xc4c7d1de90})
+	/go/src/github.com/thanos-io/thanos/pkg/store/telemetry.go:124 +0x9a fp=0xc05fd33228 sp=0xc05fd331f0 pc=0x1f0c8da
+github.com/thanos-io/thanos/pkg/store.(*limitedStoreServer).Series(0xc000bf67b0, 0xc639931d60, {0x3a95f80, 0xc28f7c6550})
+	/go/src/github.com/thanos-io/thanos/pkg/store/limiter.go:141 +0x171 fp=0xc05fd33298 sp=0xc05fd33228 pc=0x1ef7311
+github.com/thanos-io/thanos/pkg/store.(*ReadWriteTSDBStore).Series(0x15998bf?, 0x10?, {0x3a95f80?, 0xc28f7c6550?})
+	<autogenerated>:1 +0x2e fp=0xc05fd332c8 sp=0xc05fd33298 pc=0x1f1496e
+github.com/thanos-io/thanos/pkg/store.(*recoverableStoreServer).Series(0xc4c7d1ddd0?, 0x2b1afa0?, {0x3a95f80?, 0xc28f7c6550?})
+	/go/src/github.com/thanos-io/thanos/pkg/store/recover.go:28 +0x6c fp=0xc05fd33338 sp=0xc05fd332c8 pc=0x1f0a7ec
+github.com/thanos-io/thanos/pkg/store/storepb._Store_Series_Handler({0x2853c00, 0xc00015b320}, {0x3a8fb88, 0xc4c7d1ddd0})
+	/go/src/github.com/thanos-io/thanos/pkg/store/storepb/rpc.pb.go:981 +0x107 fp=0xc05fd33378 sp=0xc05fd33338 pc=0x17ec607
+github.com/thanos-io/thanos/pkg/server/grpc.New.StreamServerInterceptor.func23({0x2853c00, 0xc00015b320}, {0x3a8fb88, 0xc4c7d1ddd0}, 0xc28f7c4468, 0x3625080)
+	/go/pkg/mod/github.com/grpc-ecosystem/go-grpc-middleware/v2@v2.1.0/interceptors/selector/selector.go:52 +0x1fa fp=0xc05fd33490 sp=0xc05fd33378 pc=0x224209a
+google.golang.org/grpc.getChainStreamHandler.func1({0x2853c00, 0xc00015b320}, {0x3a8fb88, 0xc4c7d1ddd0})
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1515 +0xb2 fp=0xc05fd334f8 sp=0xc05fd33490 pc=0xcc5f52
+github.com/thanos-io/thanos/pkg/server/grpc.New.StreamServerInterceptor.func21({0x2853c00, 0xc00015b320}, {0x3a8fb88, 0xc4c7d1ddd0}, 0xc28f7c4468, 0xc578229e80)
+	/go/pkg/mod/github.com/grpc-ecosystem/go-grpc-middleware/v2@v2.1.0/interceptors/selector/selector.go:52 +0x1fa fp=0xc05fd33610 sp=0xc05fd334f8 pc=0x22425fa
+google.golang.org/grpc.getChainStreamHandler.func1({0x2853c00, 0xc00015b320}, {0x3a8fb88, 0xc4c7d1ddd0})
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1515 +0xb2 fp=0xc05fd33678 sp=0xc05fd33610 pc=0xcc5f52
+github.com/thanos-io/thanos/pkg/tracing/tracing_middleware.StreamServerInterceptor.StreamServerInterceptor.func1({0x2853c00, 0xc00015b320}, {0x3a8e998, 0xc79947f000}, 0xc28f7c4468, 0xc578229e40)
+	/go/src/github.com/thanos-io/thanos/pkg/tracing/interceptors/server.go:40 +0x264 fp=0xc05fd337c0 sp=0xc05fd33678 pc=0x159cbc4
+github.com/thanos-io/thanos/pkg/tracing.StreamServerInterceptor.func1({0x2853c00, 0xc00015b320}, {0x3a8ef20, 0xc28f7c4480}, 0xc28f7c4468, 0xc578229e40)
+	/go/src/github.com/thanos-io/thanos/pkg/tracing/grpc.go:42 +0xf7 fp=0xc05fd33820 sp=0xc05fd337c0 pc=0x159da37
+google.golang.org/grpc.getChainStreamHandler.func1({0x2853c00, 0xc00015b320}, {0x3a8ef20, 0xc28f7c4480})
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1515 +0xb2 fp=0xc05fd33888 sp=0xc05fd33820 pc=0xcc5f52
+github.com/thanos-io/thanos/pkg/server/grpc.New.(*ServerMetrics).StreamServerInterceptor.func19({0x2853c00, 0xc00015b320}, {0x3a8eed8, 0xc79947efe0}, 0xc28f7c4468, 0xc578229e00)
+	/go/pkg/mod/github.com/grpc-ecosystem/go-grpc-prometheus@v1.2.0/server_metrics.go:121 +0xd2 fp=0xc05fd338e0 sp=0xc05fd33888 pc=0x2242b92
+google.golang.org/grpc.getChainStreamHandler.func1({0x2853c00, 0xc00015b320}, {0x3a8eed8, 0xc79947efe0})
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1515 +0xb2 fp=0xc05fd33948 sp=0xc05fd338e0 pc=0xcc5f52
+github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery.StreamServerInterceptor.func1({0x2853c00?, 0xc00015b320?}, {0x3a8eed8?, 0xc79947efe0?}, 0xc28f7c4468?, 0x3625080?)
+	/go/pkg/mod/github.com/grpc-ecosystem/go-grpc-middleware/v2@v2.1.0/interceptors/recovery/interceptors.go:48 +0x82 fp=0xc05fd339c0 sp=0xc05fd33948 pc=0x2234562
+google.golang.org/grpc.getChainStreamHandler.func1({0x2853c00, 0xc00015b320}, {0x3a8eed8, 0xc79947efe0})
+	/go/pkg/mod/google.golang.org/grpc@v1.63.2/server.go:1515 +0xb2 fp=0xc05fd33a28 sp=0xc05fd339c0 pc=0xcc5f52
+github.com/thanos-io/thanos/pkg/server/grpc.New.NewStreamServerRequestIDInterceptor.func17({0x2853c00, 0xc00015b320}, {0x3a8ecc0, 0xc28f784870}, 0xc28f7c4468?, 0xc578229d80)
+	/go/src/github.com/thanos-io/thanos/pkg/server/grpc/request_id.go:50 +0xa6 fp=0xc05fd33a60 sp=0xc05fd33a28 pc=0x2244ac6

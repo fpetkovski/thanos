@@ -163,13 +163,15 @@ func TestCapNProtoServer_MultipleSerialClientsWithReconnect(t *testing.T) {
 		handler.numFailures = 2
 		var wg sync.WaitGroup
 		for range numRequests {
-			wg.Go(func() {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
 				_, err := client.RemoteWrite(context.Background(), &storepb.WriteRequest{
 					Tenant:     "default",
 					Timeseries: makeSeriesBatch(),
 				})
 				require.NoError(t, err)
-			})
+			}()
 		}
 		wg.Wait()
 	}
@@ -179,7 +181,6 @@ func TestCapNProtoServer_MultipleSerialClientsWithReconnect(t *testing.T) {
 
 type faultyHandler struct {
 	mu          sync.Mutex
-	numReqs     int
 	numFailures int
 }
 
