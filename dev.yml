@@ -9,7 +9,7 @@ check:
 up:
   - go:
       version: 1.25.7
-      modules: true
+      skip_default_tools: true
   - node:
       version: v20.18.0
       packages:
