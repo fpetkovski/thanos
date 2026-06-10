@@ -8,7 +8,7 @@ check:
 
 up:
   - go:
-      version: 1.25.5
+      version: 1.25.7
       modules: true
   - node:
       version: v20.18.0
